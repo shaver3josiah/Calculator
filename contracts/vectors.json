@@ -1,0 +1,1874 @@
+{
+  "meta": {
+    "generatedFrom": "Bloom Calculator (all-in-one).html",
+    "date": "2026-07-02",
+    "runtime": "node",
+    "nodeVersion": "v22.22.3",
+    "sources": {
+      "formatters_fmt_plain_money": "Bloom Calculator (all-in-one).html:1852-1862 (fmt, plain, money)",
+      "formatters_usd": "Bloom Calculator (all-in-one).html:2094 (usd)",
+      "calc_engine": "Bloom Calculator (all-in-one).html:1851,1863-1919 (calc state, compute, setOp, equals, clearAll, toggleSign, percent)",
+      "op_symbol": "Bloom Calculator (all-in-one).html:1735 (OP_SYMBOL)",
+      "finance_project": "Bloom Calculator (all-in-one).html:2082-2091 (project = futureValue/contributions)",
+      "finance_loan": "Bloom Calculator (all-in-one).html:2461-2468 (loanPayment)",
+      "finance_savingsgoal": "Bloom Calculator (all-in-one).html:2469-2478 (savingsGoalPayment)",
+      "finance_fvseries": "Bloom Calculator (all-in-one).html:2479-2486 (fvSeries)",
+      "finance_ruleof72": "Bloom Calculator (all-in-one).html:2487 (ruleOf72)",
+      "finance_realrate": "Bloom Calculator (all-in-one).html:2488-2491 (realRate)",
+      "finance_employermatch": "Bloom Calculator (all-in-one).html:2492-2497 (employerMatch)",
+      "finance_tip": "Bloom Calculator (all-in-one).html:2451-2457 (tipSplit)",
+      "finance_pct": "Bloom Calculator (all-in-one).html:2458-2460 (pctOf, pctChange)",
+      "eggs": "Bloom Calculator (all-in-one).html:1737-1748 (EASTER_EGGS, eval'd verbatim after bracket-depth extraction)",
+      "theme_root": "Bloom Calculator (all-in-one).html:11-24 (:root theme vars)",
+      "theme_presets": "Bloom Calculator (all-in-one).html:25-41 (rose, peony, soft presets)",
+      "theme_vars_editable": "Bloom Calculator (all-in-one).html:1750-1763 (THEME_VARS, eval'd verbatim)",
+      "funds_default": "Bloom Calculator (all-in-one).html:2060-2064 (FUNDS, eval'd verbatim)",
+      "soundmap": "Bloom Calculator (all-in-one).html:2680-2687 (DEFAULT_MAP, GAIN, eval'd verbatim)",
+      "foods_iframe": "Bloom Calculator (all-in-one).html:1054 (iframe FOODS, entity-encoded, schema n/g/m/e, bracket-depth extracted + entity-decoded + JSON.parse)",
+      "foods_pantry": "Bloom Calculator (all-in-one).html:1552 (pantry FOODS, entity-encoded, schema id/name/group/measure/glyph/icon/filter/tinted, same method)",
+      "food_svg": "Bloom Calculator (all-in-one).html:1243 (FOOD_SVG templates, entity-encoded template literals, bracket-depth + backtick-aware extraction)",
+      "food_art_key": "Bloom Calculator (all-in-one).html:1244-1252 (foodArtKey matcher, transcribed)",
+      "recipe_parse": "Bloom Calculator (all-in-one).html:2205-2286 (UNICODE_FRAC, UNIT_ALIASES, tokenQty, parseLine, fmtQty, transcribed)",
+      "unit_convert": "Bloom Calculator (all-in-one).html:2200-2212 (VOL, WT, convertFamily, transcribed)",
+      "cleanurl_jsonld": "Bloom Calculator (all-in-one).html:2963 (cleanUrl), 2344-2353 (extractJsonLdIngredients, transcribed)"
+    }
+  },
+  "formatters": [
+    {
+      "fn": "fmt",
+      "arg": 0,
+      "expect": "0"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1,
+      "expect": "1"
+    },
+    {
+      "fn": "fmt",
+      "arg": -1,
+      "expect": "-1"
+    },
+    {
+      "fn": "fmt",
+      "arg": 0.5,
+      "expect": "0.5"
+    },
+    {
+      "fn": "fmt",
+      "arg": -0.5,
+      "expect": "-0.5"
+    },
+    {
+      "fn": "fmt",
+      "arg": 44,
+      "expect": "44"
+    },
+    {
+      "fn": "fmt",
+      "arg": 100,
+      "expect": "100"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1000,
+      "expect": "1,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1234.5678,
+      "expect": "1,234.5678"
+    },
+    {
+      "fn": "fmt",
+      "arg": -1234.5678,
+      "expect": "-1,234.5678"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1000000,
+      "expect": "1,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1234567.891,
+      "expect": "1,234,567.891"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1e-8,
+      "expect": "1.0000e-8"
+    },
+    {
+      "fn": "fmt",
+      "arg": 0.000001,
+      "expect": "0.000001"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1e-7,
+      "expect": "1.0000e-7"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1000000000000000,
+      "expect": "1.0000e+15"
+    },
+    {
+      "fn": "fmt",
+      "arg": 10000000000000000,
+      "expect": "1.0000e+16"
+    },
+    {
+      "fn": "fmt",
+      "arg": -10000000000000000,
+      "expect": "-1.0000e+16"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1000000000000,
+      "expect": "1,000,000,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 123456789.12345678,
+      "expect": "123,456,789.12345678"
+    },
+    {
+      "fn": "fmt",
+      "arg": 0.1,
+      "expect": "0.1"
+    },
+    {
+      "fn": "fmt",
+      "arg": 0.12345678901,
+      "expect": "0.12345679"
+    },
+    {
+      "fn": "fmt",
+      "arg": 3.14159265358979,
+      "expect": "3.14159265"
+    },
+    {
+      "fn": "fmt",
+      "arg": 100000000,
+      "expect": "100,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1e-8,
+      "expect": "1.0000e-8"
+    },
+    {
+      "fn": "fmt",
+      "arg": -1.23e-7,
+      "expect": "-1.2300e-7"
+    },
+    {
+      "fn": "fmt",
+      "arg": 5000000000,
+      "expect": "5,000,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 2.5,
+      "expect": "2.5"
+    },
+    {
+      "fn": "fmt",
+      "arg": -2.5,
+      "expect": "-2.5"
+    },
+    {
+      "fn": "fmt",
+      "arg": 10.005,
+      "expect": "10.005"
+    },
+    {
+      "fn": "fmt",
+      "arg": 999.995,
+      "expect": "999.995"
+    },
+    {
+      "fn": "fmt",
+      "arg": 100000000000000,
+      "expect": "100,000,000,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 999999900000000,
+      "expect": "999,999,900,000,000"
+    },
+    {
+      "fn": "fmt",
+      "arg": 1000000010000000,
+      "expect": "1.0000e+15"
+    },
+    {
+      "fn": "fmt",
+      "arg": 9.9999999e-7,
+      "expect": "1.0000e-6"
+    },
+    {
+      "fn": "fmt",
+      "arg": 12345.6789012345,
+      "expect": "12,345.67890123"
+    },
+    {
+      "fn": "fmt",
+      "arg": -1e-7,
+      "expect": "-1.0000e-7"
+    },
+    {
+      "fn": "fmt",
+      "arg": 42,
+      "expect": "42"
+    },
+    {
+      "fn": "fmt",
+      "arg": 3,
+      "expect": "3"
+    },
+    {
+      "fn": "fmt",
+      "arg": -3,
+      "expect": "-3"
+    },
+    {
+      "fn": "fmt",
+      "arg": 7.5,
+      "expect": "7.5"
+    },
+    {
+      "fn": "fmt",
+      "arg": 8888.8888,
+      "expect": "8,888.8888"
+    },
+    {
+      "fn": "plain",
+      "arg": 0,
+      "expect": "0"
+    },
+    {
+      "fn": "plain",
+      "arg": 1,
+      "expect": "1"
+    },
+    {
+      "fn": "plain",
+      "arg": -1,
+      "expect": "-1"
+    },
+    {
+      "fn": "plain",
+      "arg": 0.5,
+      "expect": "0.5"
+    },
+    {
+      "fn": "plain",
+      "arg": -0.5,
+      "expect": "-0.5"
+    },
+    {
+      "fn": "plain",
+      "arg": 44,
+      "expect": "44"
+    },
+    {
+      "fn": "plain",
+      "arg": 100,
+      "expect": "100"
+    },
+    {
+      "fn": "plain",
+      "arg": 1000,
+      "expect": "1000"
+    },
+    {
+      "fn": "plain",
+      "arg": 1234.5678,
+      "expect": "1234.5678"
+    },
+    {
+      "fn": "plain",
+      "arg": -1234.5678,
+      "expect": "-1234.5678"
+    },
+    {
+      "fn": "plain",
+      "arg": 1000000,
+      "expect": "1000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 1234567.891,
+      "expect": "1234567.891"
+    },
+    {
+      "fn": "plain",
+      "arg": 1e-8,
+      "expect": "1e-8"
+    },
+    {
+      "fn": "plain",
+      "arg": 0.000001,
+      "expect": "0.000001"
+    },
+    {
+      "fn": "plain",
+      "arg": 1e-7,
+      "expect": "1e-7"
+    },
+    {
+      "fn": "plain",
+      "arg": 1000000000000000,
+      "expect": "999999999999999.9"
+    },
+    {
+      "fn": "plain",
+      "arg": 10000000000000000,
+      "expect": "10000000000000000"
+    },
+    {
+      "fn": "plain",
+      "arg": -10000000000000000,
+      "expect": "-10000000000000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 1000000000000,
+      "expect": "1000000000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 123456789.12345678,
+      "expect": "123456789.12345678"
+    },
+    {
+      "fn": "plain",
+      "arg": 0.1,
+      "expect": "0.1"
+    },
+    {
+      "fn": "plain",
+      "arg": 0.12345678901,
+      "expect": "0.12345679"
+    },
+    {
+      "fn": "plain",
+      "arg": 3.14159265358979,
+      "expect": "3.14159265"
+    },
+    {
+      "fn": "plain",
+      "arg": 100000000,
+      "expect": "100000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 1e-8,
+      "expect": "1e-8"
+    },
+    {
+      "fn": "plain",
+      "arg": -1.23e-7,
+      "expect": "-1.2e-7"
+    },
+    {
+      "fn": "plain",
+      "arg": 5000000000,
+      "expect": "5000000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 2.5,
+      "expect": "2.5"
+    },
+    {
+      "fn": "plain",
+      "arg": -2.5,
+      "expect": "-2.5"
+    },
+    {
+      "fn": "plain",
+      "arg": 10.005,
+      "expect": "10.005"
+    },
+    {
+      "fn": "plain",
+      "arg": 999.995,
+      "expect": "999.995"
+    },
+    {
+      "fn": "plain",
+      "arg": 100000000000000,
+      "expect": "100000000000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 999999900000000,
+      "expect": "999999900000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 1000000010000000,
+      "expect": "1000000010000000"
+    },
+    {
+      "fn": "plain",
+      "arg": 9.9999999e-7,
+      "expect": "0.000001"
+    },
+    {
+      "fn": "plain",
+      "arg": 12345.6789012345,
+      "expect": "12345.67890123"
+    },
+    {
+      "fn": "plain",
+      "arg": -1e-7,
+      "expect": "-1e-7"
+    },
+    {
+      "fn": "plain",
+      "arg": 42,
+      "expect": "42"
+    },
+    {
+      "fn": "plain",
+      "arg": 3,
+      "expect": "3"
+    },
+    {
+      "fn": "plain",
+      "arg": -3,
+      "expect": "-3"
+    },
+    {
+      "fn": "plain",
+      "arg": 7.5,
+      "expect": "7.5"
+    },
+    {
+      "fn": "plain",
+      "arg": 8888.8888,
+      "expect": "8888.8888"
+    },
+    {
+      "fn": "money",
+      "arg": 0,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1,
+      "expect": "$1.00"
+    },
+    {
+      "fn": "money",
+      "arg": -1,
+      "expect": "$-1.00"
+    },
+    {
+      "fn": "money",
+      "arg": 0.5,
+      "expect": "$0.50"
+    },
+    {
+      "fn": "money",
+      "arg": -0.5,
+      "expect": "$-0.50"
+    },
+    {
+      "fn": "money",
+      "arg": 44,
+      "expect": "$44.00"
+    },
+    {
+      "fn": "money",
+      "arg": 100,
+      "expect": "$100.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1000,
+      "expect": "$1,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1234.5678,
+      "expect": "$1,234.57"
+    },
+    {
+      "fn": "money",
+      "arg": -1234.5678,
+      "expect": "$-1,234.57"
+    },
+    {
+      "fn": "money",
+      "arg": 1000000,
+      "expect": "$1,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1234567.891,
+      "expect": "$1,234,567.89"
+    },
+    {
+      "fn": "money",
+      "arg": 1e-8,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 0.000001,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1e-7,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1000000000000000,
+      "expect": "$1,000,000,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 10000000000000000,
+      "expect": "$10,000,000,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": -10000000000000000,
+      "expect": "$-10,000,000,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1000000000000,
+      "expect": "$1,000,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 123456789.12345678,
+      "expect": "$123,456,789.12"
+    },
+    {
+      "fn": "money",
+      "arg": 0.1,
+      "expect": "$0.10"
+    },
+    {
+      "fn": "money",
+      "arg": 0.12345678901,
+      "expect": "$0.12"
+    },
+    {
+      "fn": "money",
+      "arg": 3.14159265358979,
+      "expect": "$3.14"
+    },
+    {
+      "fn": "money",
+      "arg": 100000000,
+      "expect": "$100,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1e-8,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": -1.23e-7,
+      "expect": "$-0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 5000000000,
+      "expect": "$5,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 2.5,
+      "expect": "$2.50"
+    },
+    {
+      "fn": "money",
+      "arg": -2.5,
+      "expect": "$-2.50"
+    },
+    {
+      "fn": "money",
+      "arg": 10.005,
+      "expect": "$10.01"
+    },
+    {
+      "fn": "money",
+      "arg": 999.995,
+      "expect": "$1,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 100000000000000,
+      "expect": "$100,000,000,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 999999900000000,
+      "expect": "$999,999,900,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 1000000010000000,
+      "expect": "$1,000,000,010,000,000.00"
+    },
+    {
+      "fn": "money",
+      "arg": 9.9999999e-7,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 12345.6789012345,
+      "expect": "$12,345.68"
+    },
+    {
+      "fn": "money",
+      "arg": -1e-7,
+      "expect": "$-0.00"
+    },
+    {
+      "fn": "money",
+      "arg": 42,
+      "expect": "$42.00"
+    },
+    {
+      "fn": "money",
+      "arg": 3,
+      "expect": "$3.00"
+    },
+    {
+      "fn": "money",
+      "arg": -3,
+      "expect": "$-3.00"
+    },
+    {
+      "fn": "money",
+      "arg": 7.5,
+      "expect": "$7.50"
+    },
+    {
+      "fn": "money",
+      "arg": 8888.8888,
+      "expect": "$8,888.89"
+    },
+    {
+      "fn": "usd",
+      "arg": 0,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 1,
+      "expect": "$1"
+    },
+    {
+      "fn": "usd",
+      "arg": -1,
+      "expect": "$-1"
+    },
+    {
+      "fn": "usd",
+      "arg": 0.5,
+      "expect": "$1"
+    },
+    {
+      "fn": "usd",
+      "arg": -0.5,
+      "expect": "$-0"
+    },
+    {
+      "fn": "usd",
+      "arg": 44,
+      "expect": "$44"
+    },
+    {
+      "fn": "usd",
+      "arg": 100,
+      "expect": "$100"
+    },
+    {
+      "fn": "usd",
+      "arg": 1000,
+      "expect": "$1,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 1234.5678,
+      "expect": "$1,235"
+    },
+    {
+      "fn": "usd",
+      "arg": -1234.5678,
+      "expect": "$-1,235"
+    },
+    {
+      "fn": "usd",
+      "arg": 1000000,
+      "expect": "$1,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 1234567.891,
+      "expect": "$1,234,568"
+    },
+    {
+      "fn": "usd",
+      "arg": 1e-8,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 0.000001,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 1e-7,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 1000000000000000,
+      "expect": "$1,000,000,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 10000000000000000,
+      "expect": "$10,000,000,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": -10000000000000000,
+      "expect": "$-10,000,000,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 1000000000000,
+      "expect": "$1,000,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 123456789.12345678,
+      "expect": "$123,456,789"
+    },
+    {
+      "fn": "usd",
+      "arg": 0.1,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 0.12345678901,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 3.14159265358979,
+      "expect": "$3"
+    },
+    {
+      "fn": "usd",
+      "arg": 100000000,
+      "expect": "$100,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 1e-8,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": -1.23e-7,
+      "expect": "$-0"
+    },
+    {
+      "fn": "usd",
+      "arg": 5000000000,
+      "expect": "$5,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 2.5,
+      "expect": "$3"
+    },
+    {
+      "fn": "usd",
+      "arg": -2.5,
+      "expect": "$-2"
+    },
+    {
+      "fn": "usd",
+      "arg": 10.005,
+      "expect": "$10"
+    },
+    {
+      "fn": "usd",
+      "arg": 999.995,
+      "expect": "$1,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 100000000000000,
+      "expect": "$100,000,000,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 999999900000000,
+      "expect": "$999,999,900,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 1000000010000000,
+      "expect": "$1,000,000,010,000,000"
+    },
+    {
+      "fn": "usd",
+      "arg": 9.9999999e-7,
+      "expect": "$0"
+    },
+    {
+      "fn": "usd",
+      "arg": 12345.6789012345,
+      "expect": "$12,346"
+    },
+    {
+      "fn": "usd",
+      "arg": -1e-7,
+      "expect": "$-0"
+    },
+    {
+      "fn": "usd",
+      "arg": 42,
+      "expect": "$42"
+    },
+    {
+      "fn": "usd",
+      "arg": 3,
+      "expect": "$3"
+    },
+    {
+      "fn": "usd",
+      "arg": -3,
+      "expect": "$-3"
+    },
+    {
+      "fn": "usd",
+      "arg": 7.5,
+      "expect": "$8"
+    },
+    {
+      "fn": "usd",
+      "arg": 8888.8888,
+      "expect": "$8,889"
+    }
+  ],
+  "finance": [
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 1000,
+        "monthly": 100,
+        "annualRatePct": 6,
+        "years": 10
+      },
+      "raw": 18207.33141467809,
+      "expect": "$18,207"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 0,
+        "monthly": 500,
+        "annualRatePct": 7,
+        "years": 30
+      },
+      "raw": 609985.4978879723,
+      "expect": "$609,985"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 10000,
+        "monthly": 0,
+        "annualRatePct": 5,
+        "years": 20
+      },
+      "raw": 27126.402854819888,
+      "expect": "$27,126"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 1000,
+        "monthly": 100,
+        "annualRatePct": 0,
+        "years": 10
+      },
+      "raw": 13000,
+      "expect": "$13,000"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 5000,
+        "monthly": 200,
+        "annualRatePct": 4.5,
+        "years": 0
+      },
+      "raw": 5000,
+      "expect": "$5,000"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 0,
+        "monthly": 0,
+        "annualRatePct": 6,
+        "years": 10
+      },
+      "raw": 0,
+      "expect": "$0"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 250000,
+        "monthly": 1500,
+        "annualRatePct": 8,
+        "years": 25
+      },
+      "raw": 3261583.582776161,
+      "expect": "$3,261,584"
+    },
+    {
+      "fn": "futureValue",
+      "args": {
+        "principal": 100,
+        "monthly": 10,
+        "annualRatePct": 12,
+        "years": 1
+      },
+      "raw": 239.50753314516675,
+      "expect": "$240"
+    },
+    {
+      "fn": "contributions",
+      "args": {
+        "principal": 1000,
+        "monthly": 100,
+        "years": 10
+      },
+      "raw": 13000,
+      "expect": "$13,000"
+    },
+    {
+      "fn": "contributions",
+      "args": {
+        "principal": 0,
+        "monthly": 500,
+        "years": 30
+      },
+      "raw": 180000,
+      "expect": "$180,000"
+    },
+    {
+      "fn": "contributions",
+      "args": {
+        "principal": 10000,
+        "monthly": 0,
+        "years": 20
+      },
+      "raw": 10000,
+      "expect": "$10,000"
+    },
+    {
+      "fn": "contributions",
+      "args": {
+        "principal": 5000,
+        "monthly": 200,
+        "years": 0
+      },
+      "raw": 5000,
+      "expect": "$5,000"
+    },
+    {
+      "fn": "loanPayment",
+      "args": {
+        "principal": 20000,
+        "annualRatePct": 6,
+        "years": 5
+      },
+      "raw": 386.6560305885655,
+      "expect": "$386.66"
+    },
+    {
+      "fn": "loanPayment",
+      "args": {
+        "principal": 300000,
+        "annualRatePct": 6.5,
+        "years": 30
+      },
+      "raw": 1896.2040704788958,
+      "expect": "$1,896.20"
+    },
+    {
+      "fn": "loanPayment",
+      "args": {
+        "principal": 10000,
+        "annualRatePct": 0,
+        "years": 5
+      },
+      "raw": 166.66666666666666,
+      "expect": "$166.67"
+    },
+    {
+      "fn": "loanPayment",
+      "args": {
+        "principal": 5000,
+        "annualRatePct": 3.9,
+        "years": 1
+      },
+      "raw": 425.5211093742139,
+      "expect": "$425.52"
+    },
+    {
+      "fn": "savingsGoalPayment",
+      "args": {
+        "target": 50000,
+        "principal": 0,
+        "annualRatePct": 5,
+        "years": 10
+      },
+      "raw": 321.99424286204425,
+      "expect": "$321.99"
+    },
+    {
+      "fn": "savingsGoalPayment",
+      "args": {
+        "target": 100000,
+        "principal": 20000,
+        "annualRatePct": 6,
+        "years": 15
+      },
+      "raw": 175.08546243876987,
+      "expect": "$175.09"
+    },
+    {
+      "fn": "savingsGoalPayment",
+      "args": {
+        "target": 10000,
+        "principal": 0,
+        "annualRatePct": 0,
+        "years": 5
+      },
+      "raw": 166.66666666666666,
+      "expect": "$166.67"
+    },
+    {
+      "fn": "savingsGoalPayment",
+      "args": {
+        "target": 5000,
+        "principal": 5000,
+        "annualRatePct": 4,
+        "years": 2
+      },
+      "raw": -16.66666666666666,
+      "expect": "$-16.67"
+    },
+    {
+      "fn": "realRate",
+      "args": {
+        "nominalPct": 7,
+        "inflationPct": 3
+      },
+      "raw": 3.8834951456310662,
+      "expect": "3.88349515"
+    },
+    {
+      "fn": "realRate",
+      "args": {
+        "nominalPct": 5,
+        "inflationPct": 5
+      },
+      "raw": 0,
+      "expect": "0"
+    },
+    {
+      "fn": "realRate",
+      "args": {
+        "nominalPct": 2,
+        "inflationPct": 8
+      },
+      "raw": -5.555555555555558,
+      "expect": "-5.55555556"
+    },
+    {
+      "fn": "realRate",
+      "args": {
+        "nominalPct": 0,
+        "inflationPct": 0
+      },
+      "raw": 0,
+      "expect": "0"
+    },
+    {
+      "fn": "employerMatch",
+      "args": {
+        "salary": 80000,
+        "contribPct": 6,
+        "matchPct": 50,
+        "matchLimitPct": 6
+      },
+      "raw": 2400,
+      "expect": "$2,400.00"
+    },
+    {
+      "fn": "employerMatch",
+      "args": {
+        "salary": 60000,
+        "contribPct": 3,
+        "matchPct": 100,
+        "matchLimitPct": 6
+      },
+      "raw": 1800,
+      "expect": "$1,800.00"
+    },
+    {
+      "fn": "employerMatch",
+      "args": {
+        "salary": 50000,
+        "contribPct": 10,
+        "matchPct": 50,
+        "matchLimitPct": 4
+      },
+      "raw": 1000,
+      "expect": "$1,000.00"
+    },
+    {
+      "fn": "employerMatch",
+      "args": {
+        "salary": 45000,
+        "contribPct": 0,
+        "matchPct": 50,
+        "matchLimitPct": 5
+      },
+      "raw": 0,
+      "expect": "$0.00"
+    },
+    {
+      "fn": "ruleOf72",
+      "args": {
+        "ratePct": 6
+      },
+      "raw": 12,
+      "expect": "12"
+    },
+    {
+      "fn": "ruleOf72",
+      "args": {
+        "ratePct": 12
+      },
+      "raw": 6,
+      "expect": "6"
+    },
+    {
+      "fn": "ruleOf72",
+      "args": {
+        "ratePct": 1
+      },
+      "raw": 72,
+      "expect": "72"
+    },
+    {
+      "fn": "tip",
+      "args": {
+        "bill": 84.5,
+        "tipPct": 18,
+        "people": 3
+      },
+      "raw": 99.71,
+      "expect": "$99.71"
+    },
+    {
+      "fn": "tip",
+      "args": {
+        "bill": 50,
+        "tipPct": 20,
+        "people": 1
+      },
+      "raw": 60,
+      "expect": "$60.00"
+    },
+    {
+      "fn": "percentOf",
+      "args": {
+        "pct": 15,
+        "value": 200
+      },
+      "raw": 30,
+      "expect": "30"
+    },
+    {
+      "fn": "percentChange",
+      "args": {
+        "a": 50,
+        "b": 75
+      },
+      "raw": 50,
+      "expect": "50"
+    }
+  ],
+  "calc": [
+    {
+      "keys": [
+        "3",
+        "+",
+        "1",
+        "6",
+        "+",
+        "2",
+        "5",
+        "="
+      ],
+      "display": "44",
+      "sequence": "3+16+25"
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "*",
+        "5",
+        "*",
+        "2",
+        "6",
+        "="
+      ],
+      "display": "1,560",
+      "sequence": "12×5×26"
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "0",
+        "/",
+        "0",
+        "="
+      ],
+      "display": "Error",
+      "sequence": "120÷0"
+    },
+    {
+      "keys": [
+        "5",
+        "+",
+        "5",
+        "="
+      ],
+      "display": "10",
+      "sequence": "5+5"
+    },
+    {
+      "keys": [
+        "9",
+        "-",
+        "4",
+        "="
+      ],
+      "display": "5",
+      "sequence": "9−4"
+    },
+    {
+      "keys": [
+        "6",
+        "*",
+        "7",
+        "="
+      ],
+      "display": "42",
+      "sequence": "6×7"
+    },
+    {
+      "keys": [
+        "1",
+        "0",
+        "0",
+        "/",
+        "4",
+        "="
+      ],
+      "display": "25",
+      "sequence": "100÷4"
+    },
+    {
+      "keys": [
+        "7",
+        "+",
+        "+",
+        "3",
+        "="
+      ],
+      "display": "10",
+      "sequence": "7+3"
+    },
+    {
+      "keys": [
+        "7",
+        "-",
+        "*",
+        "3",
+        "="
+      ],
+      "display": "21",
+      "sequence": "7×3"
+    },
+    {
+      "keys": [
+        "2",
+        "0",
+        "0",
+        "%",
+        "="
+      ],
+      "display": "2",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "5",
+        "+/-",
+        "="
+      ],
+      "display": "-5",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "0",
+        "+/-",
+        "="
+      ],
+      "display": "0",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "9",
+        "+/-",
+        "+/-",
+        "="
+      ],
+      "display": "9",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "1",
+        ".",
+        "5",
+        "+",
+        "2",
+        ".",
+        "5",
+        "="
+      ],
+      "display": "4",
+      "sequence": "1.5+2.5"
+    },
+    {
+      "keys": [
+        "3",
+        ".",
+        ".",
+        "5",
+        "="
+      ],
+      "display": "3.5",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "3",
+        "C",
+        "4",
+        "5",
+        "="
+      ],
+      "display": "45",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "1",
+        "0",
+        "-",
+        "3",
+        "-",
+        "2",
+        "="
+      ],
+      "display": "5",
+      "sequence": "10−3−2"
+    },
+    {
+      "keys": [
+        "2",
+        "+",
+        "3",
+        "*",
+        "4",
+        "="
+      ],
+      "display": "20",
+      "sequence": "2+3×4"
+    },
+    {
+      "keys": [
+        "1",
+        "0",
+        "0",
+        "-",
+        "5",
+        "0",
+        "%",
+        "="
+      ],
+      "display": "99.5",
+      "sequence": "100−0.5"
+    },
+    {
+      "keys": [
+        "8",
+        "/",
+        "2",
+        "/",
+        "2",
+        "="
+      ],
+      "display": "2",
+      "sequence": "8÷2÷2"
+    },
+    {
+      "keys": [
+        "3",
+        "÷",
+        "1",
+        "6",
+        "÷",
+        "2",
+        "5",
+        "="
+      ],
+      "display": "0.0075",
+      "sequence": "3÷16÷25"
+    },
+    {
+      "keys": [
+        "3",
+        "×",
+        "1",
+        "6",
+        "×",
+        "2",
+        "5",
+        "="
+      ],
+      "display": "1,200",
+      "sequence": "3×16×25"
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "÷",
+        "5",
+        "÷",
+        "2",
+        "6",
+        "="
+      ],
+      "display": "0.09230769",
+      "sequence": "12÷5÷26"
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "−",
+        "5",
+        "−",
+        "2",
+        "6",
+        "="
+      ],
+      "display": "-19",
+      "sequence": "12−5−26"
+    },
+    {
+      "keys": [
+        "7",
+        "×",
+        "6",
+        "="
+      ],
+      "display": "42",
+      "sequence": "7×6"
+    },
+    {
+      "keys": [
+        "1",
+        "2",
+        "×",
+        "1",
+        "2",
+        "="
+      ],
+      "display": "144",
+      "sequence": "12×12"
+    },
+    {
+      "keys": [
+        "4",
+        "4",
+        "="
+      ],
+      "display": "44",
+      "sequence": ""
+    },
+    {
+      "keys": [
+        "1",
+        "+",
+        "="
+      ],
+      "display": "2",
+      "sequence": "1+1"
+    }
+  ],
+  "eggs": [
+    {
+      "sequence": "3÷16÷25",
+      "match": "never-divided"
+    },
+    {
+      "sequence": "3/16/25",
+      "match": "never-divided"
+    },
+    {
+      "sequence": "3+16+25",
+      "match": "ragingly-positive"
+    },
+    {
+      "sequence": "3×16×25",
+      "match": "multiply"
+    },
+    {
+      "sequence": "3*16*25",
+      "match": "multiply"
+    },
+    {
+      "sequence": "3−16−25",
+      "match": "straight-to-the-point"
+    },
+    {
+      "sequence": "3-16-25",
+      "match": "straight-to-the-point"
+    },
+    {
+      "sequence": "12÷5÷26",
+      "match": "in-unity"
+    },
+    {
+      "sequence": "12/5/26",
+      "match": "in-unity"
+    },
+    {
+      "sequence": "12+5+26",
+      "match": "a-good-feeling"
+    },
+    {
+      "sequence": "12×5×26",
+      "match": "acceleration"
+    },
+    {
+      "sequence": "12*5*26",
+      "match": "acceleration"
+    },
+    {
+      "sequence": "12−5−26",
+      "match": "no-condemnation"
+    },
+    {
+      "sequence": "12-5-26",
+      "match": "no-condemnation"
+    },
+    {
+      "sequence": "7×6",
+      "match": "a-little-secret"
+    },
+    {
+      "sequence": "6×7",
+      "match": "a-little-secret"
+    },
+    {
+      "sequence": "12×12",
+      "match": "well-spotted"
+    },
+    {
+      "sequence": "3÷16÷24",
+      "match": null
+    },
+    {
+      "sequence": "4+16+25",
+      "match": null
+    },
+    {
+      "sequence": "3+17+25",
+      "match": null
+    },
+    {
+      "sequence": "7×5",
+      "match": null
+    },
+    {
+      "sequence": "12÷5÷27",
+      "match": null
+    },
+    {
+      "sequence": "13-5-26",
+      "match": null
+    },
+    {
+      "sequence": "7+6",
+      "match": null
+    },
+    {
+      "sequence": "12×13",
+      "match": null
+    }
+  ],
+  "recipe": [
+    {
+      "line": "1 ½ cups flour",
+      "qty": 1.5,
+      "unit": "cup",
+      "name": "flour"
+    },
+    {
+      "line": "2 eggs",
+      "qty": 2,
+      "unit": null,
+      "name": "eggs"
+    },
+    {
+      "line": "¼ tsp salt",
+      "qty": 0.25,
+      "unit": "tsp",
+      "name": "salt"
+    },
+    {
+      "line": "⅓ cup sugar",
+      "qty": 0.3333333333333333,
+      "unit": "cup",
+      "name": "sugar"
+    },
+    {
+      "line": "¾ cup milk",
+      "qty": 0.75,
+      "unit": "cup",
+      "name": "milk"
+    },
+    {
+      "line": "3/4 cup butter",
+      "qty": 0.75,
+      "unit": "cup",
+      "name": "butter"
+    },
+    {
+      "line": "1/2 tsp baking soda",
+      "qty": 0.5,
+      "unit": "tsp",
+      "name": "baking soda"
+    },
+    {
+      "line": "2 1/2 cups all-purpose flour",
+      "qty": 2.5,
+      "unit": "cup",
+      "name": "all-purpose flour"
+    },
+    {
+      "line": "1 tbsp olive oil",
+      "qty": 1,
+      "unit": "tbsp",
+      "name": "olive oil"
+    },
+    {
+      "line": "8 oz cream cheese",
+      "qty": 8,
+      "unit": "oz",
+      "name": "cream cheese"
+    },
+    {
+      "line": "1 lb ground beef",
+      "qty": 1,
+      "unit": "lb",
+      "name": "ground beef"
+    },
+    {
+      "line": "500 g pasta",
+      "qty": 500,
+      "unit": "g",
+      "name": "pasta"
+    },
+    {
+      "line": "2 cloves garlic, minced",
+      "qty": 2,
+      "unit": "clove",
+      "name": "garlic"
+    },
+    {
+      "line": "1 can black beans",
+      "qty": 1,
+      "unit": "can",
+      "name": "black beans"
+    },
+    {
+      "line": "1 stick butter, softened",
+      "qty": 1,
+      "unit": "stick",
+      "name": "butter"
+    },
+    {
+      "line": "3 slices bacon",
+      "qty": 3,
+      "unit": "slice",
+      "name": "bacon"
+    },
+    {
+      "line": "1 pinch of cinnamon",
+      "qty": 1,
+      "unit": "pinch",
+      "name": "cinnamon"
+    },
+    {
+      "line": "2 cups water",
+      "qty": 2,
+      "unit": "cup",
+      "name": "water"
+    },
+    {
+      "line": "1 1/4 cups powdered sugar",
+      "qty": 1.25,
+      "unit": "cup",
+      "name": "powdered sugar"
+    },
+    {
+      "line": "1 fl oz vanilla extract",
+      "qty": 1,
+      "unit": "fl oz",
+      "name": "vanilla extract"
+    },
+    {
+      "line": "vanilla extract",
+      "qty": null,
+      "unit": null,
+      "name": "vanilla extract"
+    },
+    {
+      "line": "  - 2 tsp cumin",
+      "qty": 2,
+      "unit": "tsp",
+      "name": "cumin"
+    }
+  ],
+  "convert": [
+    {
+      "value": 2,
+      "from": "cup",
+      "to": "mL",
+      "expect": 473.176
+    },
+    {
+      "value": 1,
+      "from": "tsp",
+      "to": "mL",
+      "expect": 4.92892
+    },
+    {
+      "value": 1,
+      "from": "tbsp",
+      "to": "mL",
+      "expect": 14.7868
+    },
+    {
+      "value": 1,
+      "from": "cup",
+      "to": "fl oz",
+      "expect": 8
+    },
+    {
+      "value": 1,
+      "from": "L",
+      "to": "mL",
+      "expect": 1000
+    },
+    {
+      "value": 1000,
+      "from": "mL",
+      "to": "L",
+      "expect": 1
+    },
+    {
+      "value": 100,
+      "from": "g",
+      "to": "oz",
+      "expect": 3.52739907
+    },
+    {
+      "value": 1,
+      "from": "oz",
+      "to": "g",
+      "expect": 28.3495
+    },
+    {
+      "value": 1,
+      "from": "lb",
+      "to": "g",
+      "expect": 453.592
+    },
+    {
+      "value": 1000,
+      "from": "g",
+      "to": "lb",
+      "expect": 2.20462442
+    },
+    {
+      "value": 1,
+      "from": "cup",
+      "to": "tbsp",
+      "expect": 15.9999459
+    },
+    {
+      "value": 1,
+      "from": "tbsp",
+      "to": "tsp",
+      "expect": 3.00000812
+    }
+  ]
+}

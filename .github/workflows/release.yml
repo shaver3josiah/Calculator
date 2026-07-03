@@ -1,0 +1,58 @@
+# CI: builds, signs, and uploads Bloom to TestFlight when a v* tag is pushed.
+name: release
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  build-and-upload:
+    runs-on: macos-15
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Fetch fonts
+        run: bash scripts/fetch_fonts.sh
+      - name: Write App Store Connect API key
+        run: |
+          echo "${{ secrets.ASC_KEY_P8 }}" > "$RUNNER_TEMP/asc.p8"
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project Bloom.xcodeproj \
+            -scheme Bloom \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/Bloom.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc.p8" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+      - name: Export ipa
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Bloom.xcarchive" \
+            -exportOptionsPlist App/Support/ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc.p8" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
+      - name: Install fastlane
+        run: bundle install
+      - name: Upload to TestFlight
+        env:
+          IPA_PATH: ${{ runner.temp }}/export/Bloom.ipa
+          ASC_KEY_FILEPATH: ${{ runner.temp }}/asc.p8
+        run: bundle exec fastlane upload_testflight
+      - name: Remove API key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/asc.p8"
