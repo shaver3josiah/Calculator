@@ -8,13 +8,15 @@ final class BudgetStore {
     var yearSel: Int
 
     init() {
+        let initialDB: BudgetDB
         if let saved = JSONStore.shared.get(.budget2, as: BudgetDB.self), !saved.months.isEmpty, saved.months[saved.cur] != nil {
-            db = saved
+            initialDB = saved
         } else {
             let key = BudgetMath.ymKey(year: Calendar.current.component(.year, from: Date()), month: Calendar.current.component(.month, from: Date()))
-            db = BudgetDB(v: 2, cur: key, months: [key: BudgetDefaults.month()])
+            initialDB = BudgetDB(v: 2, cur: key, months: [key: BudgetDefaults.month()])
         }
-        yearSel = BudgetMath.parseYM(db.cur)?.year ?? Calendar.current.component(.year, from: Date())
+        db = initialDB
+        yearSel = BudgetMath.parseYM(initialDB.cur)?.year ?? Calendar.current.component(.year, from: Date())
     }
 
     var month: BudgetMonth {

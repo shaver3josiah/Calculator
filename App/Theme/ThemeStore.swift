@@ -12,14 +12,17 @@ final class ThemeStore {
     init() {
         let savedPresetName = JSONStore.shared.get(.theme, as: String.self) ?? "cherry"
         let savedCustom = JSONStore.shared.get(.custom, as: [String: String].self)
-        customTokens = savedCustom ?? ThemeStore.presetTokens(for: "cherry")
+        let tokens = savedCustom ?? ThemeStore.presetTokens(for: "cherry")
+        customTokens = tokens
 
+        let initialSpec: ThemeSpec
         if savedPresetName == "custom" {
-            spec = ThemeSpec(name: "custom", tokens: customTokens)
+            initialSpec = ThemeSpec(name: "custom", tokens: tokens)
         } else {
-            spec = ThemeSpec(name: savedPresetName, tokens: ThemeStore.presetTokens(for: savedPresetName))
+            initialSpec = ThemeSpec(name: savedPresetName, tokens: ThemeStore.presetTokens(for: savedPresetName))
         }
-        radius = ThemeStore.parseRadius(spec.tokens["radius"])
+        spec = initialSpec
+        radius = ThemeStore.parseRadius(initialSpec.tokens["radius"])
     }
 
     func color(_ token: String) -> Color {
