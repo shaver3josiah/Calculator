@@ -6,17 +6,28 @@ mkdir -p "$FONTS_DIR"
 
 RAW_BASE="https://raw.githubusercontent.com/google/fonts/main"
 
-declare -A FONT_URLS=(
-  ["Quicksand.ttf"]="$RAW_BASE/ofl/quicksand/Quicksand%5Bwght%5D.ttf"
-  ["PlayfairDisplay.ttf"]="$RAW_BASE/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf"
-  ["PlayfairDisplay-Italic.ttf"]="$RAW_BASE/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf"
-  ["GreatVibes-Regular.ttf"]="$RAW_BASE/ofl/greatvibes/GreatVibes-Regular.ttf"
+FONT_NAMES=(
+  "Quicksand.ttf"
+  "PlayfairDisplay.ttf"
+  "PlayfairDisplay-Italic.ttf"
+  "GreatVibes-Regular.ttf"
+)
+FONT_URLS=(
+  "$RAW_BASE/ofl/quicksand/Quicksand%5Bwght%5D.ttf"
+  "$RAW_BASE/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf"
+  "$RAW_BASE/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf"
+  "$RAW_BASE/ofl/greatvibes/GreatVibes-Regular.ttf"
 )
 
-declare -A LICENSE_URLS=(
-  ["Quicksand-OFL.txt"]="$RAW_BASE/ofl/quicksand/OFL.txt"
-  ["PlayfairDisplay-OFL.txt"]="$RAW_BASE/ofl/playfairdisplay/OFL.txt"
-  ["GreatVibes-OFL.txt"]="$RAW_BASE/ofl/greatvibes/OFL.txt"
+LICENSE_NAMES=(
+  "Quicksand-OFL.txt"
+  "PlayfairDisplay-OFL.txt"
+  "GreatVibes-OFL.txt"
+)
+LICENSE_URLS=(
+  "$RAW_BASE/ofl/quicksand/OFL.txt"
+  "$RAW_BASE/ofl/playfairdisplay/OFL.txt"
+  "$RAW_BASE/ofl/greatvibes/OFL.txt"
 )
 
 MIN_FONT_BYTES=40960
@@ -28,16 +39,17 @@ download() {
   curl -fsSL "$url" -o "$FONTS_DIR/$dest"
 }
 
-for name in "${!FONT_URLS[@]}"; do
-  download "$name" "${FONT_URLS[$name]}"
+for i in "${!FONT_NAMES[@]}"; do
+  download "${FONT_NAMES[$i]}" "${FONT_URLS[$i]}"
 done
 
-for name in "${!LICENSE_URLS[@]}"; do
-  download "$name" "${LICENSE_URLS[$name]}"
+for i in "${!LICENSE_NAMES[@]}"; do
+  download "${LICENSE_NAMES[$i]}" "${LICENSE_URLS[$i]}"
 done
 
 echo "Verifying downloaded fonts"
-for name in "${!FONT_URLS[@]}"; do
+for i in "${!FONT_NAMES[@]}"; do
+  name="${FONT_NAMES[$i]}"
   path="$FONTS_DIR/$name"
 
   if [ ! -f "$path" ]; then
@@ -65,7 +77,8 @@ for name in "${!FONT_URLS[@]}"; do
 done
 
 echo "Verifying license files"
-for name in "${!LICENSE_URLS[@]}"; do
+for i in "${!LICENSE_NAMES[@]}"; do
+  name="${LICENSE_NAMES[$i]}"
   path="$FONTS_DIR/$name"
 
   if [ ! -f "$path" ]; then
