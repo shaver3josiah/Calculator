@@ -27,9 +27,17 @@ final class MusicSynth: @unchecked Sendable {
 
     private static let harmonicCount = 16
     private static let harmonicAmplitudes: [Double] = {
-        (0..<harmonicCount).map { n in
-            n == 0 ? 0 : 1.0 / Double(n) * (n <= 6 ? 1.0 : 0.6)
+        var amps: [Double] = []
+        amps.reserveCapacity(harmonicCount)
+        for n in 0..<harmonicCount {
+            if n == 0 {
+                amps.append(0.0)
+                continue
+            }
+            let rolloff: Double = n <= 6 ? 1.0 : 0.6
+            amps.append(1.0 / Double(n) * rolloff)
         }
+        return amps
     }()
 
     func start() {
