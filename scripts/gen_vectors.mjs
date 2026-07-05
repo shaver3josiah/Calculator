@@ -1048,6 +1048,7 @@ results.budgetShare = [
 
 mkdirSync(CONTRACTS_DIR, { recursive: true });
 writeFileSync(path.join(CONTRACTS_DIR, "vectors.json"), JSON.stringify(results, null, 2) + "\n", "utf-8");
+writeFileSync(path.join(ROOT, "Packages", "BloomCore", "Tests", "BloomCoreTests", "Resources", "vectors.json"), JSON.stringify(results, null, 2) + "\n", "utf-8");
 
 function foodArtKey(name) {
   const n = String(name).toLowerCase();

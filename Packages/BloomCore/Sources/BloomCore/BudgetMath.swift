@@ -76,13 +76,14 @@ public enum BudgetMath {
         var comps = DateComponents()
         comps.year = parsed.year
         comps.month = parsed.month
-        comps.day = 0
+        comps.day = 1
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
-        guard let date = calendar.date(from: comps) else {
+        guard let date = calendar.date(from: comps),
+              let range = calendar.range(of: .day, in: .month, for: date) else {
             return 0
         }
-        return calendar.component(.day, from: date)
+        return range.count
     }
 
     public static func monthLabel(_ ymKey: String) -> String {
