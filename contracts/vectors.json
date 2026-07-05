@@ -30,7 +30,9 @@
       "food_art_key": "Bloom Calculator (all-in-one).html:1244-1252 (foodArtKey matcher, transcribed)",
       "recipe_parse": "Bloom Calculator (all-in-one).html:2205-2286 (UNICODE_FRAC, UNIT_ALIASES, tokenQty, parseLine, fmtQty, transcribed)",
       "unit_convert": "Bloom Calculator (all-in-one).html:2200-2212 (VOL, WT, convertFamily, transcribed)",
-      "cleanurl_jsonld": "Bloom Calculator (all-in-one).html:2963 (cleanUrl), 2344-2353 (extractJsonLdIngredients, transcribed)"
+      "cleanurl_jsonld": "Bloom Calculator (all-in-one).html:2963 (cleanUrl), 2344-2353 (extractJsonLdIngredients, transcribed)",
+      "budget_engine": "Bloom Calculator (all-in-one).html:3113-3598 (budget IIFE: state, defaults, presets, math, month switching, chart math, year aggregation, transcribed)",
+      "budget_share": "Bloom Calculator (all-in-one).html:3713-3735 (exBudget), 3832-3845 (importBudget, tag #hannahs-budget-v1, transcribed)"
     }
   },
   "formatters": [
@@ -1870,5 +1872,6514 @@
       "to": "tsp",
       "expect": 3.00000812
     }
-  ]
+  ],
+  "budgetYmKey": [
+    {
+      "year": 2026,
+      "month": 7,
+      "expect": "2026-07"
+    },
+    {
+      "year": 2026,
+      "month": 11,
+      "expect": "2026-11"
+    },
+    {
+      "year": 2026,
+      "month": 1,
+      "expect": "2026-01"
+    }
+  ],
+  "budgetParseYM": [
+    {
+      "key": "2026-07",
+      "expect": {
+        "year": 2026,
+        "month": 7
+      }
+    },
+    {
+      "key": "2026-11",
+      "expect": {
+        "year": 2026,
+        "month": 11
+      }
+    },
+    {
+      "key": "bogus",
+      "expect": null
+    }
+  ],
+  "budgetMonthLabel": [
+    {
+      "key": "2026-07",
+      "expect": "July 2026"
+    },
+    {
+      "key": "2027-01",
+      "expect": "January 2027"
+    },
+    {
+      "key": "2026-12",
+      "expect": "December 2026"
+    }
+  ],
+  "budgetMonthDays": [
+    {
+      "key": "2027-02",
+      "expect": 28
+    },
+    {
+      "key": "2028-02",
+      "expect": 29
+    },
+    {
+      "key": "2026-04",
+      "expect": 30
+    },
+    {
+      "key": "2026-01",
+      "expect": 31
+    },
+    {
+      "key": "2000-02",
+      "expect": 29
+    },
+    {
+      "key": "1900-02",
+      "expect": 28
+    },
+    {
+      "key": "2026-12",
+      "expect": 31
+    }
+  ],
+  "budgetChartYMax": [
+    {
+      "sels": [
+        50
+      ],
+      "goals": [
+        null
+      ],
+      "expect": 54
+    },
+    {
+      "sels": [
+        50
+      ],
+      "goals": [
+        200
+      ],
+      "expect": 216
+    },
+    {
+      "sels": [
+        10,
+        20
+      ],
+      "goals": [
+        null,
+        null
+      ],
+      "expect": 32.400000000000006
+    },
+    {
+      "sels": [
+        100,
+        50
+      ],
+      "goals": [
+        30,
+        400
+      ],
+      "expect": 432
+    },
+    {
+      "sels": [
+        0.2
+      ],
+      "goals": [
+        null
+      ],
+      "expect": 1.08
+    },
+    {
+      "sels": [
+        5,
+        5,
+        5
+      ],
+      "goals": [
+        null,
+        null,
+        null
+      ],
+      "expect": 16.200000000000003
+    }
+  ],
+  "budgetPerDay": [
+    {
+      "fn": "perDay",
+      "sel": 300,
+      "days": 30,
+      "expect": 10
+    },
+    {
+      "fn": "perDay",
+      "sel": 100,
+      "days": 31,
+      "expect": 3.225806451612903
+    },
+    {
+      "fn": "perDay",
+      "sel": 0,
+      "days": 28,
+      "expect": 0
+    },
+    {
+      "fn": "byToday",
+      "sel": 300,
+      "today": 15,
+      "days": 30,
+      "expect": 150
+    },
+    {
+      "fn": "byToday",
+      "sel": 620,
+      "today": 1,
+      "days": 31,
+      "expect": 20
+    },
+    {
+      "fn": "byToday",
+      "sel": 100,
+      "today": 28,
+      "days": 28,
+      "expect": 100
+    }
+  ],
+  "budgetImportRow": [
+    {
+      "name": "Milk",
+      "qty": null,
+      "amount": 3.5,
+      "expect": {
+        "n": "Milk",
+        "a": 3.5,
+        "sel": false
+      }
+    },
+    {
+      "name": "Eggs",
+      "qty": null,
+      "amount": 4.25,
+      "expect": {
+        "n": "Eggs",
+        "a": 4.25,
+        "sel": false
+      }
+    },
+    {
+      "name": "Bread",
+      "qty": 2,
+      "amount": 2.5,
+      "expect": {
+        "n": "Bread",
+        "a": 5,
+        "sel": false
+      }
+    },
+    {
+      "name": "HalfCent",
+      "qty": 1,
+      "amount": 0.005,
+      "expect": {
+        "n": "HalfCent",
+        "a": 0.01,
+        "sel": false
+      }
+    },
+    {
+      "name": "HalfCentAlt",
+      "qty": 1,
+      "amount": 0.014,
+      "expect": {
+        "n": "HalfCentAlt",
+        "a": 0.01,
+        "sel": false
+      }
+    },
+    {
+      "name": "NegAmount",
+      "qty": 1,
+      "amount": -2.005,
+      "expect": {
+        "n": "NegAmount",
+        "a": -2,
+        "sel": false
+      }
+    },
+    {
+      "name": "NegHalfCent",
+      "qty": 3,
+      "amount": -0.505,
+      "expect": {
+        "n": "NegHalfCent",
+        "a": -1.51,
+        "sel": false
+      }
+    },
+    {
+      "name": "  Trimmed  ",
+      "qty": 1,
+      "amount": 5,
+      "expect": {
+        "n": "Trimmed",
+        "a": 5,
+        "sel": false
+      }
+    },
+    {
+      "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "qty": 1,
+      "amount": 1,
+      "expect": {
+        "n": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "a": 1,
+        "sel": false
+      }
+    },
+    {
+      "name": "  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB  ",
+      "qty": 1,
+      "amount": 2,
+      "expect": {
+        "n": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "a": 2,
+        "sel": false
+      }
+    },
+    {
+      "name": "ZeroQty",
+      "qty": 0,
+      "amount": 10,
+      "expect": {
+        "n": "ZeroQty",
+        "a": 0,
+        "sel": false
+      }
+    },
+    {
+      "name": "FracQty",
+      "qty": 1.5,
+      "amount": 4,
+      "expect": {
+        "n": "FracQty",
+        "a": 6,
+        "sel": false
+      }
+    }
+  ],
+  "budgetCatTotals": [
+    {
+      "cat": {
+        "n": "Mixed",
+        "open": true,
+        "goal": null,
+        "items": [
+          {
+            "n": "A",
+            "a": 100,
+            "sel": true
+          },
+          {
+            "n": "B",
+            "a": 50,
+            "sel": false
+          },
+          {
+            "n": "C",
+            "a": 25.5,
+            "sel": true
+          },
+          {
+            "n": "D",
+            "a": 0,
+            "sel": false
+          }
+        ]
+      },
+      "total": 175.5,
+      "sel": 125.5
+    },
+    {
+      "cat": {
+        "n": "AllSel",
+        "open": true,
+        "goal": null,
+        "items": [
+          {
+            "n": "X",
+            "a": 40,
+            "sel": true
+          },
+          {
+            "n": "Y",
+            "a": 60,
+            "sel": true
+          }
+        ]
+      },
+      "total": 100,
+      "sel": 100
+    },
+    {
+      "cat": {
+        "n": "NoneSel",
+        "open": true,
+        "goal": null,
+        "items": [
+          {
+            "n": "Z",
+            "a": 15,
+            "sel": false
+          }
+        ]
+      },
+      "total": 15,
+      "sel": 0
+    },
+    {
+      "cat": {
+        "n": "Empty",
+        "open": true,
+        "goal": null,
+        "items": []
+      },
+      "total": 0,
+      "sel": 0
+    }
+  ],
+  "budgetNetOf": [
+    {
+      "income": {
+        "label": "Income",
+        "gross": 4200,
+        "tax": 18,
+        "ret": 5,
+        "oth": 2
+      },
+      "expect": 3150
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 3600,
+        "tax": 16,
+        "ret": 5,
+        "oth": 0
+      },
+      "expect": 2844
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 5000,
+        "tax": 60,
+        "ret": 30,
+        "oth": 25
+      },
+      "expect": 0
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 0,
+        "tax": 10,
+        "ret": 5,
+        "oth": 0
+      },
+      "expect": 0
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 3000,
+        "tax": 0,
+        "ret": 0,
+        "oth": 0
+      },
+      "expect": 3000
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 2000,
+        "tax": 50,
+        "ret": 30,
+        "oth": 20
+      },
+      "expect": 0
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 8000,
+        "tax": 90,
+        "ret": 40,
+        "oth": 10
+      },
+      "expect": 0
+    },
+    {
+      "income": {
+        "label": "Income",
+        "gross": 500,
+        "tax": 22,
+        "ret": 3,
+        "oth": 1
+      },
+      "expect": 370
+    }
+  ],
+  "budgetTakeHome": [
+    {
+      "month": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": false
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 5994
+    },
+    {
+      "month": {
+        "inc2On": false,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": false
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 3150
+    },
+    {
+      "month": {
+        "inc2On": false,
+        "inc": [
+          {
+            "label": "Solo",
+            "gross": 6000,
+            "tax": 20,
+            "ret": 6,
+            "oth": 0
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": false
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 4440
+    },
+    {
+      "month": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Second",
+            "gross": 1000,
+            "tax": 5,
+            "ret": 0,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": false
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 4100
+    }
+  ],
+  "budgetPlanned": [
+    {
+      "month": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": false
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 4855
+    },
+    {
+      "month": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": []
+      },
+      "expect": 0
+    },
+    {
+      "month": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "One",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "a",
+                "a": 33.33,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Two",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "b",
+                "a": 66.67,
+                "sel": true
+              },
+              {
+                "n": "c",
+                "a": 10,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      },
+      "expect": 110
+    }
+  ],
+  "budgetMonthSwitch": [
+  {
+    "scenario": "prior-exists",
+    "db": {
+      "v": 2,
+      "cur": "2026-05",
+      "months": {
+        "2026-05": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": 500,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "target": "2026-07",
+    "resultMonth": {
+      "inc2On": true,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": 500,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": false
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "copiedFrom": "2026-05"
+  },
+  {
+    "scenario": "only-later-exists",
+    "db": {
+      "v": 2,
+      "cur": "2026-09",
+      "months": {
+        "2026-09": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": 500,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "target": "2026-03",
+    "resultMonth": {
+      "inc2On": true,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": 500,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": false
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "copiedFrom": "2026-09"
+  },
+  {
+    "scenario": "empty",
+    "db": {
+      "v": 2,
+      "cur": "2026-07",
+      "months": {}
+    },
+    "target": "2026-07",
+    "resultMonth": {
+      "inc2On": true,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": null,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": false
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "copiedFrom": null
+  },
+  {
+    "scenario": "multi-prior-nearest",
+    "db": {
+      "v": 2,
+      "cur": "2026-01",
+      "months": {
+        "2026-01": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": 500,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        },
+        "2026-03": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": false
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        },
+        "2026-08": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": 500,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "target": "2026-06",
+    "resultMonth": {
+      "inc2On": true,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": null,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": false
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "copiedFrom": "2026-03"
+  }
+],
+  "budgetYearAggregate": [
+  {
+    "db": {
+      "v": 2,
+      "cur": "2026-01",
+      "months": {
+        "2026-01": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": false
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        },
+        "2026-06": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 999,
+                  "sel": false
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        },
+        "2025-12": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": false
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "year": 2026,
+    "expect": [
+      {
+        "key": "2026-01",
+        "has": true,
+        "planned": 4855,
+        "takeHome": 5994
+      },
+      {
+        "key": "2026-02",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-03",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-04",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-05",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-06",
+        "has": true,
+        "planned": 4454,
+        "takeHome": 5994
+      },
+      {
+        "key": "2026-07",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-08",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-09",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-10",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-11",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2026-12",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      }
+    ]
+  },
+  {
+    "db": {
+      "v": 2,
+      "cur": "2027-01",
+      "months": {}
+    },
+    "year": 2027,
+    "expect": [
+      {
+        "key": "2027-01",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-02",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-03",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-04",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-05",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-06",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-07",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-08",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-09",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-10",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-11",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      },
+      {
+        "key": "2027-12",
+        "has": false,
+        "planned": 0,
+        "takeHome": 0
+      }
+    ]
+  }
+],
+  "budgetShare": [
+  {
+    "cur": "2026-07",
+    "month": {
+      "inc2On": true,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": null,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": true
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": 250.5,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "fixtureText": "Budget · July 2026\nTake-home $5,994.00 · planned $4,855.00 · left $1,139.00\n\nINCOME\n• Income 1: $4200 gross (tax 18%, retire 5%, other 2%) → $3,150.00\n• Income 2: $3600 gross (tax 16%, retire 5%) → $2,844.00\n\nHOUSING — $1,425.00\n• Rent or mortgage $1400\n• Renters or home insurance $25\n\nUTILITIES — $375.00\n• Electric $110\n• Gas heat $60\n• Water and sewer $45\n• Internet $70\n• Cell phones $90\n(goal $250.50)\n\nGROCERIES & HOUSEHOLD — $610.00\n• Groceries $550\n• Household goods $60\n\nTRANSPORTATION — $650.00\n• Car payment $320\n• Fuel $160\n• Car insurance $130\n• Maintenance $40\n\nHEALTH — $225.00\n• Health insurance $180\n• Prescriptions $20\n• Gym $25\n\nDEBT PAYOFF — $320.00\n• Student loans $220\n• Credit card $100\n\nSAVINGS & FUTURE — $550.00\n• Emergency fund $200\n• Baby fund $150\n• House down payment $200\n\nKIDS & FAMILY — $80.00\n• Diapers and baby gear $80\n• Childcare $0\n\nLIFESTYLE — $355.00\n• Dining out $180\n• Date nights $80\n• Streaming and subscriptions $35\n• Clothing $60\n\nGIVING — $190.00\n• Church or charity $150\n• Gifts $40\n\nEVERYTHING ELSE — $75.00\n• Buffer for surprises $75\n\n#hannahs-budget-v1 eyJrIjoiMjAyNi0wNyIsIm0iOnsiaW5jMk9uIjp0cnVlLCJpbmMiOlt7ImxhYmVsIjoiSW5jb21lIDEiLCJncm9zcyI6NDIwMCwidGF4IjoxOCwicmV0Ijo1LCJvdGgiOjJ9LHsibGFiZWwiOiJJbmNvbWUgMiIsImdyb3NzIjozNjAwLCJ0YXgiOjE2LCJyZXQiOjUsIm90aCI6MH1dLCJjYXRzIjpbeyJuIjoiSG91c2luZyIsIm9wZW4iOnRydWUsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiUmVudCBvciBtb3J0Z2FnZSIsImEiOjE0MDAsInNlbCI6dHJ1ZX0seyJuIjoiUmVudGVycyBvciBob21lIGluc3VyYW5jZSIsImEiOjI1LCJzZWwiOmZhbHNlfV19LHsibiI6IlV0aWxpdGllcyIsIm9wZW4iOmZhbHNlLCJnb2FsIjoyNTAuNSwiaXRlbXMiOlt7Im4iOiJFbGVjdHJpYyIsImEiOjExMCwic2VsIjpmYWxzZX0seyJuIjoiR2FzIGhlYXQiLCJhIjo2MCwic2VsIjpmYWxzZX0seyJuIjoiV2F0ZXIgYW5kIHNld2VyIiwiYSI6NDUsInNlbCI6ZmFsc2V9LHsibiI6IkludGVybmV0IiwiYSI6NzAsInNlbCI6ZmFsc2V9LHsibiI6IkNlbGwgcGhvbmVzIiwiYSI6OTAsInNlbCI6ZmFsc2V9XX0seyJuIjoiR3JvY2VyaWVzICYgSG91c2Vob2xkIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiR3JvY2VyaWVzIiwiYSI6NTUwLCJzZWwiOmZhbHNlfSx7Im4iOiJIb3VzZWhvbGQgZ29vZHMiLCJhIjo2MCwic2VsIjpmYWxzZX1dfSx7Im4iOiJUcmFuc3BvcnRhdGlvbiIsIm9wZW4iOmZhbHNlLCJnb2FsIjpudWxsLCJpdGVtcyI6W3sibiI6IkNhciBwYXltZW50IiwiYSI6MzIwLCJzZWwiOmZhbHNlfSx7Im4iOiJGdWVsIiwiYSI6MTYwLCJzZWwiOmZhbHNlfSx7Im4iOiJDYXIgaW5zdXJhbmNlIiwiYSI6MTMwLCJzZWwiOmZhbHNlfSx7Im4iOiJNYWludGVuYW5jZSIsImEiOjQwLCJzZWwiOmZhbHNlfV19LHsibiI6IkhlYWx0aCIsIm9wZW4iOmZhbHNlLCJnb2FsIjpudWxsLCJpdGVtcyI6W3sibiI6IkhlYWx0aCBpbnN1cmFuY2UiLCJhIjoxODAsInNlbCI6ZmFsc2V9LHsibiI6IlByZXNjcmlwdGlvbnMiLCJhIjoyMCwic2VsIjpmYWxzZX0seyJuIjoiR3ltIiwiYSI6MjUsInNlbCI6ZmFsc2V9XX0seyJuIjoiRGVidCBQYXlvZmYiLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJTdHVkZW50IGxvYW5zIiwiYSI6MjIwLCJzZWwiOmZhbHNlfSx7Im4iOiJDcmVkaXQgY2FyZCIsImEiOjEwMCwic2VsIjpmYWxzZX1dfSx7Im4iOiJTYXZpbmdzICYgRnV0dXJlIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiRW1lcmdlbmN5IGZ1bmQiLCJhIjoyMDAsInNlbCI6ZmFsc2V9LHsibiI6IkJhYnkgZnVuZCIsImEiOjE1MCwic2VsIjpmYWxzZX0seyJuIjoiSG91c2UgZG93biBwYXltZW50IiwiYSI6MjAwLCJzZWwiOmZhbHNlfV19LHsibiI6IktpZHMgJiBGYW1pbHkiLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJEaWFwZXJzIGFuZCBiYWJ5IGdlYXIiLCJhIjo4MCwic2VsIjpmYWxzZX0seyJuIjoiQ2hpbGRjYXJlIiwiYSI6MCwic2VsIjpmYWxzZX1dfSx7Im4iOiJMaWZlc3R5bGUiLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJEaW5pbmcgb3V0IiwiYSI6MTgwLCJzZWwiOmZhbHNlfSx7Im4iOiJEYXRlIG5pZ2h0cyIsImEiOjgwLCJzZWwiOmZhbHNlfSx7Im4iOiJTdHJlYW1pbmcgYW5kIHN1YnNjcmlwdGlvbnMiLCJhIjozNSwic2VsIjpmYWxzZX0seyJuIjoiQ2xvdGhpbmciLCJhIjo2MCwic2VsIjpmYWxzZX1dfSx7Im4iOiJHaXZpbmciLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJDaHVyY2ggb3IgY2hhcml0eSIsImEiOjE1MCwic2VsIjpmYWxzZX0seyJuIjoiR2lmdHMiLCJhIjo0MCwic2VsIjpmYWxzZX1dfSx7Im4iOiJFdmVyeXRoaW5nIEVsc2UiLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJCdWZmZXIgZm9yIHN1cnByaXNlcyIsImEiOjc1LCJzZWwiOmZhbHNlfV19XX19",
+    "decoded": {
+      "k": "2026-07",
+      "m": {
+        "inc2On": true,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": true
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": 250.5,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "expectDb": {
+      "v": 2,
+      "cur": "2026-07",
+      "months": {
+        "2026-07": {
+          "inc2On": true,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": 250.5,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "cur": "2026-08",
+    "month": {
+      "inc2On": false,
+      "inc": [
+        {
+          "label": "Income 1",
+          "gross": 4200,
+          "tax": 18,
+          "ret": 5,
+          "oth": 2
+        },
+        {
+          "label": "Income 2",
+          "gross": 3600,
+          "tax": 16,
+          "ret": 5,
+          "oth": 0
+        }
+      ],
+      "cats": [
+        {
+          "n": "Housing",
+          "open": true,
+          "goal": null,
+          "items": [
+            {
+              "n": "Rent or mortgage",
+              "a": 1400,
+              "sel": true
+            },
+            {
+              "n": "Renters or home insurance",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Utilities",
+          "open": false,
+          "goal": 250.5,
+          "items": [
+            {
+              "n": "Electric",
+              "a": 110,
+              "sel": false
+            },
+            {
+              "n": "Gas heat",
+              "a": 60,
+              "sel": false
+            },
+            {
+              "n": "Water and sewer",
+              "a": 45,
+              "sel": false
+            },
+            {
+              "n": "Internet",
+              "a": 70,
+              "sel": false
+            },
+            {
+              "n": "Cell phones",
+              "a": 90,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Groceries & Household",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Groceries",
+              "a": 550,
+              "sel": false
+            },
+            {
+              "n": "Household goods",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Transportation",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Car payment",
+              "a": 320,
+              "sel": false
+            },
+            {
+              "n": "Fuel",
+              "a": 160,
+              "sel": false
+            },
+            {
+              "n": "Car insurance",
+              "a": 130,
+              "sel": false
+            },
+            {
+              "n": "Maintenance",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Health",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Health insurance",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Prescriptions",
+              "a": 20,
+              "sel": false
+            },
+            {
+              "n": "Gym",
+              "a": 25,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Debt Payoff",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Student loans",
+              "a": 220,
+              "sel": false
+            },
+            {
+              "n": "Credit card",
+              "a": 100,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Savings & Future",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Emergency fund",
+              "a": 200,
+              "sel": false
+            },
+            {
+              "n": "Baby fund",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "House down payment",
+              "a": 200,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Kids & Family",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Diapers and baby gear",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Childcare",
+              "a": 0,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Lifestyle",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Dining out",
+              "a": 180,
+              "sel": false
+            },
+            {
+              "n": "Date nights",
+              "a": 80,
+              "sel": false
+            },
+            {
+              "n": "Streaming and subscriptions",
+              "a": 35,
+              "sel": false
+            },
+            {
+              "n": "Clothing",
+              "a": 60,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Giving",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Church or charity",
+              "a": 150,
+              "sel": false
+            },
+            {
+              "n": "Gifts",
+              "a": 40,
+              "sel": false
+            }
+          ]
+        },
+        {
+          "n": "Everything Else",
+          "open": false,
+          "goal": null,
+          "items": [
+            {
+              "n": "Buffer for surprises",
+              "a": 75,
+              "sel": false
+            }
+          ]
+        }
+      ]
+    },
+    "fixtureText": "Budget · August 2026\nTake-home $3,150.00 · planned $4,855.00 · left $-1,705.00\n\nINCOME\n• Income 1: $4200 gross (tax 18%, retire 5%, other 2%) → $3,150.00\n\nHOUSING — $1,425.00\n• Rent or mortgage $1400\n• Renters or home insurance $25\n\nUTILITIES — $375.00\n• Electric $110\n• Gas heat $60\n• Water and sewer $45\n• Internet $70\n• Cell phones $90\n(goal $250.50)\n\nGROCERIES & HOUSEHOLD — $610.00\n• Groceries $550\n• Household goods $60\n\nTRANSPORTATION — $650.00\n• Car payment $320\n• Fuel $160\n• Car insurance $130\n• Maintenance $40\n\nHEALTH — $225.00\n• Health insurance $180\n• Prescriptions $20\n• Gym $25\n\nDEBT PAYOFF — $320.00\n• Student loans $220\n• Credit card $100\n\nSAVINGS & FUTURE — $550.00\n• Emergency fund $200\n• Baby fund $150\n• House down payment $200\n\nKIDS & FAMILY — $80.00\n• Diapers and baby gear $80\n• Childcare $0\n\nLIFESTYLE — $355.00\n• Dining out $180\n• Date nights $80\n• Streaming and subscriptions $35\n• Clothing $60\n\nGIVING — $190.00\n• Church or charity $150\n• Gifts $40\n\nEVERYTHING ELSE — $75.00\n• Buffer for surprises $75\n\n#hannahs-budget-v1 eyJrIjoiMjAyNi0wOCIsIm0iOnsiaW5jMk9uIjpmYWxzZSwiaW5jIjpbeyJsYWJlbCI6IkluY29tZSAxIiwiZ3Jvc3MiOjQyMDAsInRheCI6MTgsInJldCI6NSwib3RoIjoyfSx7ImxhYmVsIjoiSW5jb21lIDIiLCJncm9zcyI6MzYwMCwidGF4IjoxNiwicmV0Ijo1LCJvdGgiOjB9XSwiY2F0cyI6W3sibiI6IkhvdXNpbmciLCJvcGVuIjp0cnVlLCJnb2FsIjpudWxsLCJpdGVtcyI6W3sibiI6IlJlbnQgb3IgbW9ydGdhZ2UiLCJhIjoxNDAwLCJzZWwiOnRydWV9LHsibiI6IlJlbnRlcnMgb3IgaG9tZSBpbnN1cmFuY2UiLCJhIjoyNSwic2VsIjpmYWxzZX1dfSx7Im4iOiJVdGlsaXRpZXMiLCJvcGVuIjpmYWxzZSwiZ29hbCI6MjUwLjUsIml0ZW1zIjpbeyJuIjoiRWxlY3RyaWMiLCJhIjoxMTAsInNlbCI6ZmFsc2V9LHsibiI6IkdhcyBoZWF0IiwiYSI6NjAsInNlbCI6ZmFsc2V9LHsibiI6IldhdGVyIGFuZCBzZXdlciIsImEiOjQ1LCJzZWwiOmZhbHNlfSx7Im4iOiJJbnRlcm5ldCIsImEiOjcwLCJzZWwiOmZhbHNlfSx7Im4iOiJDZWxsIHBob25lcyIsImEiOjkwLCJzZWwiOmZhbHNlfV19LHsibiI6Ikdyb2NlcmllcyAmIEhvdXNlaG9sZCIsIm9wZW4iOmZhbHNlLCJnb2FsIjpudWxsLCJpdGVtcyI6W3sibiI6Ikdyb2NlcmllcyIsImEiOjU1MCwic2VsIjpmYWxzZX0seyJuIjoiSG91c2Vob2xkIGdvb2RzIiwiYSI6NjAsInNlbCI6ZmFsc2V9XX0seyJuIjoiVHJhbnNwb3J0YXRpb24iLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJDYXIgcGF5bWVudCIsImEiOjMyMCwic2VsIjpmYWxzZX0seyJuIjoiRnVlbCIsImEiOjE2MCwic2VsIjpmYWxzZX0seyJuIjoiQ2FyIGluc3VyYW5jZSIsImEiOjEzMCwic2VsIjpmYWxzZX0seyJuIjoiTWFpbnRlbmFuY2UiLCJhIjo0MCwic2VsIjpmYWxzZX1dfSx7Im4iOiJIZWFsdGgiLCJvcGVuIjpmYWxzZSwiZ29hbCI6bnVsbCwiaXRlbXMiOlt7Im4iOiJIZWFsdGggaW5zdXJhbmNlIiwiYSI6MTgwLCJzZWwiOmZhbHNlfSx7Im4iOiJQcmVzY3JpcHRpb25zIiwiYSI6MjAsInNlbCI6ZmFsc2V9LHsibiI6Ikd5bSIsImEiOjI1LCJzZWwiOmZhbHNlfV19LHsibiI6IkRlYnQgUGF5b2ZmIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiU3R1ZGVudCBsb2FucyIsImEiOjIyMCwic2VsIjpmYWxzZX0seyJuIjoiQ3JlZGl0IGNhcmQiLCJhIjoxMDAsInNlbCI6ZmFsc2V9XX0seyJuIjoiU2F2aW5ncyAmIEZ1dHVyZSIsIm9wZW4iOmZhbHNlLCJnb2FsIjpudWxsLCJpdGVtcyI6W3sibiI6IkVtZXJnZW5jeSBmdW5kIiwiYSI6MjAwLCJzZWwiOmZhbHNlfSx7Im4iOiJCYWJ5IGZ1bmQiLCJhIjoxNTAsInNlbCI6ZmFsc2V9LHsibiI6IkhvdXNlIGRvd24gcGF5bWVudCIsImEiOjIwMCwic2VsIjpmYWxzZX1dfSx7Im4iOiJLaWRzICYgRmFtaWx5Iiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiRGlhcGVycyBhbmQgYmFieSBnZWFyIiwiYSI6ODAsInNlbCI6ZmFsc2V9LHsibiI6IkNoaWxkY2FyZSIsImEiOjAsInNlbCI6ZmFsc2V9XX0seyJuIjoiTGlmZXN0eWxlIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiRGluaW5nIG91dCIsImEiOjE4MCwic2VsIjpmYWxzZX0seyJuIjoiRGF0ZSBuaWdodHMiLCJhIjo4MCwic2VsIjpmYWxzZX0seyJuIjoiU3RyZWFtaW5nIGFuZCBzdWJzY3JpcHRpb25zIiwiYSI6MzUsInNlbCI6ZmFsc2V9LHsibiI6IkNsb3RoaW5nIiwiYSI6NjAsInNlbCI6ZmFsc2V9XX0seyJuIjoiR2l2aW5nIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiQ2h1cmNoIG9yIGNoYXJpdHkiLCJhIjoxNTAsInNlbCI6ZmFsc2V9LHsibiI6IkdpZnRzIiwiYSI6NDAsInNlbCI6ZmFsc2V9XX0seyJuIjoiRXZlcnl0aGluZyBFbHNlIiwib3BlbiI6ZmFsc2UsImdvYWwiOm51bGwsIml0ZW1zIjpbeyJuIjoiQnVmZmVyIGZvciBzdXJwcmlzZXMiLCJhIjo3NSwic2VsIjpmYWxzZX1dfV19fQ==",
+    "decoded": {
+      "k": "2026-08",
+      "m": {
+        "inc2On": false,
+        "inc": [
+          {
+            "label": "Income 1",
+            "gross": 4200,
+            "tax": 18,
+            "ret": 5,
+            "oth": 2
+          },
+          {
+            "label": "Income 2",
+            "gross": 3600,
+            "tax": 16,
+            "ret": 5,
+            "oth": 0
+          }
+        ],
+        "cats": [
+          {
+            "n": "Housing",
+            "open": true,
+            "goal": null,
+            "items": [
+              {
+                "n": "Rent or mortgage",
+                "a": 1400,
+                "sel": true
+              },
+              {
+                "n": "Renters or home insurance",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Utilities",
+            "open": false,
+            "goal": 250.5,
+            "items": [
+              {
+                "n": "Electric",
+                "a": 110,
+                "sel": false
+              },
+              {
+                "n": "Gas heat",
+                "a": 60,
+                "sel": false
+              },
+              {
+                "n": "Water and sewer",
+                "a": 45,
+                "sel": false
+              },
+              {
+                "n": "Internet",
+                "a": 70,
+                "sel": false
+              },
+              {
+                "n": "Cell phones",
+                "a": 90,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Groceries & Household",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Groceries",
+                "a": 550,
+                "sel": false
+              },
+              {
+                "n": "Household goods",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Transportation",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Car payment",
+                "a": 320,
+                "sel": false
+              },
+              {
+                "n": "Fuel",
+                "a": 160,
+                "sel": false
+              },
+              {
+                "n": "Car insurance",
+                "a": 130,
+                "sel": false
+              },
+              {
+                "n": "Maintenance",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Health",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Health insurance",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Prescriptions",
+                "a": 20,
+                "sel": false
+              },
+              {
+                "n": "Gym",
+                "a": 25,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Debt Payoff",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Student loans",
+                "a": 220,
+                "sel": false
+              },
+              {
+                "n": "Credit card",
+                "a": 100,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Savings & Future",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Emergency fund",
+                "a": 200,
+                "sel": false
+              },
+              {
+                "n": "Baby fund",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "House down payment",
+                "a": 200,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Kids & Family",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Diapers and baby gear",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Childcare",
+                "a": 0,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Lifestyle",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Dining out",
+                "a": 180,
+                "sel": false
+              },
+              {
+                "n": "Date nights",
+                "a": 80,
+                "sel": false
+              },
+              {
+                "n": "Streaming and subscriptions",
+                "a": 35,
+                "sel": false
+              },
+              {
+                "n": "Clothing",
+                "a": 60,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Giving",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Church or charity",
+                "a": 150,
+                "sel": false
+              },
+              {
+                "n": "Gifts",
+                "a": 40,
+                "sel": false
+              }
+            ]
+          },
+          {
+            "n": "Everything Else",
+            "open": false,
+            "goal": null,
+            "items": [
+              {
+                "n": "Buffer for surprises",
+                "a": 75,
+                "sel": false
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "expectDb": {
+      "v": 2,
+      "cur": "2026-08",
+      "months": {
+        "2026-08": {
+          "inc2On": false,
+          "inc": [
+            {
+              "label": "Income 1",
+              "gross": 4200,
+              "tax": 18,
+              "ret": 5,
+              "oth": 2
+            },
+            {
+              "label": "Income 2",
+              "gross": 3600,
+              "tax": 16,
+              "ret": 5,
+              "oth": 0
+            }
+          ],
+          "cats": [
+            {
+              "n": "Housing",
+              "open": true,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Rent or mortgage",
+                  "a": 1400,
+                  "sel": true
+                },
+                {
+                  "n": "Renters or home insurance",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Utilities",
+              "open": false,
+              "goal": 250.5,
+              "items": [
+                {
+                  "n": "Electric",
+                  "a": 110,
+                  "sel": false
+                },
+                {
+                  "n": "Gas heat",
+                  "a": 60,
+                  "sel": false
+                },
+                {
+                  "n": "Water and sewer",
+                  "a": 45,
+                  "sel": false
+                },
+                {
+                  "n": "Internet",
+                  "a": 70,
+                  "sel": false
+                },
+                {
+                  "n": "Cell phones",
+                  "a": 90,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Groceries & Household",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Groceries",
+                  "a": 550,
+                  "sel": false
+                },
+                {
+                  "n": "Household goods",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Transportation",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Car payment",
+                  "a": 320,
+                  "sel": false
+                },
+                {
+                  "n": "Fuel",
+                  "a": 160,
+                  "sel": false
+                },
+                {
+                  "n": "Car insurance",
+                  "a": 130,
+                  "sel": false
+                },
+                {
+                  "n": "Maintenance",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Health",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Health insurance",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Prescriptions",
+                  "a": 20,
+                  "sel": false
+                },
+                {
+                  "n": "Gym",
+                  "a": 25,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Debt Payoff",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Student loans",
+                  "a": 220,
+                  "sel": false
+                },
+                {
+                  "n": "Credit card",
+                  "a": 100,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Savings & Future",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Emergency fund",
+                  "a": 200,
+                  "sel": false
+                },
+                {
+                  "n": "Baby fund",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "House down payment",
+                  "a": 200,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Kids & Family",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Diapers and baby gear",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Childcare",
+                  "a": 0,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Lifestyle",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Dining out",
+                  "a": 180,
+                  "sel": false
+                },
+                {
+                  "n": "Date nights",
+                  "a": 80,
+                  "sel": false
+                },
+                {
+                  "n": "Streaming and subscriptions",
+                  "a": 35,
+                  "sel": false
+                },
+                {
+                  "n": "Clothing",
+                  "a": 60,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Giving",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Church or charity",
+                  "a": 150,
+                  "sel": false
+                },
+                {
+                  "n": "Gifts",
+                  "a": 40,
+                  "sel": false
+                }
+              ]
+            },
+            {
+              "n": "Everything Else",
+              "open": false,
+              "goal": null,
+              "items": [
+                {
+                  "n": "Buffer for surprises",
+                  "a": 75,
+                  "sel": false
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+]
 }

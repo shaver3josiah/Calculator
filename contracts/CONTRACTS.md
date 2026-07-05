@@ -2,6 +2,8 @@
 
 Every worker builds against this document. Deviations are bugs. Source spec: `../Bloom Calculator (all-in-one).html`.
 
+> v2, 2026-07-03, approved deviation: the Lists/Kitchen/Pantry-era tab registry below is stale. The shipped app replaced the `pantry` tab with a `budget` tab (Monthly Budget engine) and the app display name is `Hannah's Calculator`, not `Bloom Calculator`. Both changes are called out inline below where they occur, and the frozen Budget API is appended as its own section at the end of this document.
+
 ## Global style rules
 
 Swift 5.10+, iOS 17 minimum, zero third-party dependencies. No comments, no docstrings, no force unwraps outside tests, no em-dash characters anywhere. Files under 400 lines; split when larger. `BloomCore` imports Foundation only (must compile on Linux). UI code lives in `App/` and may import SwiftUI, AVFoundation, CoreImage, UIKit.
@@ -190,9 +192,9 @@ Minimum vector counts: formatters 40, finance 30 spanning all functions includin
 
 ## UI registry (both UI workers)
 
-App target name `Bloom`, entry `BloomApp` (owner: finance-ui). Root view `RootView` with custom bottom `BloomTabBar` over cases: calc, proj, lists, kitchen, tools, pantry, music. Stores are `@Observable` classes injected via `.environment(...)`: `CalcStore, ProjectionStore, HistoryStore, ListsStore, KitchenStore, ThemeStore, SoundStore, MusicStore` (CalcStore, ProjectionStore, ThemeStore owned by finance-ui; the rest by delight-ui; every store persists through `JSONStore.shared` with its StoreKey).
+App target name `Bloom`, entry `BloomApp` (owner: finance-ui). Root view `RootView` with custom bottom `BloomTabBar` over cases: calc, proj, lists, kitchen, tools, ~~pantry~~ budget, music. **(v2, 2026-07-03, approved deviation: the `pantry` tab was replaced by `budget`, backed by `BudgetStore` and the `BloomCore` Budget API below; see the Budget section at the end of this document.)** Stores are `@Observable` classes injected via `.environment(...)`: `CalcStore, ProjectionStore, HistoryStore, ListsStore, KitchenStore, ThemeStore, SoundStore, MusicStore, BudgetStore` (CalcStore, ProjectionStore, ThemeStore owned by finance-ui; BudgetStore owned by finance-ui per the v2 deviation; the rest by delight-ui; every store persists through `JSONStore.shared` with its StoreKey).
 
-View names are frozen so RootView compiles: `CalcView, ProjectionView, ToolsView` (finance-ui); `ListsView, KitchenView, PantryView, MusicView, HistoryOverlay, PoemOverlay, ToastHost, SoundStudioView, RecycleSheet, SplashOverlay, CreditsView` (delight-ui). Delight views must exist even if a sub-feature ships as a stub with a TODO screen; compile success on CI is the gate.
+View names are frozen so RootView compiles: `CalcView, ProjectionView, ToolsView, BudgetView` (finance-ui, BudgetView added under the v2 deviation); `ListsView, KitchenView, MusicView, HistoryOverlay, PoemOverlay, ToastHost, SoundStudioView, RecycleSheet, SplashOverlay, CreditsView` (delight-ui; `PantryView` removed under the v2 deviation). Delight views must exist even if a sub-feature ships as a stub with a TODO screen; compile success on CI is the gate.
 
 Theme: `ThemeStore` exposes `spec: ThemeSpec` and `color(_ token: String) -> Color`. The 16 tokens: bg, surface, surfaceSoft, surface2, primary, primaryStrong, deep, text, muted, line, flowerCenter, good, shadow, ripple, sh1, radius (radius is a CGFloat-encoded string). Presets cherry, rose, peony, soft come from `contracts/theme-tokens.md` hex values exactly. Custom theme edits any of the 12 editable tokens via ColorPicker and persists.
 
@@ -202,4 +204,111 @@ Reduce motion: every particle system and long animation checks `@Environment(\.a
 
 ## Scaffold registry (worker-scaffold)
 
-Bundle id `com.shaver.bloomcalculator`, display name `Bloom`, marketing version 1.0, build number from CI run number, deployment target 17.0, iPhone only, portrait plus portraitUpsideDown. Info.plist via project.yml: UIAppFonts (Quicksand, PlayfairDisplay, PlayfairDisplay-Italic, GreatVibes), ITSAppUsesNonExemptEncryption false. Secrets consumed in CI: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8. test.yml: swift:6.0 container on ubuntu-latest running `swift test` in Packages/BloomCore on every push. release.yml: macos-15, triggered by tags `v*`, steps: checkout, brew install xcodegen, scripts/fetch_fonts.sh, xcodegen, xcodebuild archive with cloud signing (`-allowProvisioningUpdates -authenticationKeyPath ... -authenticationKeyID ... -authenticationKeyIssuerID ...`), export ipa, `bundle exec fastlane pilot_upload`. Fonts fetched from pinned google/fonts GitHub raw URLs with sha256 checks, never committed.
+Bundle id `com.shaver.bloomcalculator`, display name ~~`Bloom`~~ `Hannah's Calculator` **(v2, 2026-07-03, approved deviation)**, marketing version 1.0, build number from CI run number, deployment target 17.0, iPhone only, portrait plus portraitUpsideDown. Info.plist via project.yml: UIAppFonts (Quicksand, PlayfairDisplay, PlayfairDisplay-Italic, GreatVibes), ITSAppUsesNonExemptEncryption false. Secrets consumed in CI: APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8. test.yml: swift:6.0 container on ubuntu-latest running `swift test` in Packages/BloomCore on every push. release.yml: macos-15, triggered by tags `v*`, steps: checkout, brew install xcodegen, scripts/fetch_fonts.sh, xcodegen, xcodebuild archive with cloud signing (`-allowProvisioningUpdates -authenticationKeyPath ... -authenticationKeyID ... -authenticationKeyIssuerID ...`), export ipa, `bundle exec fastlane pilot_upload`. Fonts fetched from pinned google/fonts GitHub raw URLs with sha256 checks, never committed.
+
+## Budget (frozen, v2, 2026-07-03, approved addition)
+
+Source spec: budget IIFE `Bloom Calculator (all-in-one).html:3113-3598`. Share text/tag: `exBudget` 3713-3735, `importBudget` 3832-3845, tag `#hannahs-budget-v1`. Owner: worker-core for `Packages/BloomCore/**`, worker-finance-ui for `App/Views/Budget/**`.
+
+```swift
+public struct BudgetRow: Codable, Equatable {
+    public var n: String
+    public var a: Double
+    public var sel: Bool
+    public init(n: String, a: Double, sel: Bool)
+}
+
+public struct BudgetIncome: Codable, Equatable {
+    public var label: String
+    public var gross: Double
+    public var tax: Double
+    public var ret: Double
+    public var oth: Double
+    public init(label: String, gross: Double, tax: Double, ret: Double, oth: Double)
+}
+
+public struct BudgetCategory: Codable, Equatable {
+    public var n: String
+    public var open: Bool
+    public var goal: Double?
+    public var items: [BudgetRow]
+    public init(n: String, open: Bool, goal: Double?, items: [BudgetRow])
+}
+
+public struct BudgetMonth: Codable, Equatable {
+    public var inc2On: Bool
+    public var inc: [BudgetIncome]
+    public var cats: [BudgetCategory]
+    public init(inc2On: Bool, inc: [BudgetIncome], cats: [BudgetCategory])
+}
+
+public struct BudgetDB: Codable, Equatable {
+    public var v: Int
+    public var cur: String
+    public var months: [String: BudgetMonth]
+    public init(v: Int, cur: String, months: [String: BudgetMonth])
+}
+
+public struct BudgetPresetItem {
+    public let name: String
+    public let amount: Double
+    public init(name: String, amount: Double)
+}
+
+public struct BudgetPreset {
+    public let n: String
+    public let items: [BudgetPresetItem]
+    public init(n: String, items: [BudgetPresetItem])
+}
+
+public struct BudgetYearEntry: Equatable {
+    public let key: String
+    public let has: Bool
+    public let planned: Double
+    public let takeHome: Double
+    public init(key: String, has: Bool, planned: Double, takeHome: Double)
+}
+
+public enum BudgetDefaults {
+    public static func month() -> BudgetMonth
+    public static let presets: [BudgetPreset]
+    public static let colors: [String]
+    public static let monthNames: [String]
+}
+
+public enum BudgetMath {
+    public static func jsRound(_ x: Double) -> Double
+    public static func netOf(_ i: BudgetIncome) -> Double
+    public static func takeHome(of m: BudgetMonth) -> Double
+    public static func catTotal(_ c: BudgetCategory) -> Double
+    public static func catSel(_ c: BudgetCategory) -> Double
+    public static func planned(of m: BudgetMonth) -> Double
+    public static func importRow(name: String, qty: Double?, amount: Double) -> BudgetRow
+    public static func ymKey(year: Int, month: Int) -> String
+    public static func parseYM(_ key: String) -> (year: Int, month: Int)?
+    public static func monthDays(_ ymKey: String) -> Int
+    public static func monthLabel(_ ymKey: String) -> String
+    public static func perDay(sel: Double, days: Int) -> Double
+    public static func byToday(sel: Double, today: Int, days: Int) -> Double
+    public static func chartYMax(sels: [Double], goals: [Double?]) -> Double
+    public static func monthForSwitch(db: BudgetDB, to key: String) -> (month: BudgetMonth, copiedFrom: String?)
+    public static func yearAggregate(db: BudgetDB, year: Int) -> [BudgetYearEntry]
+}
+
+public enum BudgetShare {
+    public static func export(db: BudgetDB) -> String
+    public static func parse(_ text: String) -> BudgetDB?
+}
+```
+
+`StoreKey` gains `case budget2 = "bloom_budget2"` (raw value matches the JS `BKEY2` constant exactly; the case name is `budget2` to satisfy the `BudgetStore` UI call sites, not `budget`).
+
+Behavioral parity notes: `jsRound` is `floor(x + 0.5)` including negatives (matches `Formatters.jsRound` already in the codebase). `netOf`: `gross * (1 - min(100, tax+ret+oth)/100)`, floored at 0. `takeHome`: `netOf(inc[0])` plus `netOf(inc[1])` only when `inc2On`. `catTotal`/`catSel` sum `item.a` over all items, or only `sel` items respectively. `planned` sums `catTotal` over all categories. `importRow`: `qty` nil (or the JS `''`/`null` equivalent) defaults to 1; `a = jsRound(qty*amount*100)/100`; `name` is trimmed then truncated to 60 characters; `sel` is always `false`. `monthDays` mirrors JS `new Date(y, m, 0).getDate()` (last day of month `m`, 1-indexed). `monthLabel` is `monthNames[month-1] + " " + year` (e.g. "July 2026"). `chartYMax`: base 1, then the max of every `sel` and `goal ?? 0` per series; if more than one series, also compare against the sum of all `sel` values; multiply the result by 1.08. `monthForSwitch`: if the target key exists, return it with `copiedFrom: nil`; otherwise search existing keys sorted ascending for the largest key strictly less than the target, falling back to the lexicographically-last existing key, falling back to `BudgetDefaults.month()` if no months exist at all; deep-copy the source, reset every item's `sel` to `false`, leave `goal` fields unchanged; `copiedFrom` is the source key used, or `nil` only when no months existed. `yearAggregate` walks months 1 through 12 of the given year and reports `has`/`planned`/`takeHome` (zeroed when absent).
+
+Codable JSON keys are exact and match the JS payload shape: `BudgetRow` as `n, a, sel`; `BudgetIncome` as `label, gross, tax, ret, oth`; `BudgetCategory` as `n, open, goal, items`; `BudgetMonth` as `inc2On, inc, cats`; `BudgetDB` as `v, cur, months`. `BudgetCategory.goal` decodes from an explicit JSON `null` or an absent key identically (`decodeIfPresent`), and always encodes as an explicit `null` when `nil` (never an absent key), matching the JS `c.goal=c.goal` deep-copy-preserves-null-or-absent convention exactly.
+
+`BudgetShare.export` replicates the JS `exBudget()` (lines 3713-3735) text template: `"Budget · " + label`, a summary line with take-home/planned/left via `money()`, an `INCOME` section, one line per category (`uppercased name — money(total)`, em dash), one line per non-empty item, an optional `(goal money(goal))` line when a goal is set, and a trailing `\n#hannahs-budget-v1 ` plus base64 of the UTF-8 JSON `{"k": cur, "m": month}` payload. `BudgetShare.parse` replicates `importBudget()` (lines 3832-3845): regex `#hannahs-budget-v1\s+([A-Za-z0-9+/=]+)`, base64-decode as UTF-8 JSON, guard on `payload.k` and non-empty `payload.m.cats`, and construct a fresh `BudgetDB(v: 2, cur: payload.k, months: [payload.k: payload.m])`. Byte-identical export text is not required; cross round-trip decodability is: a Swift-exported payload's base64 JSON must be parseable by the JS `importBudget` logic, and a JS-exported payload must be parseable by `BudgetShare.parse`. The JS `importBudget` additionally merges the imported month into whatever `BudgetDB` already exists in `localStorage` rather than replacing it outright; `BudgetShare.parse` returns a minimal single-month `BudgetDB` and leaves any merge-into-existing-store behavior to the caller.
+
+Defaults are verbatim from the JS `defMonth()` (lines ~3134-3149): 11 categories (Housing through Everything Else), `Housing.open == true` and every other category closed, incomes `4200/18/5/2` and `3600/16/5/0`, `inc2On == true`. `PRESETS` (lines ~3120-3132): 12 presets including `Blank category` (which the UI relabels to "New category" on add). `COLORS` (line 3116) and `MONTHS` (line 3117) are transcribed verbatim as `BudgetDefaults.colors` (`[String]` hex values, Foundation-only per the BloomCore house rule; UI call sites convert via `Color(hex:)`) and `BudgetDefaults.monthNames`.
+
+Vectors: `contracts/vectors.json` and `Packages/BloomCore/Tests/BloomCoreTests/Resources/vectors.json` carry 14 budget-prefixed keys (`budgetYmKey, budgetParseYM, budgetMonthLabel, budgetMonthDays, budgetChartYMax, budgetPerDay, budgetImportRow, budgetCatTotals, budgetNetOf, budgetTakeHome, budgetPlanned, budgetMonthSwitch, budgetYearAggregate, budgetShare`), 67 vectors total, generated by the budget section of `scripts/gen_vectors.mjs` and verified by the budget section of `scripts/verify_mirror.py`. `Packages/BloomCore/Tests/BloomCoreTests/BudgetTests.swift` asserts the combined budget vector count is at least 40.

@@ -3,6 +3,9 @@ import json
 import math
 import os
 import sys
+import base64
+import re
+from datetime import date, timedelta
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VECTORS_PATH = os.path.join(ROOT, "contracts", "vectors.json")
@@ -620,6 +623,302 @@ def rel_close(got, expect, tol=1e-9):
     return abs((got - expect) / expect) < tol
 
 
+BUDGET_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August",
+                 "September", "October", "November", "December"]
+
+
+def budget_def_month():
+    return {
+        "inc2On": True,
+        "inc": [
+            {"label": "Income 1", "gross": 4200, "tax": 18, "ret": 5, "oth": 2},
+            {"label": "Income 2", "gross": 3600, "tax": 16, "ret": 5, "oth": 0},
+        ],
+        "cats": [
+            {"n": "Housing", "open": True, "goal": None, "items": [
+                {"n": "Rent or mortgage", "a": 1400, "sel": False},
+                {"n": "Renters or home insurance", "a": 25, "sel": False}]},
+            {"n": "Utilities", "open": False, "goal": None, "items": [
+                {"n": "Electric", "a": 110, "sel": False},
+                {"n": "Gas heat", "a": 60, "sel": False},
+                {"n": "Water and sewer", "a": 45, "sel": False},
+                {"n": "Internet", "a": 70, "sel": False},
+                {"n": "Cell phones", "a": 90, "sel": False}]},
+            {"n": "Groceries & Household", "open": False, "goal": None, "items": [
+                {"n": "Groceries", "a": 550, "sel": False},
+                {"n": "Household goods", "a": 60, "sel": False}]},
+            {"n": "Transportation", "open": False, "goal": None, "items": [
+                {"n": "Car payment", "a": 320, "sel": False},
+                {"n": "Fuel", "a": 160, "sel": False},
+                {"n": "Car insurance", "a": 130, "sel": False},
+                {"n": "Maintenance", "a": 40, "sel": False}]},
+            {"n": "Health", "open": False, "goal": None, "items": [
+                {"n": "Health insurance", "a": 180, "sel": False},
+                {"n": "Prescriptions", "a": 20, "sel": False},
+                {"n": "Gym", "a": 25, "sel": False}]},
+            {"n": "Debt Payoff", "open": False, "goal": None, "items": [
+                {"n": "Student loans", "a": 220, "sel": False},
+                {"n": "Credit card", "a": 100, "sel": False}]},
+            {"n": "Savings & Future", "open": False, "goal": None, "items": [
+                {"n": "Emergency fund", "a": 200, "sel": False},
+                {"n": "Baby fund", "a": 150, "sel": False},
+                {"n": "House down payment", "a": 200, "sel": False}]},
+            {"n": "Kids & Family", "open": False, "goal": None, "items": [
+                {"n": "Diapers and baby gear", "a": 80, "sel": False},
+                {"n": "Childcare", "a": 0, "sel": False}]},
+            {"n": "Lifestyle", "open": False, "goal": None, "items": [
+                {"n": "Dining out", "a": 180, "sel": False},
+                {"n": "Date nights", "a": 80, "sel": False},
+                {"n": "Streaming and subscriptions", "a": 35, "sel": False},
+                {"n": "Clothing", "a": 60, "sel": False}]},
+            {"n": "Giving", "open": False, "goal": None, "items": [
+                {"n": "Church or charity", "a": 150, "sel": False},
+                {"n": "Gifts", "a": 40, "sel": False}]},
+            {"n": "Everything Else", "open": False, "goal": None, "items": [
+                {"n": "Buffer for surprises", "a": 75, "sel": False}]},
+        ],
+    }
+
+
+def budget_ym_key(year, month):
+    return "%d-%s" % (year, str(month).zfill(2))
+
+
+def budget_parse_ym(key):
+    parts = key.split("-")
+    if len(parts) != 2:
+        return None
+    try:
+        y = int(parts[0])
+        m = int(parts[1])
+    except ValueError:
+        return None
+    return {"year": y, "month": m}
+
+
+def budget_month_label(k):
+    p = k.split("-")
+    return BUDGET_MONTHS[int(p[1]) - 1] + " " + p[0]
+
+
+def budget_deep(o):
+    return json.loads(json.dumps(o))
+
+
+def num(v):
+    if v is None:
+        return 0.0
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return 0.0
+    if math.isnan(f) or math.isinf(f):
+        return 0.0
+    return f
+
+
+def budget_net_of(i):
+    g = num(i.get("gross"))
+    p = num(i.get("tax")) + num(i.get("ret")) + num(i.get("oth"))
+    return max(0.0, g * (1 - min(100.0, p) / 100.0))
+
+
+def budget_take_home_of(m):
+    t = budget_net_of(m["inc"][0])
+    if m["inc2On"]:
+        t += budget_net_of(m["inc"][1])
+    return t
+
+
+def budget_cat_total(c):
+    t = 0.0
+    for it in c["items"]:
+        t += num(it.get("a"))
+    return t
+
+
+def budget_cat_sel(c):
+    t = 0.0
+    for it in c["items"]:
+        if it.get("sel"):
+            t += num(it.get("a"))
+    return t
+
+
+def budget_planned_of(m):
+    t = 0.0
+    for c in m["cats"]:
+        t += budget_cat_total(c)
+    return t
+
+
+def budget_import_row(name, qty, amount):
+    n = str(name).strip()
+    q = 1.0 if (qty is None or qty == "") else num(qty)
+    a = num(amount)
+    rounded = js_round(q * a * 100.0) / 100.0
+    return {"n": n[:60], "a": rounded, "sel": False}
+
+
+def budget_month_days(ym_key_str):
+    p = ym_key_str.split("-")
+    y = int(p[0])
+    m = int(p[1])
+    if m == 12:
+        ny, nm = y + 1, 1
+    else:
+        ny, nm = y, m + 1
+    first_of_next = date(ny, nm, 1)
+    last_of_this = first_of_next - timedelta(days=1)
+    return last_of_this.day
+
+
+def budget_per_day(sel, days):
+    return sel / days
+
+
+def budget_by_today(sel, today, days):
+    return sel * today / days
+
+
+def budget_chart_ymax(sels, goals):
+    ymax = 1.0
+    for idx in range(len(sels)):
+        g = goals[idx] if idx < len(goals) else None
+        gval = num(g) if g else 0.0
+        ymax = max(ymax, sels[idx], gval)
+    if len(sels) > 1:
+        all_tot = sum(sels)
+        ymax = max(ymax, all_tot)
+    return ymax * 1.08
+
+
+def budget_switch_month(months_obj, k):
+    months = budget_deep(months_obj)
+    copied_from = None
+    if k not in months:
+        ks = sorted(months.keys())
+        prior = None
+        for i in range(len(ks) - 1, -1, -1):
+            if ks[i] < k:
+                prior = ks[i]
+                break
+        if not prior and ks:
+            prior = ks[-1]
+        src = budget_deep(months[prior]) if prior else budget_def_month()
+        for c in src["cats"]:
+            for it in c["items"]:
+                it["sel"] = False
+            c["goal"] = c["goal"]
+        months[k] = src
+        copied_from = prior if prior else None
+    return {"months": months, "month": months[k], "copiedFrom": copied_from}
+
+
+def budget_year_aggregate(months_obj, year):
+    out = []
+    for m in range(1, 13):
+        k = "%d-%s" % (year, str(m).zfill(2))
+        mo = months_obj.get(k)
+        pl = budget_planned_of(mo) if mo else 0.0
+        th = budget_take_home_of(mo) if mo else 0.0
+        out.append({"key": k, "has": bool(mo), "planned": pl, "takeHome": th})
+    return out
+
+
+def budget_encode_payload(payload):
+    json_str = json.dumps(payload)
+    return base64.b64encode(json_str.encode("utf-8")).decode("ascii")
+
+
+def budget_decode_payload(b64):
+    json_str = base64.b64decode(b64).decode("utf-8")
+    return json.loads(json_str)
+
+
+def budget_money_grouped(n):
+    safe = 0.0 if (math.isinf(n) or n != n) else n
+    neg = safe < 0 or (safe == 0 and math.copysign(1, safe) < 0)
+    v = abs(safe)
+    cents = js_round(v * 100.0)
+    cents_str = "%.0f" % cents
+    while len(cents_str) < 3:
+        cents_str = "0" + cents_str
+    intpart = cents_str[:-2]
+    fracpart = cents_str[-2:]
+    grouped_digits = []
+    n_len = len(intpart)
+    for idx, ch in enumerate(intpart):
+        pos_from_right = n_len - idx
+        grouped_digits.append(ch)
+        if pos_from_right > 1 and pos_from_right % 3 == 1:
+            grouped_digits.append(",")
+    grouped = "".join(grouped_digits)
+    sign = "-" if neg else ""
+    return "$" + sign + grouped + "." + fracpart
+
+
+def budget_ex_text(cur, label, m):
+    def net(i):
+        g = num(i.get("gross"))
+        p = num(i.get("tax")) + num(i.get("ret")) + num(i.get("oth"))
+        return max(0.0, g * (1 - min(100.0, p) / 100.0))
+
+    th = net(m["inc"][0]) + (net(m["inc"][1]) if m["inc2On"] else 0.0)
+    pl = 0.0
+    for c in m["cats"]:
+        for it in c["items"]:
+            pl += num(it.get("a"))
+    out = "Budget · " + label + "\n"
+    out += "Take-home %s · planned %s · left %s\n\nINCOME\n" % (budget_money_grouped(th), budget_money_grouped(pl), budget_money_grouped(th - pl))
+    for ix, i in enumerate(m["inc"]):
+        if ix == 1 and not m["inc2On"]:
+            continue
+        label_i = i.get("label") or ("Income %d" % (ix + 1))
+        oth_part = (", other %s%%" % i.get("oth")) if i.get("oth") else ""
+        out += "• %s: $%s gross (tax %s%%, retire %s%%%s) → %s\n" % (
+            label_i, i.get("gross"), i.get("tax"), i.get("ret"), oth_part, budget_money_grouped(net(i)))
+    for c in m["cats"]:
+        ct = 0.0
+        for it in c["items"]:
+            ct += num(it.get("a"))
+        out += "\n%s — %s\n" % (str(c.get("n") or "").upper(), budget_money_grouped(ct))
+        for it in c["items"]:
+            if str(it.get("n") or "").strip():
+                out += "• %s $%s\n" % (it.get("n"), num(it.get("a")))
+        goal = c.get("goal")
+        if goal is not None and goal != "":
+            out += "(goal %s)\n" % budget_money_grouped(num(goal))
+    payload = {"k": cur, "m": m}
+    b64 = budget_encode_payload(payload)
+    if b64:
+        out += "\n#hannahs-budget-v1 " + b64
+    return out
+
+
+BUDGET_IMPORT_RE = re.compile(r"#hannahs-budget-v1\s+([A-Za-z0-9+/=]+)")
+
+
+def budget_import_text(t):
+    m = BUDGET_IMPORT_RE.search(t)
+    if not m:
+        return None
+    try:
+        payload = budget_decode_payload(m.group(1))
+        if not payload or not payload.get("k") or not payload.get("m") or not payload["m"].get("cats"):
+            return None
+        return payload
+    except Exception:
+        return None
+
+
+def budget_share_parse(text):
+    decoded = budget_import_text(text)
+    if decoded is None:
+        return None
+    return {"v": 2, "cur": decoded["k"], "months": {decoded["k"]: decoded["m"]}}
+
+
 def run():
     with open(VECTORS_PATH, encoding="utf-8") as f:
         vectors = json.load(f)
@@ -732,11 +1031,131 @@ def run():
             fails.append((c, "expect %r got %r" % (c["expect"], got_r)))
     results["convert"] = (len(vectors["convert"]) - len(fails), len(vectors["convert"]), fails)
 
+    fails = []
+    for c in vectors.get("budgetNetOf", []):
+        got = budget_net_of(c["income"])
+        if not rel_close(got, c["expect"]):
+            fails.append((c["income"], "netOf expect %r got %r" % (c["expect"], got)))
+    results["budgetNetOf"] = (len(vectors.get("budgetNetOf", [])) - len(fails), len(vectors.get("budgetNetOf", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetTakeHome", []):
+        got = budget_take_home_of(c["month"])
+        if not rel_close(got, c["expect"]):
+            fails.append(("takeHome expect %r got %r" % (c["expect"], got),))
+    results["budgetTakeHome"] = (len(vectors.get("budgetTakeHome", [])) - len(fails), len(vectors.get("budgetTakeHome", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetCatTotals", []):
+        gt = budget_cat_total(c["cat"])
+        gs = budget_cat_sel(c["cat"])
+        if not rel_close(gt, c["total"]) or not rel_close(gs, c["sel"]):
+            fails.append((c["cat"], "expect total=%r sel=%r got total=%r sel=%r" % (c["total"], c["sel"], gt, gs)))
+    results["budgetCatTotals"] = (len(vectors.get("budgetCatTotals", [])) - len(fails), len(vectors.get("budgetCatTotals", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetPlanned", []):
+        got = budget_planned_of(c["month"])
+        if not rel_close(got, c["expect"]):
+            fails.append(("planned expect %r got %r" % (c["expect"], got),))
+    results["budgetPlanned"] = (len(vectors.get("budgetPlanned", [])) - len(fails), len(vectors.get("budgetPlanned", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetImportRow", []):
+        got = budget_import_row(c["name"], c["qty"], c["amount"])
+        exp = c["expect"]
+        if got["n"] != exp["n"] or not rel_close(got["a"], exp["a"]) or got["sel"] != exp["sel"]:
+            fails.append((c["name"], "expect %r got %r" % (exp, got)))
+    results["budgetImportRow"] = (len(vectors.get("budgetImportRow", [])) - len(fails), len(vectors.get("budgetImportRow", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetPerDay", []):
+        if c["fn"] == "perDay":
+            got = budget_per_day(c["sel"], c["days"])
+        else:
+            got = budget_by_today(c["sel"], c["today"], c["days"])
+        if not rel_close(got, c["expect"]):
+            fails.append((c["fn"], "expect %r got %r" % (c["expect"], got)))
+    results["budgetPerDay"] = (len(vectors.get("budgetPerDay", [])) - len(fails), len(vectors.get("budgetPerDay", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetChartYMax", []):
+        got = budget_chart_ymax(c["sels"], c["goals"])
+        if not rel_close(got, c["expect"]):
+            fails.append((c["sels"], c["goals"], "expect %r got %r" % (c["expect"], got)))
+    results["budgetChartYMax"] = (len(vectors.get("budgetChartYMax", [])) - len(fails), len(vectors.get("budgetChartYMax", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetMonthDays", []):
+        got = budget_month_days(c["key"])
+        if got != c["expect"]:
+            fails.append((c["key"], "expect %r got %r" % (c["expect"], got)))
+    results["budgetMonthDays"] = (len(vectors.get("budgetMonthDays", [])) - len(fails), len(vectors.get("budgetMonthDays", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetYmKey", []):
+        got = budget_ym_key(c["year"], c["month"])
+        if got != c["expect"]:
+            fails.append(("ymKey expect %r got %r" % (c["expect"], got),))
+    results["budgetYmKey"] = (len(vectors.get("budgetYmKey", [])) - len(fails), len(vectors.get("budgetYmKey", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetParseYM", []):
+        got = budget_parse_ym(c["key"])
+        if got != c["expect"]:
+            fails.append((c["key"], "expect %r got %r" % (c["expect"], got)))
+    results["budgetParseYM"] = (len(vectors.get("budgetParseYM", [])) - len(fails), len(vectors.get("budgetParseYM", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetMonthLabel", []):
+        got = budget_month_label(c["key"])
+        if got != c["expect"]:
+            fails.append((c["key"], "expect %r got %r" % (c["expect"], got)))
+    results["budgetMonthLabel"] = (len(vectors.get("budgetMonthLabel", [])) - len(fails), len(vectors.get("budgetMonthLabel", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetMonthSwitch", []):
+        db = c["db"]
+        r = budget_switch_month(db["months"], c["target"])
+        if r["month"] != c["resultMonth"]:
+            fails.append((c["scenario"], "month mismatch"))
+        if r["copiedFrom"] != c["copiedFrom"]:
+            fails.append((c["scenario"], "copiedFrom expect %r got %r" % (c["copiedFrom"], r["copiedFrom"])))
+    results["budgetMonthSwitch"] = (len(vectors.get("budgetMonthSwitch", [])) - len(fails), len(vectors.get("budgetMonthSwitch", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetYearAggregate", []):
+        db = c["db"]
+        got = budget_year_aggregate(db["months"], c["year"])
+        exp = c["expect"]
+        if len(got) != len(exp):
+            fails.append((c["year"], "length mismatch"))
+        else:
+            for g, e in zip(got, exp):
+                if g["key"] != e["key"] or g["has"] != e["has"] or not rel_close(g["planned"], e["planned"]) or not rel_close(g["takeHome"], e["takeHome"]):
+                    fails.append((c["year"], "entry mismatch expect %r got %r" % (e, g)))
+    results["budgetYearAggregate"] = (len(vectors.get("budgetYearAggregate", [])) - len(fails), len(vectors.get("budgetYearAggregate", [])), fails)
+
+    fails = []
+    for c in vectors.get("budgetShare", []):
+        decoded = budget_import_text(c["fixtureText"])
+        if decoded != c["decoded"]:
+            fails.append((c["cur"], "decoded expect %r got %r" % (c["decoded"], decoded)))
+        got_db = budget_share_parse(c["fixtureText"])
+        if got_db != c["expectDb"]:
+            fails.append((c["cur"], "expectDb expect %r got %r" % (c["expectDb"], got_db)))
+        if decoded:
+            reexported = budget_ex_text(decoded["k"], budget_month_label(decoded["k"]), decoded["m"])
+            redecoded = budget_import_text(reexported)
+            if redecoded != decoded:
+                fails.append((c["cur"], "python roundtrip mismatch"))
+    results["budgetShare"] = (len(vectors.get("budgetShare", [])) - len(fails), len(vectors.get("budgetShare", [])), fails)
+
     total_pass = 0
     total_count = 0
     print("category      pass/total")
     print("---------------------------")
-    for cat in ["formatters", "finance", "calc", "eggs", "recipe", "convert"]:
+    for cat in ["formatters", "finance", "calc", "eggs", "recipe", "convert", "budgetNetOf", "budgetTakeHome", "budgetCatTotals", "budgetPlanned", "budgetImportRow", "budgetPerDay", "budgetChartYMax", "budgetMonthDays", "budgetYmKey", "budgetParseYM", "budgetMonthLabel", "budgetMonthSwitch", "budgetYearAggregate", "budgetShare"]:
         p, t, fails = results[cat]
         total_pass += p
         total_count += t

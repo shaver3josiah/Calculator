@@ -6,7 +6,7 @@ enum BloomTab: String, CaseIterable, Identifiable {
     case lists
     case kitchen
     case tools
-    case pantry
+    case budget
     case music
 
     var id: String { rawValue }
@@ -18,7 +18,7 @@ enum BloomTab: String, CaseIterable, Identifiable {
         case .lists: return "Lists"
         case .kitchen: return "Kitchen"
         case .tools: return "Tools"
-        case .pantry: return "Pantry"
+        case .budget: return "Monthly Budget"
         case .music: return "Music"
         }
     }
@@ -30,7 +30,7 @@ enum BloomTab: String, CaseIterable, Identifiable {
         case .lists: return "list.bullet"
         case .kitchen: return "fork.knife"
         case .tools: return "wrench.and.screwdriver"
-        case .pantry: return "cabinet"
+        case .budget: return "wallet.pass"
         case .music: return "music.note"
         }
     }

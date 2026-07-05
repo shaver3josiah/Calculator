@@ -45,7 +45,7 @@ targets:
     info:
       path: Generated-Info.plist
       properties:
-        CFBundleDisplayName: Bloom
+        CFBundleDisplayName: Hannah's Calculator
         ITSAppUsesNonExemptEncryption: false
         UIAppFonts:
           - Quicksand.ttf

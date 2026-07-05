@@ -119,7 +119,7 @@ final class HistoryStore {
     }
 
     func shareText() -> String {
-        var lines: [String] = ["Bloom Calculator History"]
+        var lines: [String] = ["Hannah's Calculator History"]
         for entry in filteredEntries {
             lines.append("\(entry.title): \(entry.value)")
         }

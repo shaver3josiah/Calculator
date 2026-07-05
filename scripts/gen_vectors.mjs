@@ -172,6 +172,8 @@ const sources = {
   recipe_parse: `${SOURCE_HTML}:2205-2286 (UNICODE_FRAC, UNIT_ALIASES, tokenQty, parseLine, fmtQty, transcribed)`,
   unit_convert: `${SOURCE_HTML}:2200-2212 (VOL, WT, convertFamily, transcribed)`,
   cleanurl_jsonld: `${SOURCE_HTML}:2963 (cleanUrl), 2344-2353 (extractJsonLdIngredients, transcribed)`,
+  budget_engine: `${SOURCE_HTML}:3113-3598 (budget IIFE: state, defaults, presets, math, month switching, chart math, year aggregation, transcribed)`,
+  budget_share: `${SOURCE_HTML}:3713-3735 (exBudget), 3832-3845 (importBudget, tag #hannahs-budget-v1, transcribed)`,
 };
 
 function round8(n) {
@@ -450,7 +452,13 @@ function convertUnit(value, from, to) {
   return null;
 }
 
-const results = { meta: {}, formatters: [], finance: [], calc: [], eggs: [], recipe: [], convert: [] };
+const results = {
+  meta: {}, formatters: [], finance: [], calc: [], eggs: [], recipe: [], convert: [],
+  budgetYmKey: [], budgetParseYM: [], budgetMonthLabel: [], budgetMonthDays: [],
+  budgetChartYMax: [], budgetPerDay: [], budgetImportRow: [], budgetCatTotals: [],
+  budgetNetOf: [], budgetTakeHome: [], budgetPlanned: [], budgetMonthSwitch: [],
+  budgetYearAggregate: [], budgetShare: [],
+};
 
 results.meta = {
   generatedFrom: SOURCE_HTML,
@@ -630,6 +638,414 @@ for (const [from, to, value] of convertCases) {
   results.convert.push({ value, from, to, expect: round8(expect) });
 }
 
+const BUDGET_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August",
+  "September", "October", "November", "December"];
+
+function jsRoundBudget(x) {
+  return Math.floor(x + 0.5);
+}
+
+function budgetDefMonth() {
+  return {
+    inc2On: true,
+    inc: [
+      { label: "Income 1", gross: 4200, tax: 18, ret: 5, oth: 2 },
+      { label: "Income 2", gross: 3600, tax: 16, ret: 5, oth: 0 }
+    ],
+    cats: [
+      { n: "Housing", open: true, goal: null, items: [
+        { n: "Rent or mortgage", a: 1400, sel: false },
+        { n: "Renters or home insurance", a: 25, sel: false }] },
+      { n: "Utilities", open: false, goal: null, items: [
+        { n: "Electric", a: 110, sel: false },
+        { n: "Gas heat", a: 60, sel: false },
+        { n: "Water and sewer", a: 45, sel: false },
+        { n: "Internet", a: 70, sel: false },
+        { n: "Cell phones", a: 90, sel: false }] },
+      { n: "Groceries & Household", open: false, goal: null, items: [
+        { n: "Groceries", a: 550, sel: false },
+        { n: "Household goods", a: 60, sel: false }] },
+      { n: "Transportation", open: false, goal: null, items: [
+        { n: "Car payment", a: 320, sel: false },
+        { n: "Fuel", a: 160, sel: false },
+        { n: "Car insurance", a: 130, sel: false },
+        { n: "Maintenance", a: 40, sel: false }] },
+      { n: "Health", open: false, goal: null, items: [
+        { n: "Health insurance", a: 180, sel: false },
+        { n: "Prescriptions", a: 20, sel: false },
+        { n: "Gym", a: 25, sel: false }] },
+      { n: "Debt Payoff", open: false, goal: null, items: [
+        { n: "Student loans", a: 220, sel: false },
+        { n: "Credit card", a: 100, sel: false }] },
+      { n: "Savings & Future", open: false, goal: null, items: [
+        { n: "Emergency fund", a: 200, sel: false },
+        { n: "Baby fund", a: 150, sel: false },
+        { n: "House down payment", a: 200, sel: false }] },
+      { n: "Kids & Family", open: false, goal: null, items: [
+        { n: "Diapers and baby gear", a: 80, sel: false },
+        { n: "Childcare", a: 0, sel: false }] },
+      { n: "Lifestyle", open: false, goal: null, items: [
+        { n: "Dining out", a: 180, sel: false },
+        { n: "Date nights", a: 80, sel: false },
+        { n: "Streaming and subscriptions", a: 35, sel: false },
+        { n: "Clothing", a: 60, sel: false }] },
+      { n: "Giving", open: false, goal: null, items: [
+        { n: "Church or charity", a: 150, sel: false },
+        { n: "Gifts", a: 40, sel: false }] },
+      { n: "Everything Else", open: false, goal: null, items: [
+        { n: "Buffer for surprises", a: 75, sel: false }] }
+    ]
+  };
+}
+
+function budgetYmKey(year, month) {
+  return year + "-" + String(month).padStart(2, "0");
+}
+
+function budgetParseYM(key) {
+  const parts = key.split("-");
+  if (parts.length !== 2) return null;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (!Number.isFinite(y) || !Number.isFinite(m)) return null;
+  return { year: y, month: m };
+}
+
+function budgetMonthLabel(k) {
+  const p = k.split("-");
+  return BUDGET_MONTHS[+p[1] - 1] + " " + p[0];
+}
+
+function budgetDeep(o) {
+  return JSON.parse(JSON.stringify(o));
+}
+
+function budgetNum(v) {
+  if (v === null || v === undefined) return 0;
+  const f = parseFloat(v);
+  return isFinite(f) ? f : 0;
+}
+
+function budgetNetOf(i) {
+  const g = budgetNum(i.gross);
+  const p = budgetNum(i.tax) + budgetNum(i.ret) + budgetNum(i.oth);
+  return Math.max(0, g * (1 - Math.min(100, p) / 100));
+}
+
+function budgetTakeHomeOf(m) {
+  let t = budgetNetOf(m.inc[0]);
+  if (m.inc2On) t += budgetNetOf(m.inc[1]);
+  return t;
+}
+
+function budgetCatTotal(c) {
+  let t = 0;
+  c.items.forEach((it) => { t += budgetNum(it.a); });
+  return t;
+}
+
+function budgetCatSel(c) {
+  let t = 0;
+  c.items.forEach((it) => { if (it.sel) t += budgetNum(it.a); });
+  return t;
+}
+
+function budgetPlannedOf(m) {
+  let t = 0;
+  m.cats.forEach((c) => { t += budgetCatTotal(c); });
+  return t;
+}
+
+function budgetImportRow(name, qty, amount) {
+  const n = String(name).trim();
+  const q = (qty === "" || qty === null || qty === undefined) ? 1 : budgetNum(qty);
+  const a = budgetNum(amount);
+  const rounded = jsRoundBudget(q * a * 100) / 100;
+  return { n: n.slice(0, 60), a: rounded, sel: false };
+}
+
+function budgetMonthDays(ymKeyStr) {
+  const p = ymKeyStr.split("-");
+  const y = +p[0], m = +p[1];
+  return new Date(y, m, 0).getDate();
+}
+
+function budgetPerDay(sel, days) {
+  return sel / days;
+}
+
+function budgetByToday(sel, today, days) {
+  return sel * today / days;
+}
+
+function budgetChartYMax(sels, goals) {
+  let ymax = 1;
+  for (let idx = 0; idx < sels.length; idx++) {
+    const g = idx < goals.length ? (goals[idx] || 0) : 0;
+    ymax = Math.max(ymax, sels[idx], g);
+  }
+  if (sels.length > 1) {
+    const allTot = sels.reduce((a, b) => a + b, 0);
+    ymax = Math.max(ymax, allTot);
+  }
+  return ymax * 1.08;
+}
+
+function budgetSwitchMonth(monthsObj, k) {
+  const months = budgetDeep(monthsObj);
+  let copiedFrom = null;
+  if (!months[k]) {
+    const ks = Object.keys(months).sort();
+    let prior = null;
+    for (let i = ks.length - 1; i >= 0; i--) {
+      if (ks[i] < k) { prior = ks[i]; break; }
+    }
+    if (!prior && ks.length) prior = ks[ks.length - 1];
+    const src = prior ? budgetDeep(months[prior]) : budgetDefMonth();
+    src.cats.forEach((c) => {
+      c.items.forEach((it) => { it.sel = false; });
+      c.goal = c.goal;
+    });
+    months[k] = src;
+    copiedFrom = prior || null;
+  }
+  return { months, month: months[k], copiedFrom };
+}
+
+function budgetYearAggregate(monthsObj, year) {
+  const out = [];
+  for (let m = 1; m <= 12; m++) {
+    const k = budgetYmKey(year, m);
+    const mo = monthsObj[k];
+    const pl = mo ? budgetPlannedOf(mo) : 0;
+    const th = mo ? budgetTakeHomeOf(mo) : 0;
+    out.push({ key: k, has: !!mo, planned: pl, takeHome: th });
+  }
+  return out;
+}
+
+function budgetMoneyGrouped(n) {
+  n = isFinite(n) ? n : 0;
+  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function budgetExText(cur, label, m) {
+  function net(i) {
+    const g = parseFloat(i.gross) || 0;
+    const p = (parseFloat(i.tax) || 0) + (parseFloat(i.ret) || 0) + (parseFloat(i.oth) || 0);
+    return Math.max(0, g * (1 - Math.min(100, p) / 100));
+  }
+  const th = net(m.inc[0]) + (m.inc2On ? net(m.inc[1]) : 0);
+  let pl = 0;
+  m.cats.forEach((c) => { c.items.forEach((it) => { pl += parseFloat(it.a) || 0; }); });
+  let out = "Budget · " + label + "\n";
+  out += "Take-home " + budgetMoneyGrouped(th) + " · planned " + budgetMoneyGrouped(pl) + " · left " + budgetMoneyGrouped(th - pl) + "\n\nINCOME\n";
+  m.inc.forEach((i, ix) => {
+    if (ix === 1 && !m.inc2On) return;
+    out += "• " + (i.label || ("Income " + (ix + 1))) + ": $" + i.gross + " gross (tax " + i.tax + "%, retire " + i.ret + "%" + (i.oth ? (", other " + i.oth + "%") : "") + ") → " + budgetMoneyGrouped(net(i)) + "\n";
+  });
+  m.cats.forEach((c) => {
+    let ct = 0;
+    c.items.forEach((it) => { ct += parseFloat(it.a) || 0; });
+    out += "\n" + String(c.n || "").toUpperCase() + " — " + budgetMoneyGrouped(ct) + "\n";
+    c.items.forEach((it) => { if (String(it.n || "").trim()) out += "• " + it.n + " $" + (parseFloat(it.a) || 0) + "\n"; });
+    if (c.goal != null && c.goal !== "") out += "(goal " + budgetMoneyGrouped(parseFloat(c.goal) || 0) + ")\n";
+  });
+  const payload = { k: cur, m: m };
+  let b64 = "";
+  try {
+    b64 = Buffer.from(JSON.stringify(payload), "utf-8").toString("base64");
+  } catch (e) {}
+  if (b64) out += "\n#hannahs-budget-v1 " + b64;
+  return out;
+}
+
+function budgetImportText(t) {
+  const m = t.match(/#hannahs-budget-v1\s+([A-Za-z0-9+/=]+)/);
+  if (!m) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(m[1], "base64").toString("utf-8"));
+    if (!payload || !payload.k || !payload.m || !payload.m.cats) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+results.budgetYmKey = [
+  { year: 2026, month: 7, expect: budgetYmKey(2026, 7) },
+  { year: 2026, month: 11, expect: budgetYmKey(2026, 11) },
+  { year: 2026, month: 1, expect: budgetYmKey(2026, 1) },
+];
+
+results.budgetParseYM = [
+  { key: "2026-07", expect: budgetParseYM("2026-07") },
+  { key: "2026-11", expect: budgetParseYM("2026-11") },
+  { key: "bogus", expect: budgetParseYM("bogus") },
+];
+
+results.budgetMonthLabel = [
+  { key: "2026-07", expect: budgetMonthLabel("2026-07") },
+  { key: "2027-01", expect: budgetMonthLabel("2027-01") },
+  { key: "2026-12", expect: budgetMonthLabel("2026-12") },
+];
+
+results.budgetMonthDays = [
+  { key: "2027-02", expect: budgetMonthDays("2027-02") },
+  { key: "2028-02", expect: budgetMonthDays("2028-02") },
+  { key: "2026-04", expect: budgetMonthDays("2026-04") },
+  { key: "2026-01", expect: budgetMonthDays("2026-01") },
+  { key: "2000-02", expect: budgetMonthDays("2000-02") },
+  { key: "1900-02", expect: budgetMonthDays("1900-02") },
+  { key: "2026-12", expect: budgetMonthDays("2026-12") },
+];
+
+results.budgetChartYMax = [
+  { sels: [50], goals: [null], expect: budgetChartYMax([50], [null]) },
+  { sels: [50], goals: [200], expect: budgetChartYMax([50], [200]) },
+  { sels: [10, 20], goals: [null, null], expect: budgetChartYMax([10, 20], [null, null]) },
+  { sels: [100, 50], goals: [30, 400], expect: budgetChartYMax([100, 50], [30, 400]) },
+  { sels: [0.2], goals: [null], expect: budgetChartYMax([0.2], [null]) },
+  { sels: [5, 5, 5], goals: [null, null, null], expect: budgetChartYMax([5, 5, 5], [null, null, null]) },
+];
+
+results.budgetPerDay = [
+  { fn: "perDay", sel: 300, days: 30, expect: budgetPerDay(300, 30) },
+  { fn: "perDay", sel: 100, days: 31, expect: budgetPerDay(100, 31) },
+  { fn: "perDay", sel: 0, days: 28, expect: budgetPerDay(0, 28) },
+  { fn: "byToday", sel: 300, today: 15, days: 30, expect: budgetByToday(300, 15, 30) },
+  { fn: "byToday", sel: 620, today: 1, days: 31, expect: budgetByToday(620, 1, 31) },
+  { fn: "byToday", sel: 100, today: 28, days: 28, expect: budgetByToday(100, 28, 28) },
+];
+
+function pushBudgetImportRow(name, qty, amount) {
+  results.budgetImportRow.push({ name, qty, amount, expect: budgetImportRow(name, qty, amount) });
+}
+pushBudgetImportRow("Milk", null, 3.5);
+pushBudgetImportRow("Eggs", null, 4.25);
+pushBudgetImportRow("Bread", 2, 2.5);
+pushBudgetImportRow("HalfCent", 1, 0.005);
+pushBudgetImportRow("HalfCentAlt", 1, 0.014);
+pushBudgetImportRow("NegAmount", 1, -2.005);
+pushBudgetImportRow("NegHalfCent", 3, -0.505);
+pushBudgetImportRow("  Trimmed  ", 1, 5);
+pushBudgetImportRow("A".repeat(75), 1, 1);
+pushBudgetImportRow("  " + "B".repeat(72) + "  ", 1, 2);
+pushBudgetImportRow("ZeroQty", 0, 10);
+pushBudgetImportRow("FracQty", 1.5, 4);
+
+results.budgetCatTotals = [
+  { cat: { n: "Mixed", open: true, goal: null, items: [
+      { n: "A", a: 100, sel: true }, { n: "B", a: 50, sel: false },
+      { n: "C", a: 25.5, sel: true }, { n: "D", a: 0, sel: false }] },
+    total: budgetCatTotal({ items: [{ a: 100 }, { a: 50 }, { a: 25.5 }, { a: 0 }] }),
+    sel: budgetCatSel({ items: [{ a: 100, sel: true }, { a: 50, sel: false }, { a: 25.5, sel: true }, { a: 0, sel: false }] }) },
+  { cat: { n: "AllSel", open: true, goal: null, items: [{ n: "X", a: 40, sel: true }, { n: "Y", a: 60, sel: true }] },
+    total: 100, sel: 100 },
+  { cat: { n: "NoneSel", open: true, goal: null, items: [{ n: "Z", a: 15, sel: false }] }, total: 15, sel: 0 },
+  { cat: { n: "Empty", open: true, goal: null, items: [] }, total: 0, sel: 0 },
+];
+
+results.budgetNetOf = [
+  { income: { label: "Income", gross: 4200, tax: 18, ret: 5, oth: 2 }, expect: budgetNetOf({ gross: 4200, tax: 18, ret: 5, oth: 2 }) },
+  { income: { label: "Income", gross: 3600, tax: 16, ret: 5, oth: 0 }, expect: budgetNetOf({ gross: 3600, tax: 16, ret: 5, oth: 0 }) },
+  { income: { label: "Income", gross: 5000, tax: 60, ret: 30, oth: 25 }, expect: budgetNetOf({ gross: 5000, tax: 60, ret: 30, oth: 25 }) },
+  { income: { label: "Income", gross: 0, tax: 10, ret: 5, oth: 0 }, expect: budgetNetOf({ gross: 0, tax: 10, ret: 5, oth: 0 }) },
+  { income: { label: "Income", gross: 3000, tax: 0, ret: 0, oth: 0 }, expect: budgetNetOf({ gross: 3000, tax: 0, ret: 0, oth: 0 }) },
+  { income: { label: "Income", gross: 2000, tax: 50, ret: 30, oth: 20 }, expect: budgetNetOf({ gross: 2000, tax: 50, ret: 30, oth: 20 }) },
+  { income: { label: "Income", gross: 8000, tax: 90, ret: 40, oth: 10 }, expect: budgetNetOf({ gross: 8000, tax: 90, ret: 40, oth: 10 }) },
+  { income: { label: "Income", gross: 500, tax: 22, ret: 3, oth: 1 }, expect: budgetNetOf({ gross: 500, tax: 22, ret: 3, oth: 1 }) },
+];
+
+const budgetFullMonth1 = budgetDefMonth();
+const budgetFullMonth2 = budgetDeep(budgetDefMonth());
+budgetFullMonth2.inc2On = false;
+const budgetFullMonth3 = budgetDeep(budgetDefMonth());
+budgetFullMonth3.inc2On = false;
+budgetFullMonth3.inc[0] = { label: "Solo", gross: 6000, tax: 20, ret: 6, oth: 0 };
+const budgetFullMonth4 = budgetDeep(budgetDefMonth());
+budgetFullMonth4.inc[1] = { label: "Second", gross: 1000, tax: 5, ret: 0, oth: 0 };
+
+results.budgetTakeHome = [
+  { month: budgetFullMonth1, expect: budgetTakeHomeOf(budgetFullMonth1) },
+  { month: budgetFullMonth2, expect: budgetTakeHomeOf(budgetFullMonth2) },
+  { month: budgetFullMonth3, expect: budgetTakeHomeOf(budgetFullMonth3) },
+  { month: budgetFullMonth4, expect: budgetTakeHomeOf(budgetFullMonth4) },
+];
+
+const budgetPlannedMonth2 = budgetDeep(budgetDefMonth());
+budgetPlannedMonth2.cats = [];
+const budgetPlannedMonth3 = budgetDeep(budgetDefMonth());
+budgetPlannedMonth3.cats = [
+  { n: "One", open: true, goal: null, items: [{ n: "a", a: 33.33, sel: false }] },
+  { n: "Two", open: true, goal: null, items: [{ n: "b", a: 66.67, sel: true }, { n: "c", a: 10, sel: false }] },
+];
+
+results.budgetPlanned = [
+  { month: budgetFullMonth1, expect: budgetPlannedOf(budgetFullMonth1) },
+  { month: budgetPlannedMonth2, expect: budgetPlannedOf(budgetPlannedMonth2) },
+  { month: budgetPlannedMonth3, expect: budgetPlannedOf(budgetPlannedMonth3) },
+];
+
+function budgetMonthWithGoalAndSel() {
+  const m = budgetDeep(budgetDefMonth());
+  m.cats[0].goal = 500;
+  m.cats[0].items[0].sel = true;
+  return m;
+}
+
+const budgetScenarioPrior = { v: 2, cur: "2026-05", months: { "2026-05": budgetMonthWithGoalAndSel() } };
+const budgetR1 = budgetSwitchMonth(budgetScenarioPrior.months, "2026-07");
+
+const budgetScenarioOnlyLater = { v: 2, cur: "2026-09", months: { "2026-09": budgetMonthWithGoalAndSel() } };
+const budgetR2 = budgetSwitchMonth(budgetScenarioOnlyLater.months, "2026-03");
+
+const budgetScenarioEmpty = { v: 2, cur: "2026-07", months: {} };
+const budgetR3 = budgetSwitchMonth(budgetScenarioEmpty.months, "2026-07");
+
+const budgetMonthJan = budgetMonthWithGoalAndSel();
+const budgetMonthMar = budgetDefMonth();
+const budgetMonthAug = budgetMonthWithGoalAndSel();
+const budgetScenarioMulti = { v: 2, cur: "2026-01", months: { "2026-01": budgetMonthJan, "2026-03": budgetMonthMar, "2026-08": budgetMonthAug } };
+const budgetR4 = budgetSwitchMonth(budgetScenarioMulti.months, "2026-06");
+
+results.budgetMonthSwitch = [
+  { scenario: "prior-exists", db: budgetScenarioPrior, target: "2026-07", resultMonth: budgetR1.month, copiedFrom: budgetR1.copiedFrom },
+  { scenario: "only-later-exists", db: budgetScenarioOnlyLater, target: "2026-03", resultMonth: budgetR2.month, copiedFrom: budgetR2.copiedFrom },
+  { scenario: "empty", db: budgetScenarioEmpty, target: "2026-07", resultMonth: budgetR3.month, copiedFrom: budgetR3.copiedFrom },
+  { scenario: "multi-prior-nearest", db: budgetScenarioMulti, target: "2026-06", resultMonth: budgetR4.month, copiedFrom: budgetR4.copiedFrom },
+];
+
+const budgetYearMonths1 = {
+  "2025-12": budgetMonthWithGoalAndSel(),
+  "2026-01": budgetMonthWithGoalAndSel(),
+  "2026-06": (() => { const m = budgetDefMonth(); m.cats[0].items[0].a = 999; return m; })(),
+};
+const budgetYearDb1 = { v: 2, cur: "2026-01", months: budgetYearMonths1 };
+
+results.budgetYearAggregate = [
+  { db: budgetYearDb1, year: 2026, expect: budgetYearAggregate(budgetYearMonths1, 2026) },
+  { db: { v: 2, cur: "2026-01", months: {} }, year: 2026, expect: budgetYearAggregate({}, 2026) },
+];
+
+const budgetShareMonth1 = budgetMonthWithGoalAndSel();
+budgetShareMonth1.cats[1].goal = 250.5;
+const budgetShareFixture1 = budgetExText("2026-07", budgetMonthLabel("2026-07"), budgetShareMonth1);
+const budgetShareDecoded1 = budgetImportText(budgetShareFixture1);
+
+const budgetShareMonth2 = budgetDeep(budgetMonthWithGoalAndSel());
+budgetShareMonth2.inc2On = false;
+budgetShareMonth2.cats[1].goal = 250.5;
+const budgetShareFixture2 = budgetExText("2026-08", budgetMonthLabel("2026-08"), budgetShareMonth2);
+const budgetShareDecoded2 = budgetImportText(budgetShareFixture2);
+
+results.budgetShare = [
+  { cur: "2026-07", month: budgetShareMonth1, fixtureText: budgetShareFixture1, decoded: budgetShareDecoded1,
+    expectDb: { v: 2, cur: budgetShareDecoded1.k, months: { [budgetShareDecoded1.k]: budgetShareDecoded1.m } } },
+  { cur: "2026-08", month: budgetShareMonth2, fixtureText: budgetShareFixture2, decoded: budgetShareDecoded2,
+    expectDb: { v: 2, cur: budgetShareDecoded2.k, months: { [budgetShareDecoded2.k]: budgetShareDecoded2.m } } },
+];
+
 mkdirSync(CONTRACTS_DIR, { recursive: true });
 writeFileSync(path.join(CONTRACTS_DIR, "vectors.json"), JSON.stringify(results, null, 2) + "\n", "utf-8");
 
@@ -708,6 +1124,11 @@ console.log(JSON.stringify({
   eggs: results.eggs.length,
   recipe: results.recipe.length,
   convert: results.convert.length,
+  budget_total: results.budgetYmKey.length + results.budgetParseYM.length + results.budgetMonthLabel.length
+    + results.budgetMonthDays.length + results.budgetChartYMax.length + results.budgetPerDay.length
+    + results.budgetImportRow.length + results.budgetCatTotals.length + results.budgetNetOf.length
+    + results.budgetTakeHome.length + results.budgetPlanned.length + results.budgetMonthSwitch.length
+    + results.budgetYearAggregate.length + results.budgetShare.length,
   foods_unified: foodsResult.unified.length,
   foods_collisions: foodsResult.collisions,
   foods_iframe_count: foodsResult.iframeCount,

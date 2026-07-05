@@ -5,7 +5,9 @@ import BloomCore
 final class CalcStore {
     var display: String = "0"
     var expression: String = " "
-    var memoryValue: Double = 0
+    var memoryValue: Double = 0 {
+        didSet { JSONStore.shared.set(.memory, memoryValue) }
+    }
     var lastEgg: Egg?
     var eggEpoch: Int = 0
 
@@ -17,11 +19,13 @@ final class CalcStore {
     init(history: HistoryStore?, sounds: SoundStore?) {
         self.history = history
         self.sounds = sounds
+        memoryValue = JSONStore.shared.get(.memory, as: Double.self) ?? 0
     }
 
     init() {
         self.history = nil
         self.sounds = nil
+        memoryValue = JSONStore.shared.get(.memory, as: Double.self) ?? 0
     }
 
     func press(_ key: String) {

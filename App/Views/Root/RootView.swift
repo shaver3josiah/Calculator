@@ -34,7 +34,7 @@ struct RootView: View {
         HStack(spacing: 12) {
             FlowerLogo(size: 38)
             VStack(alignment: .leading, spacing: 0) {
-                Text("Bloom")
+                Text("Hannah's")
                     .font(bloomScript(28))
                     .foregroundStyle(themeStore.color("deep"))
                 Text("CALCULATOR & PROJECTIONS")
@@ -89,8 +89,8 @@ struct RootView: View {
             KitchenView()
         case .tools:
             ToolsView()
-        case .pantry:
-            PantryView()
+        case .budget:
+            BudgetView()
         case .music:
             MusicView()
         }
