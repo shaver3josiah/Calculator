@@ -45,6 +45,18 @@ jobs:
             -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
             DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
+      - name: Inspect archive (icon/plist diagnostic)
+        run: |
+          set +e
+          APP="$RUNNER_TEMP/Bloom.xcarchive/Products/Applications/Bloom.app"
+          echo "=== .app listing ==="; ls -la "$APP"
+          echo "=== Assets.car present? ==="; ls -la "$APP/Assets.car" 2>/dev/null || echo "NO Assets.car"
+          echo "=== CFBundleIconName ==="; /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$APP/Info.plist" 2>/dev/null || echo "MISSING CFBundleIconName"
+          echo "=== CFBundleDisplayName ==="; /usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP/Info.plist" 2>/dev/null || echo "MISSING CFBundleDisplayName"
+          echo "=== UIAppFonts ==="; /usr/libexec/PlistBuddy -c "Print :UIAppFonts" "$APP/Info.plist" 2>/dev/null || echo "MISSING UIAppFonts"
+          echo "=== AppIcon entries in Assets.car ==="; xcrun assetutil --info "$APP/Assets.car" 2>/dev/null | grep -iE "AppIcon|Idiom|PixelWidth|PixelHeight" | head -60
+          echo "=== full Info.plist ==="; plutil -p "$APP/Info.plist"
+          exit 0
       - name: Export ipa
         run: |
           xcodebuild -exportArchive \
