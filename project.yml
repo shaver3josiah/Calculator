@@ -46,6 +46,7 @@ targets:
       path: Generated-Info.plist
       properties:
         CFBundleDisplayName: Hannah's Calculator
+        CFBundleIconName: AppIcon
         ITSAppUsesNonExemptEncryption: false
         UIAppFonts:
           - Quicksand.ttf

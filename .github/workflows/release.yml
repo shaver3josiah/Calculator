@@ -13,6 +13,15 @@ jobs:
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
     steps:
       - uses: actions/checkout@v4
+      - name: Select newest Xcode (iOS 26 SDK required to upload)
+        run: |
+          set -e
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$latest" ]; then echo "No Xcode found under /Applications"; exit 1; fi
+          echo "Selecting $latest"
+          sudo xcode-select -s "$latest/Contents/Developer"
+          xcodebuild -version
+          echo "iOS SDKs:"; xcodebuild -showsdks | grep -i iphoneos || true
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Fetch fonts
