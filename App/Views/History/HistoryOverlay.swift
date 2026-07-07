@@ -165,7 +165,7 @@ private struct HistoryRow: View {
                 Spacer()
                 Text(entry.value)
                     .font(bloomNumber(16))
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .foregroundStyle(theme.color("deep"))
             }
         }
         .buttonStyle(.plain)

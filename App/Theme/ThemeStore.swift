@@ -95,7 +95,7 @@ final class ThemeStore {
                 "primaryStrong": "#CE3E63",
                 "deep": "#A11C41",
                 "text": "#431B23",
-                "muted": "#92626D",
+                "muted": "#835862",
                 "line": "#F1CBD1",
                 "flowerCenter": "#FFC878",
                 "shadow": "rgba(161,28,65,.16)"
@@ -109,7 +109,7 @@ final class ThemeStore {
                 "primaryStrong": "#C22E85",
                 "deep": "#8E1560",
                 "text": "#3B1030",
-                "muted": "#8F5F7E",
+                "muted": "#815571",
                 "line": "#EFC8E0",
                 "flowerCenter": "#FFC966",
                 "shadow": "rgba(142,21,96,.16)"
@@ -123,7 +123,7 @@ final class ThemeStore {
                 "primaryStrong": "#DB6E93",
                 "deep": "#B04266",
                 "text": "#4A2533",
-                "muted": "#97707F",
+                "muted": "#82606D",
                 "line": "#F4D8E1",
                 "flowerCenter": "#FFD488",
                 "shadow": "rgba(176,66,102,.14)"
@@ -137,7 +137,7 @@ final class ThemeStore {
                 "primaryStrong": "#E2417F",
                 "deep": "#B01B58",
                 "text": "#421527",
-                "muted": "#8E5F72",
+                "muted": "#885B6D",
                 "line": "#F2CEDF",
                 "flowerCenter": "#FFC966",
                 "shadow": "rgba(176,27,88,.16)"

@@ -109,7 +109,7 @@ struct VisualizePanel: View {
 
             Text(scaledLabel(scaled))
                 .font(bloomNumber(15, weight: .semibold))
-                .foregroundStyle(theme.color("primaryStrong"))
+                .foregroundStyle(theme.color("deep"))
 
             measuringFill(fraction)
         }
