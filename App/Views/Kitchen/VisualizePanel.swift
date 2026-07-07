@@ -33,7 +33,7 @@ struct VisualizePanel: View {
             .font(bloomBody(14, weight: .semibold))
             .frame(maxWidth: .infinity)
             .padding(10)
-            .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primary")))
+            .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
             .foregroundStyle(.white)
 
             if !parsed.isEmpty {
@@ -61,7 +61,7 @@ struct VisualizePanel: View {
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 999)
-                        .fill(!useCustom && scale == value ? theme.color("primary") : theme.color("surfaceSoft"))
+                        .fill(!useCustom && scale == value ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
                 )
                 .foregroundStyle(!useCustom && scale == value ? .white : theme.color("text"))
             }

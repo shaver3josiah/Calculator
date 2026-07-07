@@ -84,6 +84,8 @@ struct CategoriesSection: View {
                     .rotationEffect(.degrees(category.open ? 90 : 0))
             }
             .buttonStyle(.plain)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
 
             Toggle(isOn: catSelectAllBinding(index)) {
                 EmptyView()
@@ -113,6 +115,8 @@ struct CategoriesSection: View {
                         .foregroundStyle(theme.color("muted"))
                 }
                 .buttonStyle(.plain)
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityLabel("Remove category")
             }
         }
@@ -152,6 +156,8 @@ struct CategoriesSection: View {
                     .foregroundStyle(theme.color("muted"))
             }
             .buttonStyle(.plain)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
             .accessibilityLabel("Remove item")
         }
     }
@@ -163,6 +169,8 @@ struct CategoriesSection: View {
                 .foregroundStyle(theme.color("muted"))
         }
         .buttonStyle(.plain)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private func catSelectAllBinding(_ index: Int) -> Binding<Bool> {
