@@ -18,7 +18,46 @@ public enum FoodLibrary {
         if let prefix = cache.first(where: { $0.name.lowercased().hasPrefix(needle) }) {
             return prefix
         }
-        return cache.first(where: { $0.name.lowercased().contains(needle) })
+        if let contains = cache.first(where: { $0.name.lowercased().contains(needle) }) {
+            return contains
+        }
+        return tokenMatch(needle)
+    }
+
+    private static func tokenize(_ s: String) -> [String] {
+        let separators: Set<Character> = [" ", "\t", "-", "/", ","]
+        return s.split(whereSeparator: { separators.contains($0) })
+            .map { $0.lowercased() }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func tokenMatch(_ needle: String) -> Food? {
+        let needleTokens = Set(tokenize(needle))
+        guard !needleTokens.isEmpty else {
+            return nil
+        }
+        var best: Food? = nil
+        var bestScore = 0
+        for food in cache {
+            let foodTokens = tokenize(food.name)
+            guard !foodTokens.isEmpty else {
+                continue
+            }
+            guard foodTokens.contains(where: { $0.contains(where: { $0.isLetter }) }) else {
+                continue
+            }
+            guard Set(foodTokens).isSubset(of: needleTokens) else {
+                continue
+            }
+            let score = foodTokens.count
+            if score > bestScore {
+                bestScore = score
+                best = food
+            } else if score == bestScore, let currentBest = best, food.name.count > currentBest.name.count {
+                best = food
+            }
+        }
+        return best
     }
 
     public static func groups() -> [String] {

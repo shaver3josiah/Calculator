@@ -21,7 +21,7 @@ final class SoundPlayer: @unchecked Sendable {
         sessionConfigured = true
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, options: [.mixWithOthers])
+            try session.setCategory(.playback, options: [.mixWithOthers])
             try session.setActive(true)
         } catch {
             sessionConfigured = false

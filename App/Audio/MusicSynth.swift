@@ -63,7 +63,7 @@ final class MusicSynth: @unchecked Sendable {
 
         mixer.outputVolume = 0.6
 
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, options: [.mixWithOthers])
+        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
         try? engine.start()
     }

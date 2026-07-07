@@ -39,6 +39,20 @@ public enum RecipeParse {
 
     private static let bulletChars: Set<Character> = [" ", "\t", "\n", "\r", "-", "*", "\u{2022}", "\u{2023}", "\u{25e6}"]
 
+    private static let descriptorWords: Set<String> = [
+        "large", "small", "medium", "extra",
+        "fresh", "freshly",
+        "chopped", "diced", "minced", "sliced", "cubed", "julienned",
+        "grated", "shredded", "crushed", "crumbled",
+        "boneless", "skinless",
+        "ripe", "raw", "cooked",
+        "peeled", "seeded", "trimmed",
+        "packed", "drained", "rinsed",
+        "softened", "melted", "beaten", "divided",
+        "cold", "warm",
+        "thinly", "finely", "coarsely", "roughly", "lightly"
+    ]
+
     public static func parseLine(_ line: String) -> ParsedIngredient? {
         guard !line.isEmpty else {
             return nil
@@ -79,6 +93,8 @@ public enum RecipeParse {
         name = stripLeadingOf(name)
         name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         name = stripTrailingCommaParen(name)
+        name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        name = stripDescriptorWords(name)
         name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
             name = trimmed
@@ -267,6 +283,16 @@ public enum RecipeParse {
             return String(s[s.startIndex..<idx]).trimmingCharacters(in: .whitespaces)
         }
         return s
+    }
+
+    private static func stripDescriptorWords(_ s: String) -> String {
+        let parts = s.split(whereSeparator: { $0 == " " || $0 == "\t" })
+        let kept = parts.filter { part in
+            let normalized = stripDotsCommas(String(part)).lowercased()
+            return !descriptorWords.contains(normalized)
+        }
+        let result = kept.joined(separator: " ")
+        return result.isEmpty ? s.trimmingCharacters(in: .whitespaces) : result
     }
 
     static func tokenQtyValue(_ t: String) -> Double? {
