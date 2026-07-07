@@ -19,7 +19,7 @@ struct VisualizePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Paste recipe text", text: $rawText, axis: .vertical)
+            TextField("Paste recipe text", text: $rawText, prompt: Text("Paste recipe text").foregroundColor(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .lineLimit(4...8)
                 .padding(10)
@@ -65,7 +65,7 @@ struct VisualizePanel: View {
                 )
                 .foregroundStyle(!useCustom && scale == value ? .white : theme.color("text"))
             }
-            TextField("custom", text: $customScale)
+            TextField("custom", text: $customScale, prompt: Text("custom").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(13))
                 .frame(width: 56)

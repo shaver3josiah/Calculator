@@ -1,0 +1,33 @@
+name: build-check
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+jobs:
+  app-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode (iOS 26 SDK)
+        run: |
+          set -e
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$latest" ]; then echo "No Xcode found under /Applications"; exit 1; fi
+          echo "Selecting $latest"
+          sudo xcode-select -s "$latest/Contents/Developer"
+          xcodebuild -version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Fetch fonts
+        run: bash scripts/fetch_fonts.sh
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build app (no signing, compile gate)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Bloom.xcodeproj \
+            -scheme Bloom \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO

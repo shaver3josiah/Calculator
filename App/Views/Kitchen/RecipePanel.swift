@@ -14,6 +14,7 @@ struct RecipePanel: View {
                 Text("Share a link").tag(RecipeMode.share)
             }
             .pickerStyle(.segmented)
+            .tint(theme.color("primaryStrong"))
 
             if mode == .write {
                 RecipeWritePanel()
@@ -39,14 +40,14 @@ struct RecipeWritePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Recipe name", text: $name)
+            TextField("Recipe name", text: $name, prompt: Text("Recipe name").foregroundColor(theme.color("muted")))
                 .font(bloomBody(15))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
             HStack {
-                TextField("Serves 4", text: $serves)
-                TextField("45 min", text: $time)
+                TextField("Serves 4", text: $serves, prompt: Text("Serves 4").foregroundColor(theme.color("muted")))
+                TextField("45 min", text: $time, prompt: Text("45 min").foregroundColor(theme.color("muted")))
             }
             .font(bloomBody(14))
             .padding(10)
@@ -72,7 +73,7 @@ struct RecipeWritePanel: View {
                 .font(bloomBody(13, weight: .medium))
                 .foregroundStyle(theme.color("primaryStrong"))
 
-            TextField("Notes (storage, swaps, a little love note...)", text: $notes, axis: .vertical)
+            TextField("Notes (storage, swaps, a little love note...)", text: $notes, prompt: Text("Notes (storage, swaps, a little love note...)").foregroundColor(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
@@ -93,7 +94,7 @@ struct RecipeWritePanel: View {
                 .font(bloomBody(14, weight: .semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primary")))
+                .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
                 .foregroundStyle(.white)
             }
 
@@ -157,7 +158,7 @@ struct RecipeWritePanel: View {
 
     private func editableRow(text: Binding<String>, placeholder: String, onDelete: @escaping () -> Void) -> some View {
         HStack {
-            TextField(placeholder, text: text)
+            TextField(placeholder, text: text, prompt: Text(placeholder).foregroundColor(theme.color("muted")))
                 .font(bloomBody(14))
             Button(action: onDelete) {
                 Image(systemName: "xmark.circle")

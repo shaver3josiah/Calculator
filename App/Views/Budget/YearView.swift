@@ -43,6 +43,8 @@ struct YearWrap: View {
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .buttonStyle(.plain)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityLabel("Previous year")
                 Button {
                     store.shiftYear(by: 1)
@@ -51,6 +53,8 @@ struct YearWrap: View {
                         .font(.system(size: 13, weight: .semibold))
                 }
                 .buttonStyle(.plain)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
                 .accessibilityLabel("Next year")
             }
             .foregroundStyle(theme.color("primaryStrong"))

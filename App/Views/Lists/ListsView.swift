@@ -27,7 +27,7 @@ struct ListsView: View {
         }
         .background(theme.color("bg"))
         .alert("Name this list", isPresented: $showNewListPrompt) {
-            TextField("Groceries, a trip, the month", text: $newListTitle)
+            TextField("Groceries, a trip, the month", text: $newListTitle, prompt: Text("Groceries, a trip, the month").foregroundColor(theme.color("muted")))
             Button("Create") {
                 _ = store.createList(title: newListTitle)
                 newListTitle = ""
@@ -112,6 +112,8 @@ struct ListsView: View {
                 Image(systemName: row.checked ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(row.checked ? theme.color("good") : theme.color("muted"))
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
 
             Text(row.name)
                 .font(bloomBody(15))
@@ -135,18 +137,20 @@ struct ListsView: View {
                 Image(systemName: "xmark.circle")
                     .foregroundStyle(theme.color("muted"))
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
     }
 
     private func addRow(listId: UUID) -> some View {
         HStack(spacing: 8) {
-            TextField("Item", text: $newItemName)
+            TextField("Item", text: $newItemName, prompt: Text("Item").foregroundColor(theme.color("muted")))
                 .font(bloomBody(14))
-            TextField("Qty", text: $newItemQty)
+            TextField("Qty", text: $newItemQty, prompt: Text("Qty").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .frame(width: 44)
-            TextField("Price", text: $newItemPrice)
+            TextField("Price", text: $newItemPrice, prompt: Text("Price").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .frame(width: 60)

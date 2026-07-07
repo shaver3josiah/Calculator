@@ -18,7 +18,7 @@ struct BudgetView: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(theme.color("primaryStrong"))
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
                             .background(theme.color("surfaceSoft"))
                             .clipShape(Circle())
                     }
@@ -29,7 +29,7 @@ struct BudgetView: View {
                         Image(systemName: "square.and.arrow.down")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(theme.color("primaryStrong"))
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
                             .background(theme.color("surfaceSoft"))
                             .clipShape(Circle())
                     }
@@ -67,7 +67,7 @@ struct BudgetView: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("primaryStrong"))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(theme.color("surfaceSoft"))
                     .clipShape(Circle())
             }
@@ -90,7 +90,7 @@ struct BudgetView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("primaryStrong"))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(theme.color("surfaceSoft"))
                     .clipShape(Circle())
             }

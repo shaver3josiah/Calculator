@@ -61,7 +61,7 @@ struct HistoryOverlay: View {
             TextField("Search your history", text: Binding(
                 get: { history.searchText },
                 set: { history.searchText = $0 }
-            ))
+            ), prompt: Text("Search your history").foregroundColor(theme.color("muted")))
             .font(bloomBody(15))
         }
         .padding(12)
@@ -90,7 +90,7 @@ struct HistoryOverlay: View {
     private var entryList: some View {
         List {
             ForEach(history.groupedEntries(), id: \.label) { group in
-                Section(group.label) {
+                Section {
                     ForEach(group.entries) { entry in
                         HistoryRow(
                             entry: entry,
@@ -100,7 +100,11 @@ struct HistoryOverlay: View {
                             onRecycle: { recycleTarget = entry },
                             onReopen: { reopenEntry(entry) }
                         )
+                        .listRowBackground(theme.color("bg"))
                     }
+                } header: {
+                    Text(group.label)
+                        .foregroundColor(theme.color("muted"))
                 }
             }
         }

@@ -52,7 +52,7 @@ struct GoalsCard: View {
                     .foregroundStyle(theme.color("muted"))
             }
             Spacer()
-            TextField(String(Int(BudgetMath.jsRound(entry.sel))), text: goalBinding(entry.index))
+            TextField(String(Int(BudgetMath.jsRound(entry.sel))), text: goalBinding(entry.index), prompt: Text(String(Int(BudgetMath.jsRound(entry.sel)))).foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(13))
                 .frame(width: 70)

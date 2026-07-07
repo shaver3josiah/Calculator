@@ -66,7 +66,7 @@ struct RecycleSheet: View {
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("muted"))
                 .frame(width: 90, alignment: .leading)
-            TextField("0", text: binding(for: idx))
+            TextField("0", text: binding(for: idx), prompt: Text("0").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomNumber(18))
                 .padding(10)

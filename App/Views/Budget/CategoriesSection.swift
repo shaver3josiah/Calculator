@@ -92,7 +92,7 @@ struct CategoriesSection: View {
             .tint(theme.color("primaryStrong"))
             .frame(width: 22)
 
-            TextField("Category", text: catNameBinding(index))
+            TextField("Category", text: catNameBinding(index), prompt: Text("Category").foregroundColor(theme.color("muted")))
                 .font(bloomBody(15, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
 
@@ -131,11 +131,11 @@ struct CategoriesSection: View {
             .tint(theme.color("primaryStrong"))
             .frame(width: 22)
 
-            TextField("Item", text: rowNameBinding(categoryIndex, rowIndex))
+            TextField("Item", text: rowNameBinding(categoryIndex, rowIndex), prompt: Text("Item").foregroundColor(theme.color("muted")))
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
 
-            TextField("0", text: rowAmountBinding(categoryIndex, rowIndex))
+            TextField("0", text: rowAmountBinding(categoryIndex, rowIndex), prompt: Text("0").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .frame(width: 64)

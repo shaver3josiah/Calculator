@@ -69,7 +69,7 @@ struct RootView: View {
             Image(systemName: system)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(themeStore.color("primaryStrong"))
-                .frame(width: 36, height: 36)
+                .frame(width: 44, height: 44)
                 .background(themeStore.color("surfaceSoft"))
                 .clipShape(Circle())
         }

@@ -37,7 +37,7 @@ struct IncomeCard: View {
         let inc = store.month.inc[index]
         let dimmed = index == 1 && !store.month.inc2On
         return VStack(alignment: .leading, spacing: 8) {
-            TextField("Income label", text: labelBinding(index))
+            TextField("Income label", text: labelBinding(index), prompt: Text("Income label").foregroundColor(theme.color("muted")))
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
             HStack(spacing: 10) {
@@ -62,7 +62,7 @@ struct IncomeCard: View {
             Text(label)
                 .font(bloomBody(10, weight: .medium))
                 .foregroundStyle(theme.color("muted"))
-            TextField("0", text: text)
+            TextField("0", text: text, prompt: Text("0").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .padding(.horizontal, 10)

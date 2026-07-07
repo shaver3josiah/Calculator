@@ -82,7 +82,7 @@ final class ThemeStore {
             "ripple": "rgba(255,255,255,.55)",
             "sh1": "0 1px 2px rgba(66,21,39,.10),0 1px 1px rgba(66,21,39,.06)",
             "radius": "22",
-            "good": "#2E9E5B",
+            "good": "#17703B",
             "surface": "#FFFFFF"
         ]
         switch name {

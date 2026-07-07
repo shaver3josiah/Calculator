@@ -12,7 +12,7 @@ struct ConvertPanel: View {
                     Text("Amount")
                         .font(bloomBody(12))
                         .foregroundStyle(theme.color("muted"))
-                    TextField("1", value: amountBinding, format: .number)
+                    TextField("1", value: amountBinding, format: .number, prompt: Text("1").foregroundColor(theme.color("muted")))
                         .keyboardType(.decimalPad)
                         .font(bloomNumber(18))
                         .padding(10)
