@@ -35,32 +35,32 @@ final class CalcStore {
             engine.digit(d)
             sequence.append(key)
             refreshDisplay()
-            sounds?.play(tapEvent())
+            sounds?.play("d\(d)")
         case ".":
             engine.dot()
             sequence.append(".")
             refreshDisplay()
-            sounds?.play(tapEvent())
+            sounds?.play("dot")
         case "+":
             engine.setOp(.add)
             sequence.append("+")
             refreshDisplay()
-            sounds?.play("operator")
+            sounds?.play("op+")
         case "-":
             engine.setOp(.subtract)
             sequence.append("−")
             refreshDisplay()
-            sounds?.play("operator")
+            sounds?.play("op-")
         case "*":
             engine.setOp(.multiply)
             sequence.append("×")
             refreshDisplay()
-            sounds?.play("operator")
+            sounds?.play("op*")
         case "/":
             engine.setOp(.divide)
             sequence.append("÷")
             refreshDisplay()
-            sounds?.play("operator")
+            sounds?.play("op/")
         case "=":
             handleEquals()
         case "C":
@@ -71,15 +71,18 @@ final class CalcStore {
         case "±":
             engine.toggleSign()
             refreshDisplay()
+            sounds?.play("sign")
         case "%":
             engine.percent()
             refreshDisplay()
+            sounds?.play("percent")
         case "⌫":
             engine.backspace()
             if !sequence.isEmpty {
                 sequence.removeLast()
             }
             refreshDisplay()
+            sounds?.play("clear")
         case "MC":
             memoryValue = 0
             sounds?.play("memory")
@@ -158,11 +161,5 @@ final class CalcStore {
             engine.toggleSign()
         }
         refreshDisplay()
-    }
-
-    private func tapEvent() -> String {
-        let events = ["tap1", "tap2", "tap3", "tap4", "tap5"]
-        let index = sequence.count % events.count
-        return events[index]
     }
 }

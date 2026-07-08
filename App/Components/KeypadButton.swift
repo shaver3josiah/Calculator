@@ -16,7 +16,6 @@ struct KeypadButton: View {
     var body: some View {
         Button {
             feedbackTrigger.toggle()
-            soundStore.play(soundEvent)
             action()
         } label: {
             Text(label)

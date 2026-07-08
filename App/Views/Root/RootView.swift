@@ -5,6 +5,7 @@ struct RootView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
+    @Environment(MusicStore.self) private var musicStore
 
     @State private var selectedTab: BloomTab = .calc
     @State private var showThemeEditor = false
@@ -108,7 +109,12 @@ struct RootView: View {
 
     private func switchTab(_ tab: BloomTab) {
         selectedTab = tab
-        soundStore.play("modeswitch")
+        guard soundStore.enabled else { return }
+        if let chord = musicStore.nextCycledChord() {
+            musicStore.soundCycledChord(chord)
+        } else {
+            soundStore.play("modeswitch")
+        }
     }
 
     private var historyPresentedBinding: Binding<Bool> {

@@ -42,6 +42,7 @@ struct RecipeWritePanel: View {
         VStack(alignment: .leading, spacing: 14) {
             TextField("Recipe name", text: $name, prompt: Text("Recipe name").foregroundColor(theme.color("muted")))
                 .font(bloomBody(15))
+                .foregroundStyle(theme.color("text"))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -50,6 +51,7 @@ struct RecipeWritePanel: View {
                 TextField("45 min", text: $time, prompt: Text("45 min").foregroundColor(theme.color("muted")))
             }
             .font(bloomBody(14))
+            .foregroundStyle(theme.color("text"))
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -75,6 +77,7 @@ struct RecipeWritePanel: View {
 
             TextField("Notes (storage, swaps, a little love note...)", text: $notes, prompt: Text("Notes (storage, swaps, a little love note...)").foregroundColor(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
+                .foregroundStyle(theme.color("text"))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
                 .lineLimit(3...6)
@@ -160,6 +163,7 @@ struct RecipeWritePanel: View {
         HStack {
             TextField(placeholder, text: text, prompt: Text(placeholder).foregroundColor(theme.color("muted")))
                 .font(bloomBody(14))
+                .foregroundStyle(theme.color("text"))
             Button(action: onDelete) {
                 Image(systemName: "xmark.circle")
                     .foregroundStyle(theme.color("muted"))

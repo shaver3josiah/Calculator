@@ -12,6 +12,7 @@ struct VisualizePanel: View {
     @State private var customScale = ""
     @State private var useCustom = false
     @State private var parsed: [ParsedIngredient] = []
+    @State private var didAttempt = false
 
     private static let artNames: Set<String> = [
         "croissant", "cupcake", "honeypot", "hotbev", "shortcake", "teacup"
@@ -21,6 +22,7 @@ struct VisualizePanel: View {
         VStack(alignment: .leading, spacing: 14) {
             TextField("Paste recipe text", text: $rawText, prompt: Text("Paste recipe text").foregroundColor(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
+                .foregroundStyle(theme.color("text"))
                 .lineLimit(4...8)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
@@ -43,6 +45,10 @@ struct VisualizePanel: View {
                 }
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("primaryStrong"))
+            } else if didAttempt {
+                Text("Paste a few ingredient lines above, then tap Visualize.")
+                    .font(bloomBody(13))
+                    .foregroundStyle(theme.color("muted"))
             }
         }
         .padding(16)
@@ -68,6 +74,7 @@ struct VisualizePanel: View {
             TextField("custom", text: $customScale, prompt: Text("custom").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(13))
+                .foregroundStyle(theme.color("text"))
                 .frame(width: 56)
                 .padding(6)
                 .background(RoundedRectangle(cornerRadius: 8).fill(theme.color("surfaceSoft")))
@@ -127,7 +134,7 @@ struct VisualizePanel: View {
 
     @ViewBuilder
     private func artView(for food: Food?) -> some View {
-        if let key = food?.artKey, Self.artNames.contains(key), let uiImage = UIImage(named: key) {
+        if let key = food?.artKey, Self.artNames.contains(key), let uiImage = Self.loadArt(key) {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
@@ -135,6 +142,39 @@ struct VisualizePanel: View {
             Text(food?.glyph ?? "🥣")
                 .font(.system(size: 34))
         }
+    }
+
+    private static var artCache: [String: UIImage] = [:]
+
+    private static func loadArt(_ key: String) -> UIImage? {
+        if let cached = artCache[key] {
+            return cached
+        }
+        guard let resolved = resolveArt(key) else {
+            return nil
+        }
+        artCache[key] = resolved
+        return resolved
+    }
+
+    private static func resolveArt(_ key: String) -> UIImage? {
+        if let named = UIImage(named: key) {
+            return named
+        }
+        let subdirectories = ["FoodArt/png", "Resources/FoodArt/png"]
+        for subdirectory in subdirectories {
+            if let url = Bundle.main.url(forResource: key, withExtension: "png", subdirectory: subdirectory),
+               let data = try? Data(contentsOf: url),
+               let image = UIImage(data: data) {
+                return image
+            }
+        }
+        if let url = Bundle.main.url(forResource: key, withExtension: "png"),
+           let data = try? Data(contentsOf: url),
+           let image = UIImage(data: data) {
+            return image
+        }
+        return nil
     }
 
     private func measuringFill(_ fraction: Double) -> some View {
@@ -154,6 +194,7 @@ struct VisualizePanel: View {
     private func parseText() {
         let lines = rawText.split(separator: "\n").map(String.init)
         parsed = lines.compactMap { RecipeParse.parseLine($0) }
+        didAttempt = true
         sound.play("tap1")
     }
 

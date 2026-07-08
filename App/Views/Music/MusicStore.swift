@@ -20,12 +20,15 @@ final class MusicStore {
 
     private let synth = MusicSynth()
     private var playTask: Task<Void, Never>?
+    private var cycleIndex: Int = 0
+    private static let cycleDuration: Double = 0.6
 
     init() {}
 
     func loadChords() {
         chords = ChordParser.parseText(chordText)
         transpose = 0
+        cycleIndex = 0
     }
 
     func playChord(_ voice: ChordVoice) {
@@ -62,6 +65,18 @@ final class MusicStore {
             chordText = match.1
             loadChords()
         }
+    }
+
+    func nextCycledChord() -> ChordVoice? {
+        guard !chords.isEmpty else { return nil }
+        let idx = cycleIndex % chords.count
+        cycleIndex = idx + 1
+        return chords[idx]
+    }
+
+    func soundCycledChord(_ voice: ChordVoice) {
+        let notes = voice.midiNotes.map { $0 + transpose }
+        synth.playChord(midiNotes: notes, strum: strum, duration: Self.cycleDuration)
     }
 
     func saveSong(history: HistoryStore) {

@@ -24,6 +24,7 @@ struct BloomApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .preferredColorScheme(.light)
                 .environment(themeStore)
                 .environment(historyStore)
                 .environment(soundStore)

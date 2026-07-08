@@ -15,6 +15,7 @@ struct ConvertPanel: View {
                     TextField("1", value: amountBinding, format: .number, prompt: Text("1").foregroundColor(theme.color("muted")))
                         .keyboardType(.decimalPad)
                         .font(bloomNumber(18))
+                        .foregroundStyle(theme.color("text"))
                         .padding(10)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
