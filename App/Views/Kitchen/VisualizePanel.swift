@@ -32,14 +32,18 @@ struct VisualizePanel: View {
 
             scalePicker
 
-            Button("Visualize") {
+            Button {
                 parseText()
+            } label: {
+                Text("Visualize")
+                    .font(bloomBody(14, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(10)
+                    .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
+                    .foregroundStyle(.white)
+                    .contentShape(Rectangle())
             }
-            .font(bloomBody(14, weight: .semibold))
-            .frame(maxWidth: .infinity)
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
-            .foregroundStyle(.white)
+            .buttonStyle(.plain)
 
             if !parsed.isEmpty || !failed.isEmpty {
                 stationGrid
@@ -61,18 +65,22 @@ struct VisualizePanel: View {
     private var scalePicker: some View {
         HStack(spacing: 10) {
             ForEach([0.5, 1.0, 2.0], id: \.self) { value in
-                Button(scaleLabel(value)) {
+                Button {
                     useCustom = false
                     scale = value
+                } label: {
+                    Text(scaleLabel(value))
+                        .font(bloomBody(13, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 999)
+                                .fill(!useCustom && scale == value ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
+                        )
+                        .foregroundStyle(!useCustom && scale == value ? .white : theme.color("text"))
+                        .contentShape(Rectangle())
                 }
-                .font(bloomBody(13, weight: .semibold))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 999)
-                        .fill(!useCustom && scale == value ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
-                )
-                .foregroundStyle(!useCustom && scale == value ? .white : theme.color("text"))
+                .buttonStyle(.plain)
             }
             TextField("custom", text: $customScale, prompt: Text("custom").foregroundColor(theme.color("muted")))
                 .keyboardType(.decimalPad)

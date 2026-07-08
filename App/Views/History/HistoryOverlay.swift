@@ -11,6 +11,8 @@ struct HistoryOverlay: View {
 
     @State private var showClearConfirm = false
     @State private var recycleTarget: HistoryEntry?
+    @State private var isSelecting = false
+    @State private var selectedIds: Set<String> = []
 
     var body: some View {
         NavigationStack {
@@ -23,17 +25,28 @@ struct HistoryOverlay: View {
                 }
             }
             .background(theme.color("bg"))
-            .navigationTitle("History")
+            .navigationTitle(isSelecting ? selectionTitle : "History")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    ShareLink(item: history.shareText())
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Clear") { showClearConfirm = true }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Done") { dismiss() }
+                if isSelecting {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Cancel", action: cancelSelection)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ShareLink(item: formatShareText(selectedEntries))
+                            .disabled(selectedIds.isEmpty)
+                    }
+                } else {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Done") { dismiss() }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Select") { isSelecting = true }
+                            .disabled(history.groupedEntries().isEmpty)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Clear") { showClearConfirm = true }
+                    }
                 }
             }
             .confirmationDialog(
@@ -52,6 +65,27 @@ struct HistoryOverlay: View {
         .sheet(item: $recycleTarget) { entry in
             RecycleSheet(entry: entry)
         }
+    }
+
+    private var selectionTitle: String {
+        selectedIds.isEmpty ? "Select Items" : "\(selectedIds.count) Selected"
+    }
+
+    private func cancelSelection() {
+        isSelecting = false
+        selectedIds.removeAll()
+    }
+
+    private func toggleSelection(_ entry: HistoryEntry) {
+        if selectedIds.contains(entry.id) {
+            selectedIds.remove(entry.id)
+        } else {
+            selectedIds.insert(entry.id)
+        }
+    }
+
+    private var selectedEntries: [HistoryEntry] {
+        history.groupedEntries().flatMap { $0.entries }.filter { selectedIds.contains($0.id) }
     }
 
     private var searchBar: some View {
@@ -95,10 +129,13 @@ struct HistoryOverlay: View {
                         HistoryRow(
                             entry: entry,
                             isFavorite: history.isFavorite(entry),
+                            isSelecting: isSelecting,
+                            isSelected: selectedIds.contains(entry.id),
                             onTap: { insertEntry(entry) },
                             onFavorite: { history.toggleFavorite(entry) },
                             onRecycle: { recycleTarget = entry },
-                            onReopen: { reopenEntry(entry) }
+                            onReopen: { reopenEntry(entry) },
+                            onToggleSelect: { toggleSelection(entry) }
                         )
                         .listRowBackground(theme.color("bg"))
                     }
@@ -146,41 +183,76 @@ private struct HistoryRow: View {
     @Environment(ThemeStore.self) private var theme
     let entry: HistoryEntry
     let isFavorite: Bool
+    let isSelecting: Bool
+    let isSelected: Bool
     let onTap: () -> Void
     let onFavorite: () -> Void
     let onRecycle: () -> Void
     let onReopen: () -> Void
+    let onToggleSelect: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.title)
-                        .font(bloomBody(15, weight: .medium))
-                        .foregroundStyle(theme.color("text"))
-                    Text(kindLabel)
-                        .font(bloomBody(12))
-                        .foregroundStyle(theme.color("muted"))
+        HStack(alignment: .top, spacing: 12) {
+            leadingAccessory
+            Button(action: isSelecting ? onToggleSelect : onTap) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.title)
+                            .font(bloomBody(15, weight: .medium))
+                            .foregroundStyle(theme.color("text"))
+                        Text(kindLabel)
+                            .font(bloomBody(12))
+                            .foregroundStyle(theme.color("muted"))
+                    }
+                    Spacer()
+                    Text(entry.value)
+                        .font(bloomNumber(16))
+                        .foregroundStyle(theme.color("deep"))
                 }
-                Spacer()
-                Text(entry.value)
-                    .font(bloomNumber(16))
-                    .foregroundStyle(theme.color("deep"))
             }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
-            if entry.type == "calc" {
-                Button("Recycle", action: onRecycle)
-                    .tint(.orange)
-            } else if entry.type == "list" {
-                Button("Reopen", action: onReopen)
-                    .tint(.blue)
+            if !isSelecting {
+                if entry.type == "calc" {
+                    Button("Recycle", action: onRecycle)
+                        .tint(.orange)
+                } else if entry.type == "list" {
+                    Button("Reopen", action: onReopen)
+                        .tint(.blue)
+                }
             }
         }
         .swipeActions(edge: .leading) {
-            Button(isFavorite ? "Unpin" : "Pin", action: onFavorite)
-                .tint(.pink)
+            if !isSelecting {
+                Button(isFavorite ? "Unpin" : "Pin", action: onFavorite)
+                    .tint(.pink)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var leadingAccessory: some View {
+        if isSelecting {
+            Button(action: onToggleSelect) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20))
+                    .foregroundStyle(isSelected ? theme.color("primaryStrong") : theme.color("muted"))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isSelected ? "Deselect" : "Select")
+        } else {
+            Button(action: onFavorite) {
+                Image(systemName: isFavorite ? "star.fill" : "star")
+                    .font(.system(size: 18))
+                    .foregroundStyle(isFavorite ? theme.color("primaryStrong") : theme.color("muted"))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isFavorite ? "Unpin" : "Pin")
         }
     }
 
@@ -191,4 +263,39 @@ private struct HistoryRow: View {
         default: return "Calculation"
         }
     }
+}
+
+private func entryShareLines(_ entry: HistoryEntry) -> [String] {
+    if entry.type == "calc" {
+        let expression = prettifyExpression(entry.extra["tokens"]) ?? entry.title
+        return [expression, "= \(entry.value)"]
+    }
+    return [entry.title, entry.value]
+}
+
+private func prettifyExpression(_ raw: String?) -> String? {
+    guard let raw, !raw.isEmpty else { return nil }
+    let operators: Set<Character> = ["+", "\u{2212}", "\u{00D7}", "\u{00F7}"]
+    var spaced = ""
+    for ch in raw {
+        if operators.contains(ch) {
+            spaced += " \(ch) "
+        } else {
+            spaced.append(ch)
+        }
+    }
+    return spaced.trimmingCharacters(in: .whitespaces)
+}
+
+private func formatShareText(_ entries: [HistoryEntry]) -> String {
+    guard entries.count > 1 else {
+        return entries.first.map { entryShareLines($0).joined(separator: "\n") } ?? ""
+    }
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateStyle = .short
+    dateFormatter.timeStyle = .none
+    let blocks = entries.map { entry -> String in
+        (entryShareLines(entry) + [dateFormatter.string(from: entry.ts)]).joined(separator: "\n")
+    }
+    return (["Hannah's Calculator"] + blocks).joined(separator: "\n\n")
 }

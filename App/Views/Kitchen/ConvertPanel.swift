@@ -44,7 +44,7 @@ struct ConvertPanel: View {
                 }
             }
 
-            VesselFill(fraction: store.convertFraction)
+            convertIllustration
                 .padding(.horizontal, 20)
 
             resultCard
@@ -69,6 +69,15 @@ struct ConvertPanel: View {
             ForEach(UnitConvert.weightUnits, id: \.self) { unit in
                 Text(unit).tag(unit)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var convertIllustration: some View {
+        if UnitConvert.weightUnits.contains(store.convertToUnit) {
+            ScaleFill(fraction: store.convertWeightFraction)
+        } else {
+            VesselFill(fraction: store.convertFraction)
         }
     }
 

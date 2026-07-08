@@ -48,15 +48,16 @@ final class KitchenStore {
     }
 
     var convertFraction: Double {
-        guard convertFromUnit.lowercased() == "cup" || convertToUnit.lowercased() == "cup" else {
-            guard let cupValue = UnitConvert.convert(convertAmount, from: convertFromUnit, to: "cup") else {
-                return 0
-            }
-            return min(max(cupValue, 0), 1.6)
+        guard let cupValue = UnitConvert.convert(convertAmount, from: convertFromUnit, to: "cup") else {
+            return 0
         }
-        if convertToUnit.lowercased() == "cup", let value = convertedValue {
-            return min(max(value, 0), 1.6)
+        return min(max(cupValue, 0), 1.6)
+    }
+
+    var convertWeightFraction: Double {
+        guard let gramsValue = UnitConvert.convert(convertAmount, from: convertFromUnit, to: "g") else {
+            return 0
         }
-        return min(max(convertAmount, 0), 1.6)
+        return min(max(gramsValue / 453.592, 0), 2.0)
     }
 }

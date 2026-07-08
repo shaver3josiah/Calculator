@@ -91,14 +91,18 @@ struct RecipeWritePanel: View {
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("primaryStrong"))
                 Spacer()
-                Button("Save") {
+                Button {
                     saveRecipe()
+                } label: {
+                    Text("Save")
+                        .font(bloomBody(14, weight: .semibold))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
+                        .foregroundStyle(.white)
+                        .contentShape(Rectangle())
                 }
-                .font(bloomBody(14, weight: .semibold))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
-                .foregroundStyle(.white)
+                .buttonStyle(.plain)
             }
 
             ShareLink(item: previewText) {

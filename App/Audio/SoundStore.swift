@@ -61,6 +61,9 @@ final class SoundStore {
     private static let digitEvents: Set<String> = [
         "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9"
     ]
+    private static let operatorChordIndices: [String: Int] = [
+        "op+": 10, "op-": 11, "op*": 12, "op/": 13
+    ]
 
     private var tapIndex = 0
 
@@ -73,7 +76,8 @@ final class SoundStore {
 
     func play(_ event: String) {
         guard enabled else { return }
-        if let digit = digitFromKeyEvent(event), digitChordHook?(digit) == true {
+        if let chordIndex = digitFromKeyEvent(event) ?? Self.operatorChordIndices[event],
+           digitChordHook?(chordIndex) == true {
             return
         }
         let value = eventMap[event] ?? Self.defaultMap[event] ?? "silent"
