@@ -1,13 +1,14 @@
 # CI: runs BloomCore's Swift Package tests on every push and pull request.
 name: test
 on:
-  push: {}
+  push:
+    branches: ["**"]
   pull_request: {}
 jobs:
   swift-test:
     runs-on: ubuntu-latest
     container: swift:6.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run BloomCore tests
         run: swift test --package-path Packages/BloomCore

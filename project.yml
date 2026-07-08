@@ -15,12 +15,8 @@ targets:
     sources:
       - path: App
         excludes:
-          - "Resources/**"
           - "Support/ExportOptions.plist"
-    resources:
-      - path: App/Resources
-        excludes:
-          - "FoodArt/svg/**"
+          - "Resources/FoodArt/svg/**"
     dependencies:
       - package: BloomCore
         product: BloomCore

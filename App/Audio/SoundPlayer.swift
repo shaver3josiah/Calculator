@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 
 final class SoundPlayer: @unchecked Sendable {
     static let shared = SoundPlayer()
@@ -10,6 +11,7 @@ final class SoundPlayer: @unchecked Sendable {
         "modeswitch", "easteregg", "startup"
     ]
     private var sessionConfigured = false
+    private let logger = Logger(subsystem: "com.shaver.bloomcalculator", category: "SoundPlayer")
 
     private init() {
         configureSession()
@@ -29,17 +31,30 @@ final class SoundPlayer: @unchecked Sendable {
     }
 
     private func preload() {
+        var missing: [String] = []
         for name in soundNames {
-            guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else { continue }
+            guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else {
+                missing.append(name)
+                continue
+            }
             if let player = try? AVAudioPlayer(contentsOf: url) {
                 player.prepareToPlay()
                 players[name] = player
             }
         }
+        if !missing.isEmpty {
+            logger.error("Missing bundled sounds: \(missing.joined(separator: ", "), privacy: .public)")
+            #if DEBUG
+            assertionFailure("Missing bundled sounds: \(missing.joined(separator: ", "))")
+            #endif
+        }
     }
 
     func play(_ name: String, gain: Float) {
-        guard let player = players[name] else { return }
+        guard let player = players[name] else {
+            logger.error("No preloaded player for sound: \(name, privacy: .public)")
+            return
+        }
         player.currentTime = 0
         player.volume = gain
         player.play()

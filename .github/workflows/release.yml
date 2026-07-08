@@ -5,14 +5,22 @@ on:
     tags:
       - "v*"
 jobs:
+  swift-test:
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run BloomCore tests
+        run: swift test --package-path Packages/BloomCore
   build-and-upload:
+    needs: swift-test
     runs-on: macos-15
     env:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Select newest Xcode (iOS 26 SDK required to upload)
         run: |
           set -e
@@ -57,6 +65,25 @@ jobs:
           echo "=== AppIcon entries in Assets.car ==="; xcrun assetutil --info "$APP/Assets.car" 2>/dev/null | grep -iE "AppIcon|Idiom|PixelWidth|PixelHeight" | head -60
           echo "=== full Info.plist ==="; plutil -p "$APP/Info.plist"
           exit 0
+      - name: Verify bundled sounds and fonts
+        run: |
+          set -e
+          APP="$RUNNER_TEMP/Bloom.xcarchive/Products/Applications/Bloom.app"
+          missing=0
+          for f in tap1.mp3 tap2.mp3 tap3.mp3 tap4.mp3 tap5.mp3 operator.mp3 equals.mp3 clear.mp3 error.mp3 success.mp3 modeswitch.mp3 easteregg.mp3 startup.mp3 Quicksand.ttf PlayfairDisplay.ttf PlayfairDisplay-Italic.ttf GreatVibes-Regular.ttf; do
+            hit=$(find "$APP" -type f -name "$f")
+            if [ -z "$hit" ]; then
+              echo "MISSING: $f"
+              missing=1
+            else
+              echo "FOUND: $hit"
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "One or more required bundled sounds/fonts are missing from the archived app."
+            exit 1
+          fi
+          echo "All 13 sounds and 4 fonts verified present in the archive."
       - name: Export ipa
         run: |
           xcodebuild -exportArchive \
