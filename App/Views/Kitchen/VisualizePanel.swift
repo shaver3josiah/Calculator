@@ -12,7 +12,9 @@ struct VisualizePanel: View {
     @State private var customScale = ""
     @State private var useCustom = false
     @State private var parsed: [ParsedIngredient] = []
+    @State private var failed: [String] = []
     @State private var didAttempt = false
+    @FocusState private var textFocused: Bool
 
     private static let artNames: Set<String> = [
         "croissant", "cupcake", "honeypot", "hotbev", "shortcake", "teacup"
@@ -24,6 +26,7 @@ struct VisualizePanel: View {
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(4...8)
+                .focused($textFocused)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -38,7 +41,7 @@ struct VisualizePanel: View {
             .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primaryStrong")))
             .foregroundStyle(.white)
 
-            if !parsed.isEmpty {
+            if !parsed.isEmpty || !failed.isEmpty {
                 stationGrid
                 Button("Add to shopping list") {
                     addAllToList()
@@ -96,7 +99,29 @@ struct VisualizePanel: View {
             ForEach(Array(parsed.enumerated()), id: \.offset) { _, ing in
                 stationCard(ing)
             }
+            ForEach(Array(failed.enumerated()), id: \.offset) { _, line in
+                fallbackCard(line)
+            }
         }
+    }
+
+    private func fallbackCard(_ line: String) -> some View {
+        VStack(spacing: 8) {
+            Text("🧺")
+                .font(.system(size: 34))
+                .frame(height: 56)
+            Text(line.capitalized)
+                .font(bloomBody(13, weight: .medium))
+                .foregroundStyle(theme.color("text"))
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+            Text("as written")
+                .font(bloomBody(11))
+                .foregroundStyle(theme.color("muted"))
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 14).fill(theme.color("surfaceSoft")))
     }
 
     private func stationCard(_ ing: ParsedIngredient) -> some View {
@@ -192,8 +217,21 @@ struct VisualizePanel: View {
     }
 
     private func parseText() {
-        let lines = rawText.split(separator: "\n").map(String.init)
-        parsed = lines.compactMap { RecipeParse.parseLine($0) }
+        textFocused = false
+        let lines = rawText.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        var good: [ParsedIngredient] = []
+        var bad: [String] = []
+        for line in lines {
+            if let ing = RecipeParse.parseLine(line) {
+                good.append(ing)
+            } else {
+                bad.append(line)
+            }
+        }
+        parsed = good
+        failed = bad
         didAttempt = true
         sound.play("tap1")
     }
@@ -201,6 +239,9 @@ struct VisualizePanel: View {
     private func addAllToList() {
         for ing in parsed {
             lists.addIngredient(name: ing.name)
+        }
+        for line in failed {
+            lists.addIngredient(name: line)
         }
         sound.play("success")
     }

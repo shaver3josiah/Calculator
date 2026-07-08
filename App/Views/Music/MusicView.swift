@@ -12,6 +12,7 @@ struct MusicView: View {
                 textBox
                 sampleChips
                 loadButton
+                keyChordToggles
 
                 if !store.chords.isEmpty {
                     controls
@@ -71,6 +72,27 @@ struct MusicView: View {
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("primary")))
         .foregroundStyle(.white)
+    }
+
+    private var keyChordToggles: some View {
+        VStack(spacing: 10) {
+            Toggle(isOn: playOnKeysBinding) {
+                Text("Play chords on calculator keys")
+                    .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
+            }
+            Toggle(isOn: cycleOnTabSwitchBinding) {
+                Text("Cycle chords on tab switch")
+                    .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: theme.radius)
+                .fill(theme.color("surface"))
+        )
+        .tint(theme.color("primaryStrong"))
     }
 
     private var controls: some View {
@@ -137,5 +159,11 @@ struct MusicView: View {
     }
     private var tempoBinding: Binding<Double> {
         Binding(get: { store.tempo }, set: { store.tempo = $0 })
+    }
+    private var playOnKeysBinding: Binding<Bool> {
+        Binding(get: { store.playOnKeys }, set: { store.playOnKeys = $0 })
+    }
+    private var cycleOnTabSwitchBinding: Binding<Bool> {
+        Binding(get: { store.cycleOnTabSwitch }, set: { store.cycleOnTabSwitch = $0 })
     }
 }

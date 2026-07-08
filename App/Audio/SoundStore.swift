@@ -13,6 +13,7 @@ final class SoundStore {
     var eventMap: [String: String] {
         didSet { persistPrefs() }
     }
+    var digitChordHook: ((Int) -> Bool)?
 
     static let defaultMap: [String: String] = [
         "clear": "clear", "sign": "operator", "percent": "operator", "dot": "rotate", "equals": "equals",
@@ -57,6 +58,9 @@ final class SoundStore {
     private static let defaultGain: Float = 0.45
     private static let tapRotation = ["tap1", "tap2", "tap3", "tap4", "tap5"]
     private static let tapGain: Float = 0.45
+    private static let digitEvents: Set<String> = [
+        "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9"
+    ]
 
     private var tapIndex = 0
 
@@ -69,8 +73,16 @@ final class SoundStore {
 
     func play(_ event: String) {
         guard enabled else { return }
+        if let digit = digitFromKeyEvent(event), digitChordHook?(digit) == true {
+            return
+        }
         let value = eventMap[event] ?? Self.defaultMap[event] ?? "silent"
         resolve(value, event: event)
+    }
+
+    private func digitFromKeyEvent(_ event: String) -> Int? {
+        guard Self.digitEvents.contains(event) else { return nil }
+        return Int(event.dropFirst())
     }
 
     private func resolve(_ value: String, event: String) {

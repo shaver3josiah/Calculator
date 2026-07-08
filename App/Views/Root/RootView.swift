@@ -110,7 +110,7 @@ struct RootView: View {
     private func switchTab(_ tab: BloomTab) {
         selectedTab = tab
         guard soundStore.enabled else { return }
-        if let chord = musicStore.nextCycledChord() {
+        if musicStore.cycleOnTabSwitch, let chord = musicStore.nextCycledChord() {
             musicStore.soundCycledChord(chord)
         } else {
             soundStore.play("modeswitch")
