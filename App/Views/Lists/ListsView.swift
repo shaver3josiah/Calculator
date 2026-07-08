@@ -47,6 +47,8 @@ struct ListsView: View {
                     Text(store.activeList?.title ?? "No lists yet")
                         .font(bloomNumber(19, weight: .semibold))
                         .foregroundStyle(theme.color("deep"))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 13))
                         .foregroundStyle(theme.color("muted"))

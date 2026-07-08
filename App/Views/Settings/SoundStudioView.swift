@@ -59,6 +59,11 @@ struct SoundStudioView: View {
             .navigationTitle("Sound Studio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Sound Studio")
+                        .font(bloomBody(17, weight: .semibold))
+                        .foregroundStyle(theme.color("deep"))
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
@@ -77,6 +82,7 @@ struct SoundStudioView: View {
             )) {
                 Text("Sounds")
                     .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
             }
             Toggle(isOn: Binding(
                 get: { sound.hapticsEnabled },
@@ -84,6 +90,7 @@ struct SoundStudioView: View {
             )) {
                 Text("Haptics")
                     .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
             }
         }
         .padding(14)

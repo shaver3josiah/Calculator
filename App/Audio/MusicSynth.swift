@@ -10,7 +10,7 @@ final class MusicSynth: @unchecked Sendable {
     private let mixer = AVAudioMixerNode()
     private let reverb = AVAudioUnitReverb()
     private var sourceNode: AVAudioSourceNode?
-    private var started = false
+    private var configured = false
 
     private struct Voice {
         var frequency: Double
@@ -41,31 +41,33 @@ final class MusicSynth: @unchecked Sendable {
     }()
 
     func start() {
-        guard !started else { return }
-        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
-        started = true
-
-        let node = AVAudioSourceNode(format: format) { [weak self] _, _, frameCount, audioBufferList -> OSStatus in
-            self?.render(frameCount: frameCount, audioBufferList: audioBufferList) ?? noErr
+        if !configured {
+            guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
+            let node = AVAudioSourceNode(format: format) { [weak self] _, _, frameCount, audioBufferList -> OSStatus in
+                self?.render(frameCount: frameCount, audioBufferList: audioBufferList) ?? noErr
+            }
+            sourceNode = node
+            engine.attach(node)
+            engine.attach(mixer)
+            engine.attach(reverb)
+            reverb.loadFactoryPreset(.mediumHall)
+            reverb.wetDryMix = 25
+            engine.connect(node, to: mixer, format: format)
+            engine.connect(mixer, to: reverb, format: format)
+            engine.connect(reverb, to: engine.mainMixerNode, format: format)
+            mixer.outputVolume = 0.6
+            configured = true
         }
-        sourceNode = node
-
-        engine.attach(node)
-        engine.attach(mixer)
-        engine.attach(reverb)
-
-        reverb.loadFactoryPreset(.mediumHall)
-        reverb.wetDryMix = 25
-
-        engine.connect(node, to: mixer, format: format)
-        engine.connect(mixer, to: reverb, format: format)
-        engine.connect(reverb, to: engine.mainMixerNode, format: format)
-
-        mixer.outputVolume = 0.6
-
-        try? AVAudioSession.sharedInstance().setCategory(.playback, options: [.mixWithOthers])
-        try? AVAudioSession.sharedInstance().setActive(true)
-        try? engine.start()
+        guard !engine.isRunning else { return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, options: [.mixWithOthers])
+            try session.setActive(true)
+            engine.prepare()
+            try engine.start()
+        } catch {
+            engine.stop()
+        }
     }
 
     func playChord(midiNotes: [Int], strum: Bool, duration: Double) {

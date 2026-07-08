@@ -37,6 +37,8 @@ struct RootView: View {
                 Text("Hannah's")
                     .font(bloomScript(28))
                     .foregroundStyle(themeStore.color("deep"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                 Text("CALCULATOR & PROJECTIONS")
                     .font(bloomBody(9, weight: .semibold))
                     .foregroundStyle(themeStore.color("muted"))
