@@ -60,4 +60,8 @@ final class KitchenStore {
         }
         return min(max(gramsValue / 453.592, 0), 2.0)
     }
+
+    var convertCups: Double {
+        UnitConvert.convert(convertAmount, from: convertFromUnit, to: "cup") ?? 0
+    }
 }

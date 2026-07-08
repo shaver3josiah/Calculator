@@ -25,6 +25,7 @@ struct VesselFill: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let fraction: Double
+    var height: CGFloat = 140
 
     var body: some View {
         GeometryReader { geo in
@@ -52,7 +53,7 @@ struct VesselFill: View {
                     .stroke(theme.color("deep").opacity(0.25), lineWidth: 1)
             }
         }
-        .frame(height: 140)
+        .frame(height: height)
     }
 
     private var clampedFraction: Double {

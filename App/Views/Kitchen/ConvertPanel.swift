@@ -5,6 +5,10 @@ struct ConvertPanel: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(KitchenStore.self) private var store
 
+    private static let maxWholeCups = 12
+    private static let cupGlyphHeight: CGFloat = 50
+    private static let cupGridColumns = [GridItem(.adaptive(minimum: 44, maximum: 56), spacing: 10)]
+
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 10) {
@@ -76,9 +80,39 @@ struct ConvertPanel: View {
     private var convertIllustration: some View {
         if UnitConvert.weightUnits.contains(store.convertToUnit) {
             ScaleFill(fraction: store.convertWeightFraction)
+        } else if store.convertCups > 1 {
+            multiCupIllustration
         } else {
             VesselFill(fraction: store.convertFraction)
         }
+    }
+
+    private var multiCupIllustration: some View {
+        let cups = store.convertCups
+        let flooredCups = cups.rounded(.down)
+        let remainder = cups - flooredCups
+        let showsPartial = remainder >= 0.05
+        let cappedFloor = min(flooredCups, Double(Self.maxWholeCups))
+        let fullCupCount = max(Int(cappedFloor), 0)
+
+        return VStack(spacing: 10) {
+            LazyVGrid(columns: Self.cupGridColumns, spacing: 10) {
+                ForEach(0..<fullCupCount, id: \.self) { _ in
+                    VesselFill(fraction: 1.0, height: Self.cupGlyphHeight)
+                }
+                if showsPartial {
+                    VesselFill(fraction: remainder, height: Self.cupGlyphHeight)
+                }
+            }
+            Text(cupsLabelText(cups))
+                .font(bloomNumber(15, weight: .semibold))
+                .foregroundStyle(theme.color("text"))
+        }
+    }
+
+    private func cupsLabelText(_ cups: Double) -> String {
+        let rounded = (cups * 100).rounded() / 100
+        return "\(Formatters.fmt(rounded)) cups"
     }
 
     private var resultCard: some View {

@@ -112,6 +112,28 @@ final class CalcStore {
         }
     }
 
+    func replayTokens(_ tokens: String) {
+        press("C")
+        for character in tokens {
+            switch character {
+            case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+                press(String(character))
+            case ".":
+                press(".")
+            case "+":
+                press("+")
+            case "\u{2212}", "-":
+                press("-")
+            case "\u{00D7}", "*":
+                press("*")
+            case "\u{00F7}", "/":
+                press("/")
+            default:
+                break
+            }
+        }
+    }
+
     private func handleEquals() {
         guard let result = engine.equals() else {
             refreshDisplay()

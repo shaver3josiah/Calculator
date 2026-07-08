@@ -151,17 +151,21 @@ struct HistoryOverlay: View {
 
     private func insertEntry(_ entry: HistoryEntry) {
         guard entry.type == "calc" else { return }
-        calc.press("clear")
-        for ch in entry.value {
-            switch ch {
-            case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
-                calc.press("d\(ch)")
-            case ".":
-                calc.press("dot")
-            case "-":
-                calc.press("sign")
-            default:
-                continue
+        if let tokens = entry.extra["tokens"], !tokens.isEmpty {
+            calc.replayTokens(tokens)
+        } else {
+            calc.press("C")
+            for ch in entry.value {
+                switch ch {
+                case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+                    calc.press(String(ch))
+                case ".":
+                    calc.press(".")
+                case "-":
+                    calc.press("±")
+                default:
+                    continue
+                }
             }
         }
         sound.play("tap1")
@@ -267,10 +271,79 @@ private struct HistoryRow: View {
 
 private func entryShareLines(_ entry: HistoryEntry) -> [String] {
     if entry.type == "calc" {
-        let expression = prettifyExpression(entry.extra["tokens"]) ?? entry.title
-        return [expression, "= \(entry.value)"]
+        return calcShareLines(entry)
     }
-    return [entry.title, entry.value]
+    return nonCalcShareLines(entry)
+}
+
+private func calcShareLines(_ entry: HistoryEntry) -> [String] {
+    let rawTokens = entry.extra["tokens"]
+    let expression = prettifyExpression(rawTokens) ?? entry.title
+    var lines = [expression]
+    if let rawTokens {
+        let parts = splitCalcTokens(rawTokens)
+        let operatorCount = parts.count >= 3 ? (parts.count - 1) / 2 : 0
+        if operatorCount > 1 {
+            lines += calcReplaySteps(parts)
+        }
+    }
+    lines.append("= \(entry.value)")
+    return lines
+}
+
+private func splitCalcTokens(_ raw: String) -> [String] {
+    let operatorGlyphs: Set<Character> = ["+", "\u{2212}", "\u{00D7}", "\u{00F7}", "*", "/"]
+    var parts: [String] = []
+    var current = ""
+    for ch in raw {
+        if operatorGlyphs.contains(ch) {
+            if !current.isEmpty {
+                parts.append(current)
+                current = ""
+            }
+            parts.append(String(ch))
+        } else {
+            current.append(ch)
+        }
+    }
+    if !current.isEmpty {
+        parts.append(current)
+    }
+    return parts
+}
+
+private func calcReplaySteps(_ parts: [String]) -> [String] {
+    guard parts.count >= 3, var accumulator = Double(parts[0]) else { return [] }
+    var steps: [String] = []
+    var index = 1
+    while index + 1 < parts.count {
+        let opToken = parts[index]
+        guard let operand = Double(parts[index + 1]) else { break }
+        let result = calcApplyOp(opToken, accumulator, operand)
+        if result.isNaN || result.isInfinite {
+            steps.append("= Error")
+            return steps
+        }
+        steps.append("\(Formatters.fmt(accumulator)) \(opToken) \(Formatters.fmt(operand)) = \(Formatters.fmt(result))")
+        accumulator = result
+        index += 2
+    }
+    return steps
+}
+
+private func calcApplyOp(_ opToken: String, _ a: Double, _ b: Double) -> Double {
+    switch opToken {
+    case "+":
+        return a + b
+    case "\u{2212}", "-":
+        return a - b
+    case "\u{00D7}", "*":
+        return a * b
+    case "\u{00F7}", "/":
+        return b == 0 ? Double.nan : a / b
+    default:
+        return Double.nan
+    }
 }
 
 private func prettifyExpression(_ raw: String?) -> String? {
@@ -285,6 +358,15 @@ private func prettifyExpression(_ raw: String?) -> String? {
         }
     }
     return spaced.trimmingCharacters(in: .whitespaces)
+}
+
+private func nonCalcShareLines(_ entry: HistoryEntry) -> [String] {
+    var lines = [entry.title, entry.value]
+    for pair in entry.extra.sorted(by: { $0.key < $1.key }) {
+        guard pair.key != "tokens", !pair.value.isEmpty else { continue }
+        lines.append("\(pair.key): \(pair.value)")
+    }
+    return lines
 }
 
 private func formatShareText(_ entries: [HistoryEntry]) -> String {

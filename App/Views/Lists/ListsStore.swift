@@ -85,6 +85,15 @@ final class ListsStore {
         addRow(to: id, name: name, qty: 1, unitPrice: 0)
     }
 
+    func addIngredient(name: String, qty: Double) {
+        guard let id = activeListId ?? lists.first?.id else {
+            let newId = createList(title: "Groceries")
+            addRow(to: newId, name: name, qty: qty, unitPrice: 0)
+            return
+        }
+        addRow(to: id, name: name, qty: qty, unitPrice: 0)
+    }
+
     func logTotalToHistory(listId: UUID, history: HistoryStore) {
         guard let list = lists.first(where: { $0.id == listId }) else { return }
         history.add(

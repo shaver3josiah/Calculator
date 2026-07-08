@@ -246,11 +246,22 @@ struct VisualizePanel: View {
 
     private func addAllToList() {
         for ing in parsed {
-            lists.addIngredient(name: ing.name)
+            let scaled = RecipeParse.scale(ing, by: scale)
+            let rawQty = scaled.qty ?? 1
+            let roundedQty = (rawQty * 100).rounded() / 100
+            let displayName = foldedIngredientName(scaled)
+            lists.addIngredient(name: displayName, qty: roundedQty)
         }
         for line in failed {
-            lists.addIngredient(name: line)
+            lists.addIngredient(name: line, qty: 1)
         }
         sound.play("success")
+    }
+
+    private func foldedIngredientName(_ ing: ParsedIngredient) -> String {
+        guard let unit = ing.unit else {
+            return ing.name
+        }
+        return "\(ing.name) (\(unit))"
     }
 }
