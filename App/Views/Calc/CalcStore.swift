@@ -32,6 +32,7 @@ final class CalcStore {
     }
     var lastEgg: Egg?
     var eggEpoch: Int = 0
+    var resultEpoch: Int = 0
     var mathMode: CalcMathMode = .memory
     var angleMode: AngleMode = .radians
 
@@ -207,6 +208,7 @@ final class CalcStore {
                 value: display,
                 extra: ["tokens": tokenSequence]
             )
+            resultEpoch += 1   // result bloom on every successful "="
             if let egg = EasterEggs.match(sequence: tokenSequence) {
                 lastEgg = egg
                 eggEpoch += 1

@@ -7,8 +7,10 @@ struct RootView: View {
     @Environment(SoundStore.self) private var soundStore
     @Environment(MusicStore.self) private var musicStore
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedTab: BloomTab = .calc
     @State private var showThemeEditor = false
+    @State private var slideForward = true
 
     var body: some View {
         ZStack {
@@ -17,6 +19,8 @@ struct RootView: View {
                 header
                 content
                     .keyboardDoneBar()
+                    .id(selectedTab)
+                    .transition(contentTransition)
                 BloomTabBar(selection: $selectedTab, onSelect: switchTab)
             }
             overlays
@@ -102,20 +106,42 @@ struct RootView: View {
 
     private var overlays: some View {
         ZStack {
+            PetalCurtainView(trigger: selectedTab)
+                .allowsHitTesting(false)
             ToastHost()
             PoemOverlay()
             SplashOverlay()
         }
     }
 
+    // Outgoing panel glides off, incoming glides in on the expo-out glide token.
+    private var contentTransition: AnyTransition {
+        guard !reduceMotion else { return .opacity }
+        let inEdge: Edge = slideForward ? .trailing : .leading
+        let outEdge: Edge = slideForward ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: inEdge).combined(with: .opacity),
+            removal: .move(edge: outEdge).combined(with: .opacity)
+        )
+    }
+
     private func switchTab(_ tab: BloomTab) {
-        selectedTab = tab
+        slideForward = tabOrder(tab) >= tabOrder(selectedTab)
+        if reduceMotion {
+            selectedTab = tab
+        } else {
+            withAnimation(BloomMotion.glide) { selectedTab = tab }
+        }
         guard soundStore.enabled else { return }
         if musicStore.cycleOnTabSwitch, let chord = musicStore.nextCycledChord() {
             musicStore.soundCycledChord(chord)
         } else {
             soundStore.play("modeswitch")
         }
+    }
+
+    private func tabOrder(_ tab: BloomTab) -> Int {
+        BloomTab.allCases.firstIndex(of: tab) ?? 0
     }
 
     private var historyPresentedBinding: Binding<Bool> {

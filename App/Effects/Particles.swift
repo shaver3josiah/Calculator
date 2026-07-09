@@ -29,21 +29,65 @@ private func makeSparkle(index: Int, baseTime: Double) -> ParticleSpec {
     )
 }
 
+private func timeSeed(_ baseTime: Double) -> Int {
+    // Fold the spawn time into the seed so no two bursts match (spec: "never the exact same twice").
+    Int(baseTime.truncatingRemainder(dividingBy: 100_000) * 1000)
+}
+
 private func makePetal(index: Int, baseTime: Double, originX: Double, originY: Double) -> ParticleSpec {
-    var rng = SeededGenerator(seed: index &* 4451 &+ 31)
-    let angle = Double(index) / 18.0 * 2 * .pi + Double.random(in: -0.2...0.2, using: &rng)
+    var rng = SeededGenerator(seed: index &* 4451 &+ timeSeed(baseTime))
+    let angle = Double(index) / 24.0 * 2 * .pi + Double.random(in: -0.35...0.35, using: &rng)
     return ParticleSpec(
         seedTime: baseTime,
         x: originX,
         y: originY,
-        vx: cos(angle) * Double.random(in: 0.5...1, using: &rng),
-        vy: sin(angle) * Double.random(in: 0.5...1, using: &rng),
+        vx: cos(angle) * Double.random(in: 0.5...1.1, using: &rng),
+        vy: sin(angle) * Double.random(in: 0.5...1.1, using: &rng),
         rotation: Double.random(in: 0...360, using: &rng),
         rotationSpeed: Double.random(in: -220...220, using: &rng),
-        size: Double.random(in: 8...15, using: &rng),
+        size: Double.random(in: 8...16, using: &rng),
         colorIndex: index,
-        lifetime: Double.random(in: 0.7...1.15, using: &rng)
+        lifetime: Double.random(in: 0.95...1.65, using: &rng)
     )
+}
+
+private func makeBloomPetal(index: Int, baseTime: Double) -> ParticleSpec {
+    var rng = SeededGenerator(seed: index &* 3307 &+ timeSeed(baseTime))
+    let spread = Double.random(in: -0.42...0.42, using: &rng)
+    return ParticleSpec(
+        seedTime: baseTime + Double.random(in: 0...0.12, using: &rng),
+        x: 0.5 + spread * 0.5,
+        y: 0.62,
+        vx: spread + Double.random(in: -0.15...0.15, using: &rng),
+        vy: -Double.random(in: 0.55...1.0, using: &rng),   // upward — rises out from behind the card
+        rotation: Double.random(in: 0...360, using: &rng),
+        rotationSpeed: Double.random(in: -120...120, using: &rng),
+        size: Double.random(in: 9...16, using: &rng),
+        colorIndex: index,
+        lifetime: Double.random(in: 1.1...1.7, using: &rng)
+    )
+}
+
+private func makeCurtainPetal(index: Int, baseTime: Double) -> ParticleSpec {
+    var rng = SeededGenerator(seed: index &* 6151 &+ timeSeed(baseTime))
+    return ParticleSpec(
+        seedTime: baseTime + Double.random(in: 0...0.35, using: &rng),
+        x: Double.random(in: 0.04...0.96, using: &rng),
+        y: 0,
+        vx: 0,
+        vy: 0,
+        rotation: Double.random(in: 0...(2 * .pi), using: &rng),   // used as sway phase
+        rotationSpeed: Double.random(in: -35...35, using: &rng),   // barely spins
+        size: Double.random(in: 9...16, using: &rng),
+        colorIndex: index,
+        lifetime: Double.random(in: 1.25...1.95, using: &rng)
+    )
+}
+
+/// Mostly pink with the occasional gold petal (~14%).
+private func petalToken(_ index: Int) -> String {
+    if index % 7 == 0 { return "flowerCenter" }
+    return index % 2 == 0 ? "primary" : "primaryStrong"
 }
 
 private func makeRainDrop(index: Int, baseTime: Double) -> ParticleSpec {
@@ -113,6 +157,7 @@ struct SparkleFieldView: View {
     }
 }
 
+/// Celebration burst — fires only on `trigger` change, not on appear.
 struct PetalBurstView: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -120,7 +165,7 @@ struct PetalBurstView: View {
     let originX: Double
     let originY: Double
 
-    private static let count = 18
+    private static let count = 24
     @State private var pool: [ParticleSpec] = []
 
     var body: some View {
@@ -139,19 +184,98 @@ struct PetalBurstView: View {
                         let py = spec.y * size.height + spec.vy * ease * 140 + 60 * t * t
                         let alpha = 1.0 - t
                         let rot = spec.rotation + spec.rotationSpeed * age
-                        let token = ["primary", "primaryStrong", "flowerCenter"][spec.colorIndex % 3]
-                        drawPetal(&ctx, spec: spec, x: px, y: py, rotationDeg: rot, alpha: alpha, color: theme.color(token))
+                        drawPetal(&ctx, spec: spec, x: px, y: py, rotationDeg: rot, alpha: alpha, color: theme.color(petalToken(spec.colorIndex)))
                     }
                 }
             }
             .onChange(of: trigger) { _, _ in spawnBurst() }
-            .onAppear(perform: spawnBurst)
         }
     }
 
     private func spawnBurst() {
+        guard trigger > 0 else { return }
         let now = Date.timeIntervalSinceReferenceDate
         pool = (0..<Self.count).map { makePetal(index: $0, baseTime: now, originX: originX, originY: originY) }
+    }
+}
+
+/// Result bloom — petals rise up out from behind the display when a calc lands.
+/// Placed behind the display card so they only peek out around its edges.
+struct ResultBloomView: View {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let trigger: Int
+
+    private static let count = 12
+    @State private var pool: [ParticleSpec] = []
+
+    var body: some View {
+        if reduceMotion {
+            Color.clear
+        } else {
+            TimelineView(.animation) { context in
+                Canvas { ctx, size in
+                    let now = context.date.timeIntervalSinceReferenceDate
+                    for spec in pool {
+                        let age = now - spec.seedTime
+                        guard age >= 0, age < spec.lifetime else { continue }
+                        let t = age / spec.lifetime
+                        let glide = 1 - pow(1 - t, 3)   // expo-out, matches the glide token
+                        let px = spec.x * size.width + spec.vx * glide * 120
+                        let py = spec.y * size.height + spec.vy * glide * 170
+                        let alpha = (1 - t) * 0.9
+                        let rot = spec.rotation + spec.rotationSpeed * age
+                        drawPetal(&ctx, spec: spec, x: px, y: py, rotationDeg: rot, alpha: alpha, color: theme.color(petalToken(spec.colorIndex)))
+                    }
+                }
+            }
+            .onChange(of: trigger) { _, _ in spawn() }
+        }
+    }
+
+    private func spawn() {
+        guard trigger > 0 else { return }
+        let now = Date.timeIntervalSinceReferenceDate
+        pool = (0..<Self.count).map { makeBloomPetal(index: $0, baseTime: now) }
+    }
+}
+
+/// Soft petal curtain that drifts down over the seam on a mode change.
+/// One-shot per `trigger` change; petals sway on an S-path and barely spin.
+struct PetalCurtainView: View {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let trigger: BloomTab
+
+    private static let count = 16
+    @State private var pool: [ParticleSpec] = []
+
+    var body: some View {
+        if reduceMotion {
+            Color.clear
+        } else {
+            TimelineView(.animation) { context in
+                Canvas { ctx, size in
+                    let now = context.date.timeIntervalSinceReferenceDate
+                    for spec in pool {
+                        let age = now - spec.seedTime
+                        guard age >= 0, age < spec.lifetime else { continue }
+                        let t = age / spec.lifetime
+                        let px = spec.x * size.width + sin(t * .pi * 2 + spec.rotation) * 22
+                        let py = -30 + t * (size.height + 60)
+                        let alpha = sin(t * .pi) * 0.7   // fade in, then out
+                        let rot = spec.rotation * 57 + spec.rotationSpeed * age
+                        drawPetal(&ctx, spec: spec, x: px, y: py, rotationDeg: rot, alpha: alpha, color: theme.color(petalToken(spec.colorIndex)))
+                    }
+                }
+            }
+            .onChange(of: trigger) { _, _ in spawn() }
+        }
+    }
+
+    private func spawn() {
+        let now = Date.timeIntervalSinceReferenceDate
+        pool = (0..<Self.count).map { makeCurtainPetal(index: $0, baseTime: now) }
     }
 }
 

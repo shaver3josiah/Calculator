@@ -37,6 +37,11 @@ struct CalcView: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
+        .overlay {
+            // Confetti celebration on an easter-egg result — flies across the whole pad.
+            PetalBurstView(trigger: calcStore.eggEpoch, originX: 0.5, originY: 0.3)
+                .allowsHitTesting(false)
+        }
         .sheet(item: $activeSolver) { solver in
             MathSolverSheet(solver: solver) { value in
                 calcStore.sendValue(value)
@@ -65,6 +70,13 @@ struct CalcView: View {
         .frame(maxWidth: .infinity)
         .background(themeStore.color("surfaceSoft"))
         .clipShape(RoundedRectangle(cornerRadius: themeStore.radius))
+        .background {
+            // Bloom sits behind the opaque card and is left unclipped, so petals
+            // only show where they rise past the card's edges.
+            ResultBloomView(trigger: calcStore.resultEpoch)
+                .padding(-34)
+                .allowsHitTesting(false)
+        }
     }
 
     private var memoryBar: some View {
