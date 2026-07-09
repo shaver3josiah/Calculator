@@ -34,7 +34,7 @@ struct SplashOverlay: View {
         if controller.isShowing {
             ZStack {
                 backdrop
-                if !reduceMotion {
+                if !reduceMotion && theme.petalsOn {
                     PetalRainView()
                         .allowsHitTesting(false)
                 }

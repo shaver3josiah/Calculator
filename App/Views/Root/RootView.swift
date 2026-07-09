@@ -25,6 +25,7 @@ struct RootView: View {
             }
             overlays
         }
+        .onAppear { _ = themeStore.firstVisit(selectedTab.rawValue) }   // launch tab: seen, no curtain
         .fullScreenCover(isPresented: historyPresentedBinding) {
             HistoryOverlay()
         }
@@ -106,8 +107,10 @@ struct RootView: View {
 
     private var overlays: some View {
         ZStack {
-            PetalCurtainView(trigger: selectedTab)
-                .allowsHitTesting(false)
+            if themeStore.petalsOn {
+                PetalCurtainView(trigger: themeStore.curtainEpoch)
+                    .allowsHitTesting(false)
+            }
             ToastHost()
             PoemOverlay()
             SplashOverlay()
@@ -116,7 +119,7 @@ struct RootView: View {
 
     // Outgoing panel glides off, incoming glides in on the expo-out glide token.
     private var contentTransition: AnyTransition {
-        guard !reduceMotion else { return .opacity }
+        guard !reduceMotion, themeStore.motionEnabled else { return .opacity }
         let inEdge: Edge = slideForward ? .trailing : .leading
         let outEdge: Edge = slideForward ? .leading : .trailing
         return .asymmetric(
@@ -127,10 +130,14 @@ struct RootView: View {
 
     private func switchTab(_ tab: BloomTab) {
         slideForward = tabOrder(tab) >= tabOrder(selectedTab)
-        if reduceMotion {
+        if reduceMotion || !themeStore.motionEnabled {
             selectedTab = tab
         } else {
             withAnimation(BloomMotion.glide) { selectedTab = tab }
+        }
+        // Petal curtain only the first time she ever opens each tab.
+        if themeStore.firstVisit(tab.rawValue) {
+            themeStore.triggerCurtain()
         }
         guard soundStore.enabled else { return }
         if musicStore.cycleOnTabSwitch, let chord = musicStore.nextCycledChord() {

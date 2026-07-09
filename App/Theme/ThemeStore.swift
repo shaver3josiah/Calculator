@@ -10,6 +10,32 @@ final class ThemeStore {
         didSet { JSONStore.shared.set(.tabLabels, showTabLabels) }
     }
 
+    // Motion preferences + first-visit tracking. Kept here because ThemeStore is
+    // already injected into every view that needs to gate an animation.
+    var motionEnabled: Bool = true { didSet { persistMotion() } }
+    var petalsEnabled: Bool = true { didSet { persistMotion() } }
+    var shimmerEnabled: Bool = true { didSet { persistMotion() } }
+    private var seenTabs: Set<String> = []
+    var curtainEpoch: Int = 0   // transient; bumped to fire the petal curtain
+
+    /// Effective gates — a sub-effect is on only when the master switch is too.
+    var petalsOn: Bool { motionEnabled && petalsEnabled }
+    var shimmerOn: Bool { motionEnabled && shimmerEnabled }
+
+    /// True the first time (ever) a tab is opened; marks it seen and persists.
+    func firstVisit(_ tabRaw: String) -> Bool {
+        guard !seenTabs.contains(tabRaw) else { return false }
+        seenTabs.insert(tabRaw)
+        persistMotion()
+        return true
+    }
+
+    /// Fire the top-down petal curtain (no-op when petals are disabled).
+    func triggerCurtain() {
+        guard petalsOn else { return }
+        curtainEpoch += 1
+    }
+
     private var customTokens: [String: String]
 
     init() {
@@ -27,6 +53,19 @@ final class ThemeStore {
         spec = initialSpec
         radius = ThemeStore.parseRadius(initialSpec.tokens["radius"])
         showTabLabels = JSONStore.shared.get(.tabLabels, as: Bool.self) ?? true
+
+        let motion = JSONStore.shared.get(.motion, as: MotionPrefs.self)
+        seenTabs = Set(motion?.seenTabs ?? [])   // before the prefs — their didSet persists seenTabs
+        motionEnabled = motion?.motion ?? true
+        petalsEnabled = motion?.petals ?? true
+        shimmerEnabled = motion?.shimmer ?? true
+    }
+
+    private func persistMotion() {
+        JSONStore.shared.set(.motion, MotionPrefs(
+            motion: motionEnabled, petals: petalsEnabled,
+            shimmer: shimmerEnabled, seenTabs: Array(seenTabs)
+        ))
     }
 
     func color(_ token: String) -> Color {
@@ -148,6 +187,13 @@ final class ThemeStore {
             ]) { _, new in new }
         }
     }
+}
+
+private struct MotionPrefs: Codable {
+    var motion: Bool
+    var petals: Bool
+    var shimmer: Bool
+    var seenTabs: [String]
 }
 
 extension Color {

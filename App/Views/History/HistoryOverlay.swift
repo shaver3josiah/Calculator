@@ -3,6 +3,7 @@ import BloomCore
 
 struct HistoryOverlay: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(ThemeStore.self) private var theme
     @Environment(CalcStore.self) private var calc
     @Environment(HistoryStore.self) private var history
@@ -10,6 +11,7 @@ struct HistoryOverlay: View {
     @Environment(ListsStore.self) private var lists
 
     @State private var showClearConfirm = false
+    @State private var celebrateTrigger = 0
     @State private var recycleTarget: HistoryEntry?
     @State private var isSelecting = false
     @State private var selectedIds: Set<String> = []
@@ -60,6 +62,12 @@ struct HistoryOverlay: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Pinned entries stay. This cannot be undone.")
+            }
+        }
+        .overlay {
+            if theme.petalsOn {
+                PetalBurstView(trigger: celebrateTrigger, originX: 0.5, originY: 0.45)
+                    .allowsHitTesting(false)
             }
         }
         .sheet(item: $recycleTarget) { entry in
@@ -154,22 +162,19 @@ struct HistoryOverlay: View {
         if let tokens = entry.extra["tokens"], !tokens.isEmpty {
             calc.replayTokens(tokens)
         } else {
-            calc.press("C")
-            for ch in entry.value {
-                switch ch {
-                case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
-                    calc.press(String(ch))
-                case ".":
-                    calc.press(".")
-                case "-":
-                    calc.press("±")
-                default:
-                    continue
-                }
-            }
+            calc.replayValue(entry.value)
         }
-        sound.play("tap1")
-        dismiss()
+        // One pleasant chime + a flower burst, instead of machine-gunning every key sound.
+        sound.play("success")
+        if theme.petalsOn && !reduceMotion {
+            celebrateTrigger += 1
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(550))
+                dismiss()
+            }
+        } else {
+            dismiss()
+        }
     }
 
     private func reopenEntry(_ entry: HistoryEntry) {

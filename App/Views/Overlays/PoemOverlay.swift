@@ -177,7 +177,11 @@ struct PoemOverlay: View {
     }
 
     private var sparkleField: some View {
-        SparkleFieldView(colorTokens: ["flowerCenter", "primary"])
-            .allowsHitTesting(false)
+        Group {
+            if theme.petalsOn {
+                SparkleFieldView(colorTokens: ["flowerCenter", "primary"])
+                    .allowsHitTesting(false)
+            }
+        }
     }
 }

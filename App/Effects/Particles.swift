@@ -245,7 +245,7 @@ struct ResultBloomView: View {
 struct PetalCurtainView: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let trigger: BloomTab
+    let trigger: Int
 
     private static let count = 16
     @State private var pool: [ParticleSpec] = []

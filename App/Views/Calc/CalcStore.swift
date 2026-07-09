@@ -33,13 +33,20 @@ final class CalcStore {
     var lastEgg: Egg?
     var eggEpoch: Int = 0
     var resultEpoch: Int = 0
-    var mathMode: CalcMathMode = .memory
+    var mathMode: CalcMathMode = .complex
     var angleMode: AngleMode = .radians
 
     private var engine = CalcEngine()
     private var sequence: [String] = []
+    private var muted = false   // silences key sounds during programmatic replay
     private weak var history: HistoryStore?
     private weak var sounds: SoundStore?
+
+    /// Single sound gate — no-op while `muted` (e.g. replaying a history entry).
+    private func emit(_ event: String) {
+        guard !muted else { return }
+        sounds?.play(event)
+    }
 
     init(history: HistoryStore?, sounds: SoundStore?) {
         self.history = history
@@ -60,76 +67,78 @@ final class CalcStore {
             engine.digit(d)
             sequence.append(key)
             refreshDisplay()
-            sounds?.play("d\(d)")
+            emit("d\(d)")
         case ".":
             engine.dot()
             sequence.append(".")
             refreshDisplay()
-            sounds?.play("dot")
+            emit("dot")
         case "+":
             engine.setOp(.add)
             sequence.append("+")
             refreshDisplay()
-            sounds?.play("op+")
+            emit("op+")
         case "-":
             engine.setOp(.subtract)
             sequence.append("−")
             refreshDisplay()
-            sounds?.play("op-")
+            emit("op-")
         case "*":
             engine.setOp(.multiply)
             sequence.append("×")
             refreshDisplay()
-            sounds?.play("op*")
+            emit("op*")
         case "/":
             engine.setOp(.divide)
             sequence.append("÷")
             refreshDisplay()
-            sounds?.play("op/")
+            emit("op/")
         case "=":
             handleEquals()
         case "C":
             engine.clearAll()
             sequence.removeAll()
             refreshDisplay()
-            sounds?.play("clear")
+            emit("clear")
         case "±":
             engine.toggleSign()
             refreshDisplay()
-            sounds?.play("sign")
+            emit("sign")
         case "%":
             engine.percent()
             refreshDisplay()
-            sounds?.play("percent")
+            emit("percent")
         case "⌫":
             engine.backspace()
             if !sequence.isEmpty {
                 sequence.removeLast()
             }
             refreshDisplay()
-            sounds?.play("clear")
+            emit("clear")
         case "MC":
             memoryValue = 0
-            sounds?.play("memory")
+            emit("memory")
         case "MR":
             recallMemory()
-            sounds?.play("memory")
+            emit("memory")
         case "M+":
             if let value = Double(display) {
                 memoryValue += value
             }
-            sounds?.play("memory")
+            emit("memory")
         case "M-":
             if let value = Double(display) {
                 memoryValue -= value
             }
-            sounds?.play("memory")
+            emit("memory")
         default:
             break
         }
     }
 
     func recycle(tokens: [String]) {
+        muted = true
+        defer { muted = false }
         engine.clearAll()
         sequence.removeAll()
         for token in tokens {
@@ -137,7 +146,29 @@ final class CalcStore {
         }
     }
 
+    /// Rebuild a plain display value (e.g. a negative result) silently, treating a
+    /// leading "-" as a sign toggle rather than the subtract operator.
+    func replayValue(_ value: String) {
+        muted = true
+        defer { muted = false }
+        press("C")
+        for ch in value {
+            switch ch {
+            case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+                press(String(ch))
+            case ".":
+                press(".")
+            case "-":
+                press("±")
+            default:
+                continue
+            }
+        }
+    }
+
     func replayTokens(_ tokens: String) {
+        muted = true
+        defer { muted = false }
         press("C")
         for character in tokens {
             switch character {
@@ -161,12 +192,12 @@ final class CalcStore {
 
     func cycleMathMode() {
         mathMode = mathMode.next
-        sounds?.play("modeswitch")
+        emit("modeswitch")
     }
 
     func toggleAngleMode() {
         angleMode = angleMode == .radians ? .degrees : .radians
-        sounds?.play("memory")
+        emit("memory")
     }
 
     func applyTrig(_ fn: TrigFunction) {
@@ -174,20 +205,20 @@ final class CalcStore {
         let result = MathModes.trig(fn, value, mode: angleMode)
         guard result.isFinite else {
             display = "Error"
-            sounds?.play("error")
+            emit("error")
             return
         }
         engine.setValue(result)
         refreshDisplay()
         history?.add(type: "calc", title: "\(fn.rawValue) (\(angleMode.shortLabel))", value: display, extra: [:])
-        sounds?.play("memory")
+        emit("memory")
     }
 
     func sendValue(_ value: Double) {
         guard value.isFinite else { return }
         engine.setValue(value)
         refreshDisplay()
-        sounds?.play("memory")
+        emit("memory")
     }
 
     private func handleEquals() {
@@ -200,7 +231,7 @@ final class CalcStore {
 
         let tokenSequence = result.sequence
         if display == "Error" {
-            sounds?.play("error")
+            emit("error")
         } else {
             history?.add(
                 type: "calc",
@@ -212,9 +243,9 @@ final class CalcStore {
             if let egg = EasterEggs.match(sequence: tokenSequence) {
                 lastEgg = egg
                 eggEpoch += 1
-                sounds?.play("easteregg")
+                emit("easteregg")
             } else {
-                sounds?.play("equals")
+                emit("equals")
             }
         }
         sequence.removeAll()

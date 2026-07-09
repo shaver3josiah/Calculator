@@ -73,5 +73,6 @@ struct RecipeSharePanel: View {
 
         guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return }
         qrImage = Image(decorative: cgImage, scale: 1.0)
+        theme.triggerCurtain()
     }
 }

@@ -59,7 +59,8 @@ private struct BloomTabButton: View {
         }
         .buttonStyle(.plain)
         .onChange(of: isActive) { _, nowActive in
-            if nowActive { redraw() }
+            guard nowActive else { return }
+            if outlineVisible { redraw() } else { drawEnd = 1 }
         }
         .onAppear {
             if isActive { drawEnd = 1 }
@@ -69,9 +70,12 @@ private struct BloomTabButton: View {
         }
     }
 
+    // Encircle only makes sense as the active-tab cue when labels are hidden.
+    private var outlineVisible: Bool { isActive && !showLabel && theme.shimmerOn }
+
     private var outline: some View {
         RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .trim(from: 0, to: reduceMotion ? (isActive ? 1 : 0) : drawEnd)
+            .trim(from: 0, to: reduceMotion ? (outlineVisible ? 1 : 0) : drawEnd)
             .stroke(
                 LinearGradient(
                     colors: [theme.color("primary"), theme.color("flowerCenter")],
@@ -82,7 +86,7 @@ private struct BloomTabButton: View {
             )
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .opacity(isActive ? (reduceMotion ? 0.4 : (breathe ? 0.55 : 0.28)) : 0)
+            .opacity(outlineVisible ? (reduceMotion ? 0.4 : (breathe ? 0.55 : 0.28)) : 0)
             .allowsHitTesting(false)
     }
 

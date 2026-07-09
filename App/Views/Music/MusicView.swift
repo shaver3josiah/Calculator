@@ -66,6 +66,7 @@ struct MusicView: View {
         Button("Load chords") {
             store.loadChords()
             sound.play("modeswitch")
+            theme.triggerCurtain()
         }
         .font(bloomBody(15, weight: .semibold))
         .frame(maxWidth: .infinity)

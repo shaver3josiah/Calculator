@@ -12,6 +12,7 @@ struct ThemeEditorView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     presetSection
                     displaySection
+                    motionSection
                     editableTokensSection
                 }
                 .padding(20)
@@ -45,6 +46,40 @@ struct ThemeEditorView: View {
             .background(themeStore.color("surface"))
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+    }
+
+    private var motionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Motion")
+                .font(bloomBody(13, weight: .semibold))
+                .foregroundStyle(themeStore.color("muted"))
+                .textCase(.uppercase)
+            VStack(spacing: 0) {
+                motionToggle("Animations", isOn: Binding(
+                    get: { themeStore.motionEnabled }, set: { themeStore.motionEnabled = $0 }))
+                Divider().overlay(themeStore.color("line"))
+                motionToggle("Petal effects", isOn: Binding(
+                    get: { themeStore.petalsEnabled }, set: { themeStore.petalsEnabled = $0 }))
+                    .disabled(!themeStore.motionEnabled)
+                Divider().overlay(themeStore.color("line"))
+                motionToggle("Shimmer & outline", isOn: Binding(
+                    get: { themeStore.shimmerEnabled }, set: { themeStore.shimmerEnabled = $0 }))
+                    .disabled(!themeStore.motionEnabled)
+            }
+            .padding(.horizontal, 14)
+            .background(themeStore.color("surface"))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func motionToggle(_ label: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(label)
+                .font(bloomBody(14))
+                .foregroundStyle(themeStore.color("text"))
+        }
+        .tint(themeStore.color("primaryStrong"))
+        .padding(.vertical, 10)
     }
 
     private var presetSection: some View {

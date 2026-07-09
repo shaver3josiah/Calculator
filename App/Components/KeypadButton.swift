@@ -25,6 +25,20 @@ struct KeypadButton: View {
                 .frame(height: 58)
                 .background(backgroundColor)
                 .clipShape(RoundedRectangle(cornerRadius: themeStore.radius * 0.6))
+                .overlay {
+                    if themeStore.shimmerOn {
+                        ZStack {
+                            if isStrong {   // "=" is the one hero CTA — a slow ambient glint
+                                AmbientShimmer(cornerRadius: themeStore.radius * 0.6)
+                            }
+                            ShimmerSweep(
+                                trigger: feedbackTrigger,
+                                intense: isStrong || isAccent,   // darker-pink keys shine more
+                                cornerRadius: themeStore.radius * 0.6
+                            )
+                        }
+                    }
+                }
         }
         .buttonStyle(.plain)
         .scaleEffect(isPressed ? 0.96 : 1.0)

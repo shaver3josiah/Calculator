@@ -242,6 +242,7 @@ struct VisualizePanel: View {
         failed = bad
         didAttempt = true
         sound.play("tap1")
+        theme.triggerCurtain()
     }
 
     private func addAllToList() {
