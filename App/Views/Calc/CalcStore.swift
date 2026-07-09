@@ -168,7 +168,7 @@ final class CalcStore {
         sounds?.play("memory")
     }
 
-    func applyTrig(_ fn: MathModes.TrigFunction) {
+    func applyTrig(_ fn: TrigFunction) {
         let value = Double(engine.current) ?? 0
         let result = MathModes.trig(fn, value, mode: angleMode)
         guard result.isFinite else {

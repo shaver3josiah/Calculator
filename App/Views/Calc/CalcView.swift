@@ -143,7 +143,7 @@ struct CalcView: View {
 
     private var trigStrip: some View {
         HStack(spacing: 8) {
-            ForEach(MathModes.TrigFunction.allCases, id: \.self) { fn in
+            ForEach(TrigFunction.allCases, id: \.self) { fn in
                 mathChip(fn.rawValue) { calcStore.applyTrig(fn) }
             }
             angleChip

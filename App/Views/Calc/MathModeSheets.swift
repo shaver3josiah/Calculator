@@ -197,7 +197,8 @@ private struct QuadraticSolver: View {
                 if r.discriminant.isFinite {
                     HintText(text: "Discriminant = \(Formatters.fmt(r.discriminant))")
                 }
-                ForEach(Array(r.roots.enumerated()), id: \.offset) { idx, z in
+                ForEach(r.roots.indices, id: \.self) { idx in
+                    let z = r.roots[idx]
                     if z.isReal {
                         SendPill(label: "x\(idx + 1) = \(Formatters.fmt(z.re))  ·  send") { onSend(z.re); dismiss() }
                     } else {
