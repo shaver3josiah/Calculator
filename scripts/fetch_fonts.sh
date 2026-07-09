@@ -5,6 +5,7 @@ FONTS_DIR="App/Resources/Fonts"
 mkdir -p "$FONTS_DIR"
 
 RAW_BASE="https://raw.githubusercontent.com/google/fonts/main"
+MIRROR_BASE="https://cdn.jsdelivr.net/gh/google/fonts@main"
 
 FONT_NAMES=(
   "Quicksand.ttf"
@@ -35,8 +36,21 @@ MIN_FONT_BYTES=40960
 download() {
   local dest="$1"
   local url="$2"
+  local mirror="${MIRROR_BASE}${url#$RAW_BASE}"
+  local attempt
   echo "Downloading $dest"
-  curl -fsSL "$url" -o "$FONTS_DIR/$dest"
+  for attempt in 1 2 3; do
+    if curl -fsSL --connect-timeout 15 --max-time 120 --retry 4 --retry-delay 3 "$url" -o "$FONTS_DIR/$dest"; then
+      return 0
+    fi
+    echo "Primary fetch failed for $dest (attempt $attempt), trying mirror"
+    if curl -fsSL --connect-timeout 15 --max-time 120 --retry 4 --retry-delay 3 "$mirror" -o "$FONTS_DIR/$dest"; then
+      return 0
+    fi
+    sleep $((attempt * 10))
+  done
+  echo "All fetch attempts failed for $dest" >&2
+  return 1
 }
 
 for i in "${!FONT_NAMES[@]}"; do
