@@ -1,6 +1,28 @@
 import Foundation
 import BloomCore
 
+enum CalcMathMode: String, CaseIterable {
+    case memory
+    case complex
+    case trig
+
+    var title: String {
+        switch self {
+        case .memory: return "MEMORY"
+        case .complex: return "COMPLEX"
+        case .trig: return "TRIG"
+        }
+    }
+
+    var next: CalcMathMode {
+        switch self {
+        case .memory: return .complex
+        case .complex: return .trig
+        case .trig: return .memory
+        }
+    }
+}
+
 @Observable
 final class CalcStore {
     var display: String = "0"
@@ -10,6 +32,8 @@ final class CalcStore {
     }
     var lastEgg: Egg?
     var eggEpoch: Int = 0
+    var mathMode: CalcMathMode = .memory
+    var angleMode: AngleMode = .radians
 
     private var engine = CalcEngine()
     private var sequence: [String] = []
@@ -132,6 +156,37 @@ final class CalcStore {
                 break
             }
         }
+    }
+
+    func cycleMathMode() {
+        mathMode = mathMode.next
+        sounds?.play("modeswitch")
+    }
+
+    func toggleAngleMode() {
+        angleMode = angleMode == .radians ? .degrees : .radians
+        sounds?.play("memory")
+    }
+
+    func applyTrig(_ fn: MathModes.TrigFunction) {
+        let value = Double(engine.current) ?? 0
+        let result = MathModes.trig(fn, value, mode: angleMode)
+        guard result.isFinite else {
+            display = "Error"
+            sounds?.play("error")
+            return
+        }
+        engine.setValue(result)
+        refreshDisplay()
+        history?.add(type: "calc", title: "\(fn.rawValue) (\(angleMode.shortLabel))", value: display, extra: [:])
+        sounds?.play("memory")
+    }
+
+    func sendValue(_ value: Double) {
+        guard value.isFinite else { return }
+        engine.setValue(value)
+        refreshDisplay()
+        sounds?.play("memory")
     }
 
     private func handleEquals() {

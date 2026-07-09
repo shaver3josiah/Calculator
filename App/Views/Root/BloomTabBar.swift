@@ -32,9 +32,12 @@ struct BloomTabBar: View {
             VStack(spacing: 3) {
                 Image(systemName: tab.symbol)
                     .font(.system(size: 18, weight: isActive ? .semibold : .regular))
-                Text(tab.label)
-                    .font(bloomBody(9.5, weight: isActive ? .semibold : .regular))
+                if themeStore.showTabLabels {
+                    Text(tab.label)
+                        .font(bloomBody(9.5, weight: isActive ? .semibold : .regular))
+                }
             }
+            .frame(height: 38)
             .foregroundStyle(isActive ? themeStore.color("primaryStrong") : themeStore.color("muted"))
             .frame(maxWidth: .infinity)
         }

@@ -98,6 +98,11 @@ public struct CalcEngine: Sendable {
         overwrite = true
     }
 
+    public mutating func setValue(_ v: Double) {
+        current = Formatters.plain(v)
+        overwrite = true
+    }
+
     public mutating func backspace() {
         if overwrite {
             return

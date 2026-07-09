@@ -4,6 +4,7 @@ import BloomCore
 struct CalcView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(CalcStore.self) private var calcStore
+    @State private var activeSolver: MathSolver?
 
     private let keypadRows: [[KeyDef]] = [
         [KeyDef(label: "AC", key: "C", event: "clear", accent: true),
@@ -36,6 +37,11 @@ struct CalcView: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
+        .sheet(item: $activeSolver) { solver in
+            MathSolverSheet(solver: solver) { value in
+                calcStore.sendValue(value)
+            }
+        }
     }
 
     private var displayArea: some View {
@@ -63,17 +69,56 @@ struct CalcView: View {
 
     private var memoryBar: some View {
         HStack(spacing: 10) {
+            modeLabelButton
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    modeContent
+                }
+                .padding(.vertical, 1)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(themeStore.color("surface2"))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var modeLabelButton: some View {
+        Button {
+            calcStore.cycleMathMode()
+        } label: {
             HStack(spacing: 4) {
-                Text("MEMORY")
+                Text(calcStore.mathMode.title)
                     .font(bloomBody(10, weight: .semibold))
                     .foregroundStyle(themeStore.color("muted"))
-                if calcStore.memoryValue != 0 {
+                if calcStore.mathMode == .memory, calcStore.memoryValue != 0 {
                     Circle()
                         .fill(themeStore.color("primaryStrong"))
                         .frame(width: 6, height: 6)
                 }
+                Image(systemName: "chevron.forward")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(themeStore.color("primaryStrong"))
             }
-            Spacer()
+        }
+        .buttonStyle(.plain)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var modeContent: some View {
+        switch calcStore.mathMode {
+        case .memory:
+            memoryControls
+        case .complex:
+            complexStrip
+        case .trig:
+            trigStrip
+        }
+    }
+
+    private var memoryControls: some View {
+        HStack(spacing: 8) {
             memoryButton("MC")
             memoryButton("MR")
             memoryButton("M-")
@@ -82,12 +127,53 @@ struct CalcView: View {
                 .font(bloomBody(12, weight: .medium))
                 .foregroundStyle(themeStore.color("text"))
                 .lineLimit(1)
-                .frame(minWidth: 44, alignment: .trailing)
+                .frame(minWidth: 40, alignment: .trailing)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(themeStore.color("surface2"))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var complexStrip: some View {
+        HStack(spacing: 8) {
+            mathChip("x·y") { activeSolver = .xy }
+            mathChip("Quad") { activeSolver = .quadratic }
+            mathChip("Pyth") { activeSolver = .pythagorean }
+            mathChip("Frac") { activeSolver = .fraction }
+            angleChip
+        }
+    }
+
+    private var trigStrip: some View {
+        HStack(spacing: 8) {
+            ForEach(MathModes.TrigFunction.allCases, id: \.self) { fn in
+                mathChip(fn.rawValue) { calcStore.applyTrig(fn) }
+            }
+            angleChip
+        }
+    }
+
+    private var angleChip: some View {
+        Button {
+            calcStore.toggleAngleMode()
+        } label: {
+            Text(calcStore.angleMode.shortLabel)
+                .font(bloomBody(11, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 999).fill(themeStore.color("primaryStrong")))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func mathChip(_ label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(bloomBody(11, weight: .semibold))
+                .foregroundStyle(themeStore.color("primaryStrong"))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 999).fill(themeStore.color("surfaceSoft")))
+        }
+        .buttonStyle(.plain)
     }
 
     private func memoryButton(_ label: String) -> some View {

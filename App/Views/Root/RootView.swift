@@ -16,6 +16,7 @@ struct RootView: View {
             VStack(spacing: 0) {
                 header
                 content
+                    .keyboardDoneBar()
                 BloomTabBar(selection: $selectedTab, onSelect: switchTab)
             }
             overlays

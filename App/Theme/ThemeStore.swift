@@ -6,6 +6,9 @@ final class ThemeStore {
     var spec: ThemeSpec
     var presetNames: [String] = ["cherry", "rose", "peony", "soft"]
     var radius: CGFloat = 22
+    var showTabLabels: Bool = true {
+        didSet { JSONStore.shared.set(.tabLabels, showTabLabels) }
+    }
 
     private var customTokens: [String: String]
 
@@ -23,6 +26,7 @@ final class ThemeStore {
         }
         spec = initialSpec
         radius = ThemeStore.parseRadius(initialSpec.tokens["radius"])
+        showTabLabels = JSONStore.shared.get(.tabLabels, as: Bool.self) ?? true
     }
 
     func color(_ token: String) -> Color {

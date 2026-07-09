@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ProjectionFormField: View {
     @Environment(ThemeStore.self) private var themeStore
-    @FocusState private var isFocused: Bool
 
     var label: String
     @Binding var text: String
@@ -14,19 +13,12 @@ struct ProjectionFormField: View {
                 .foregroundStyle(themeStore.color("muted"))
             TextField("", text: $text)
                 .keyboardType(.decimalPad)
-                .focused($isFocused)
                 .font(bloomBody(15))
                 .foregroundStyle(themeStore.color("text"))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(themeStore.color("surfaceSoft"))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Done") { isFocused = false }
-                    }
-                }
         }
     }
 }

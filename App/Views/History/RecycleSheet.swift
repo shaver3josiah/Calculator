@@ -44,6 +44,7 @@ struct RecycleSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .keyboardDoneBar()
         }
         .onAppear(perform: seedTokens)
     }

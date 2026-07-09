@@ -11,6 +11,7 @@ struct ThemeEditorView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     presetSection
+                    displaySection
                     editableTokensSection
                 }
                 .padding(20)
@@ -24,6 +25,25 @@ struct ThemeEditorView: View {
                         .font(bloomBody(15, weight: .semibold))
                 }
             }
+        }
+    }
+
+    private var displaySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Display")
+                .font(bloomBody(13, weight: .semibold))
+                .foregroundStyle(themeStore.color("muted"))
+                .textCase(.uppercase)
+            Toggle(isOn: Binding(get: { themeStore.showTabLabels }, set: { themeStore.showTabLabels = $0 })) {
+                Text("Show tab labels")
+                    .font(bloomBody(14))
+                    .foregroundStyle(themeStore.color("text"))
+            }
+            .tint(themeStore.color("primaryStrong"))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(themeStore.color("surface"))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
         }
     }
 

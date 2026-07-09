@@ -1565,31 +1565,31 @@
   ],
   "eggs": [
     {
-      "sequence": "3÷16÷25",
+      "sequence": "4÷16÷25",
       "match": "never-divided"
     },
     {
-      "sequence": "3/16/25",
+      "sequence": "4/16/25",
       "match": "never-divided"
     },
     {
-      "sequence": "3+16+25",
+      "sequence": "4+16+25",
       "match": "ragingly-positive"
     },
     {
-      "sequence": "3×16×25",
+      "sequence": "4×16×25",
       "match": "multiply"
     },
     {
-      "sequence": "3*16*25",
+      "sequence": "4*16*25",
       "match": "multiply"
     },
     {
-      "sequence": "3−16−25",
+      "sequence": "4−16−25",
       "match": "straight-to-the-point"
     },
     {
-      "sequence": "3-16-25",
+      "sequence": "4-16-25",
       "match": "straight-to-the-point"
     },
     {
@@ -1633,11 +1633,11 @@
       "match": "well-spotted"
     },
     {
-      "sequence": "3÷16÷24",
+      "sequence": "4÷16÷24",
       "match": null
     },
     {
-      "sequence": "4+16+25",
+      "sequence": "3+16+25",
       "match": null
     },
     {

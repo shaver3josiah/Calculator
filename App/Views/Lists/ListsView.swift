@@ -12,6 +12,8 @@ struct ListsView: View {
     @State private var newItemPrice = ""
     @State private var showNewListPrompt = false
     @State private var newListTitle = ""
+    @State private var editingRow: ShopListRow?
+    @State private var editingListId: UUID?
 
     var body: some View {
         ScrollView {
@@ -26,6 +28,18 @@ struct ListsView: View {
             .padding(16)
         }
         .background(theme.color("bg"))
+        .scrollDismissesKeyboard(.interactively)
+        .sheet(item: $editingRow) { row in
+            EditListItemSheet(row: row) { updated in
+                if let listId = editingListId {
+                    store.updateRow(listId: listId, row: updated)
+                }
+            } onDelete: {
+                if let listId = editingListId {
+                    store.deleteRow(listId: listId, rowId: row.id)
+                }
+            }
+        }
         .alert("Name this list", isPresented: $showNewListPrompt) {
             TextField("Groceries, a trip, the month", text: $newListTitle, prompt: Text("Groceries, a trip, the month").foregroundColor(theme.color("muted")))
             Button("Create") {
@@ -82,6 +96,12 @@ struct ListsView: View {
             ForEach(list.rows) { row in
                 rowView(listId: list.id, row: row)
             }
+            if !list.rows.isEmpty {
+                Text("Tap a row to edit it.")
+                    .font(bloomBody(11))
+                    .foregroundStyle(theme.color("muted"))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
             addRow(listId: list.id)
             totalsBar(list)
             HStack {
@@ -117,21 +137,30 @@ struct ListsView: View {
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
 
-            Text(row.name)
-                .font(bloomBody(15))
-                .foregroundStyle(row.checked ? theme.color("muted") : theme.color("text"))
-                .strikethrough(row.checked)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                editingListId = listId
+                editingRow = row
+            } label: {
+                HStack(spacing: 10) {
+                    Text(row.name)
+                        .font(bloomBody(15))
+                        .foregroundStyle(row.checked ? theme.color("muted") : theme.color("text"))
+                        .strikethrough(row.checked)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(Formatters.plain(row.qty))
-                .font(bloomBody(13))
-                .foregroundStyle(theme.color("muted"))
-                .frame(width: 36)
+                    Text(Formatters.plain(row.qty))
+                        .font(bloomBody(13))
+                        .foregroundStyle(theme.color("muted"))
+                        .frame(width: 36)
 
-            Text(Formatters.money(row.lineTotal))
-                .font(bloomNumber(14))
-                .foregroundStyle(theme.color("deep"))
-                .frame(width: 70, alignment: .trailing)
+                    Text(Formatters.money(row.lineTotal))
+                        .font(bloomNumber(14))
+                        .foregroundStyle(theme.color("deep"))
+                        .frame(width: 70, alignment: .trailing)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
             Button {
                 store.deleteRow(listId: listId, rowId: row.id)

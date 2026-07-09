@@ -184,7 +184,7 @@ Tests read `contracts/vectors.json` and assert string equality on every `expect`
   "formatters": [{"fn": "fmt|plain|money|usd", "arg": 1234.5678, "expect": "1,234.5678"}],
   "finance": [{"fn": "futureValue", "args": {"principal": 1000, "monthly": 100, "annualRatePct": 6, "years": 10}, "raw": 123.0, "expect": "$123"}],
   "calc": [{"keys": ["3","+","1","6","+","2","5","="], "display": "44", "sequence": "3+16+25"}],
-  "eggs": [{"sequence": "3÷16÷25", "match": "egg-id-or-null"}],
+  "eggs": [{"sequence": "4÷16÷25", "match": "egg-id-or-null"}],
   "recipe": [{"line": "1 ½ cups flour", "qty": 1.5, "unit": "cup", "name": "flour"}],
   "convert": [{"value": 2, "from": "cup", "to": "mL", "expect": 473.176}]
 }
@@ -519,7 +519,7 @@ Latch mechanism: shown ids persist under `StoreKey case celebrations = "bloom_ce
 
 Rendering: `kind == "splash"` renders via the existing `SplashOverlay`/`SplashController` (`title` becomes the displayed name, first `lines` entry becomes the subtitle). `kind == "note"` renders via the existing `ToastHost`/`ToastCenter` (`title` becomes the toast title, `lines` joined becomes the message).
 
-Hard boundary (do not violate): `due(on:calendar:shown:)` must never be called from `CalcStore`'s key-press path, or from anywhere `EasterEggs.match(sequence:)` is checked. Celebrations are a calendar-date check (today's real-world date, checked once per app foreground or launch), completely independent from the ten frozen easter eggs, which trigger on typed calculator sequences (`3÷16÷25`, `12-5-26`, and the rest, per `eggs.json`). Both mechanisms may legitimately fire on the same real day (for example, typing `12/5/26` on the calculator in any year triggers the `no-condemnation` egg regardless of what today's date is, while the `note-1205` celebration only fires when today actually is December 5, 2026); neither may suppress or intercept the other.
+Hard boundary (do not violate): `due(on:calendar:shown:)` must never be called from `CalcStore`'s key-press path, or from anywhere `EasterEggs.match(sequence:)` is checked. Celebrations are a calendar-date check (today's real-world date, checked once per app foreground or launch), completely independent from the ten frozen easter eggs, which trigger on typed calculator sequences (`4÷16÷25`, `12-5-26`, and the rest, per `eggs.json`). Both mechanisms may legitimately fire on the same real day (for example, typing `12/5/26` on the calculator in any year triggers the `no-condemnation` egg regardless of what today's date is, while the `note-1205` celebration only fires when today actually is December 5, 2026); neither may suppress or intercept the other.
 
 ### Celebrations v3.1 correction (2026-07-08, Josiah, supersedes the calendar design above)
 

@@ -143,3 +143,61 @@ struct ScaleFill: View {
         clampedFraction * 130
     }
 }
+
+struct SpoonOutline: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+        let bowlW = w * 0.62
+        let bowlH = h * 0.5
+        let bowlRect = CGRect(x: rect.midX - bowlW / 2, y: rect.minY, width: bowlW, height: bowlH)
+        path.addEllipse(in: bowlRect)
+
+        let handleW = w * 0.16
+        let handleTop = rect.minY + bowlH * 0.78
+        let handleRect = CGRect(x: rect.midX - handleW / 2, y: handleTop, width: handleW, height: max(rect.maxY - handleTop, 0))
+        path.addRoundedRect(in: handleRect, cornerSize: CGSize(width: handleW / 2, height: handleW / 2))
+        return path
+    }
+}
+
+struct SpoonGlyphFill: View {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let fraction: Double
+    var height: CGFloat = 46
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                SpoonOutline()
+                    .fill(theme.color("surface"))
+                SpoonOutline()
+                    .stroke(theme.color("line"), lineWidth: 2)
+
+                SpoonOutline()
+                    .fill(
+                        LinearGradient(
+                            colors: [theme.color("primary"), theme.color("primaryStrong")],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .mask(alignment: .bottom) {
+                        Rectangle()
+                            .frame(height: geo.size.height * clampedFraction)
+                    }
+                    .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
+
+                SpoonOutline()
+                    .stroke(theme.color("deep").opacity(0.25), lineWidth: 1)
+            }
+        }
+        .frame(height: height)
+    }
+
+    private var clampedFraction: Double {
+        min(max(fraction, 0), 1)
+    }
+}
