@@ -91,7 +91,8 @@ struct HeaderVerseTicker: View {
                 .id(index)
                 .transition(.opacity)
         }
-        .frame(maxWidth: .infinity, height: Self.tickerHeight, alignment: .leading)
+        .frame(height: Self.tickerHeight)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { advanceByTap() }
         // `.task` runs while the ticker is mounted and is cancelled automatically
