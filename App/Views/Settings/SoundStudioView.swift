@@ -4,8 +4,10 @@ struct SoundStudioView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeStore.self) private var theme
     @Environment(SoundStore.self) private var sound
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showCredits = false
+    @State private var playEpoch = 0
 
     var body: some View {
         NavigationStack {
@@ -55,14 +57,32 @@ struct SoundStudioView: View {
                 }
                 .padding(20)
             }
-            .background(theme.color("bg"))
+            .background {
+                ZStack {
+                    theme.color("bg")
+                    if theme.motionEnabled && !reduceMotion {
+                        SpinningGarden()
+                    }
+                }
+                .ignoresSafeArea()
+            }
+            .overlay {
+                // Every preview scatters a few petals over the studio.
+                if theme.petalsOn {
+                    PetalBurstView(trigger: playEpoch, originX: 0.5, originY: 0.25)
+                        .allowsHitTesting(false)
+                }
+            }
             .navigationTitle("Sound Studio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("Sound Studio")
-                        .font(bloomBody(17, weight: .semibold))
-                        .foregroundStyle(theme.color("deep"))
+                    HStack(spacing: 8) {
+                        FlowerLogo(size: 22)
+                        Text("Sound Studio")
+                            .font(bloomBody(17, weight: .semibold))
+                            .foregroundStyle(theme.color("deep"))
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -124,17 +144,37 @@ struct SoundStudioView: View {
             .labelsHidden()
 
             Button {
-                sound.preview(currentValue(eventId))
+                preview(eventId)
             } label: {
                 Image(systemName: "play.fill")
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(theme.color("primaryStrong"))
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(theme.color("surface")))
+                    .overlay(
+                        Circle().stroke(
+                            LinearGradient(
+                                colors: [theme.color("primary"), theme.color("flowerCenter")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                    )
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Preview sound")
         }
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(theme.color("surfaceSoft"))
         )
+    }
+
+    private func preview(_ eventId: String) {
+        sound.preview(currentValue(eventId))
+        playEpoch += 1   // flowers bloom with every note
     }
 
     private func currentValue(_ eventId: String) -> String {
@@ -146,5 +186,40 @@ struct SoundStudioView: View {
             get: { currentValue(eventId) },
             set: { sound.setEvent(eventId, to: $0) }
         )
+    }
+}
+
+/// Faint flowers turning very slowly behind the studio — a background layer,
+/// not content. Transform-only animation, so it stays cheap.
+private struct SpinningGarden: View {
+    var body: some View {
+        GeometryReader { geo in
+            SpinningFlower(size: 180, period: 70)
+                .position(x: geo.size.width * 0.12, y: geo.size.height * 0.18)
+            SpinningFlower(size: 130, period: 55, clockwise: false)
+                .position(x: geo.size.width * 0.92, y: geo.size.height * 0.42)
+            SpinningFlower(size: 210, period: 90)
+                .position(x: geo.size.width * 0.20, y: geo.size.height * 0.88)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct SpinningFlower: View {
+    let size: CGFloat
+    let period: Double
+    var clockwise: Bool = true
+
+    @State private var spin = false
+
+    var body: some View {
+        FlowerLogo(size: size)
+            .opacity(0.07)
+            .rotationEffect(.degrees(spin ? (clockwise ? 360 : -360) : 0))
+            .onAppear {
+                withAnimation(.linear(duration: period).repeatForever(autoreverses: false)) {
+                    spin = true
+                }
+            }
     }
 }

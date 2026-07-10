@@ -49,9 +49,9 @@ struct CupHandle: Shape {
         func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
         }
-        p.move(to: pt(0.83, 0.24))
-        p.addQuadCurve(to: pt(0.98, 0.42), control: pt(1.02, 0.28))
-        p.addQuadCurve(to: pt(0.81, 0.60), control: pt(0.98, 0.60))
+        p.move(to: pt(0.83, 0.22))
+        p.addQuadCurve(to: pt(1.00, 0.42), control: pt(1.06, 0.26))
+        p.addQuadCurve(to: pt(0.80, 0.62), control: pt(1.02, 0.62))
         return p
     }
 }
@@ -175,8 +175,10 @@ struct MeasureGlyph: View {
         let gold = theme.color("flowerCenter")
         switch kind {
         case .cup:
+            // Handle reads as a solid loop, not a wire — proportional to the glyph
+            // so the small count-grid cups keep the same sturdy look as the hero.
             CupHandle().path(in: rect)
-                .stroke(outlineGradient, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+                .stroke(outlineGradient, style: StrokeStyle(lineWidth: max(rect.height * 0.045, 2.6), lineCap: .round))
             // Gold rim + embossed-style measure ticks.
             Path { p in
                 p.move(to: CGPoint(x: 0.22 * rect.width, y: 0.10 * rect.height))

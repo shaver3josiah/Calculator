@@ -158,6 +158,9 @@ struct SparkleFieldView: View {
 }
 
 /// Celebration burst — fires only on `trigger` change, not on appear.
+/// The timeline is paused whenever no petals are alive: an always-running
+/// `TimelineView(.animation)` redraws its Canvas every frame forever, and with
+/// several mounted at once that main-thread churn made taps feel sticky.
 struct PetalBurstView: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -166,13 +169,16 @@ struct PetalBurstView: View {
     let originY: Double
 
     private static let count = 24
+    private static let maxAge: Double = 1.8   // longest lifetime + margin
     @State private var pool: [ParticleSpec] = []
+    @State private var active = false
+    @State private var generation = 0
 
     var body: some View {
         if reduceMotion {
             Color.clear
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.animation(minimumInterval: nil, paused: !active)) { context in
                 Canvas { ctx, size in
                     let now = context.date.timeIntervalSinceReferenceDate
                     for spec in pool {
@@ -196,6 +202,17 @@ struct PetalBurstView: View {
         guard trigger > 0 else { return }
         let now = Date.timeIntervalSinceReferenceDate
         pool = (0..<Self.count).map { makePetal(index: $0, baseTime: now, originX: originX, originY: originY) }
+        wake()
+    }
+
+    /// Run the timeline only while petals live; a newer burst extends the window.
+    private func wake() {
+        active = true
+        generation += 1
+        let expected = generation
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxAge) {
+            if generation == expected { active = false }
+        }
     }
 }
 
@@ -207,13 +224,16 @@ struct ResultBloomView: View {
     let trigger: Int
 
     private static let count = 12
+    private static let maxAge: Double = 2.0   // seed offset + longest lifetime
     @State private var pool: [ParticleSpec] = []
+    @State private var active = false
+    @State private var generation = 0
 
     var body: some View {
         if reduceMotion {
             Color.clear
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.animation(minimumInterval: nil, paused: !active)) { context in
                 Canvas { ctx, size in
                     let now = context.date.timeIntervalSinceReferenceDate
                     for spec in pool {
@@ -237,6 +257,12 @@ struct ResultBloomView: View {
         guard trigger > 0 else { return }
         let now = Date.timeIntervalSinceReferenceDate
         pool = (0..<Self.count).map { makeBloomPetal(index: $0, baseTime: now) }
+        active = true
+        generation += 1
+        let expected = generation
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxAge) {
+            if generation == expected { active = false }
+        }
     }
 }
 
@@ -248,13 +274,16 @@ struct PetalCurtainView: View {
     let trigger: Int
 
     private static let count = 16
+    private static let maxAge: Double = 2.5   // 0.35 stagger + 1.95 lifetime + margin
     @State private var pool: [ParticleSpec] = []
+    @State private var active = false
+    @State private var generation = 0
 
     var body: some View {
         if reduceMotion {
             Color.clear
         } else {
-            TimelineView(.animation) { context in
+            TimelineView(.animation(minimumInterval: nil, paused: !active)) { context in
                 Canvas { ctx, size in
                     let now = context.date.timeIntervalSinceReferenceDate
                     for spec in pool {
@@ -276,6 +305,12 @@ struct PetalCurtainView: View {
     private func spawn() {
         let now = Date.timeIntervalSinceReferenceDate
         pool = (0..<Self.count).map { makeCurtainPetal(index: $0, baseTime: now) }
+        active = true
+        generation += 1
+        let expected = generation
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxAge) {
+            if generation == expected { active = false }
+        }
     }
 }
 

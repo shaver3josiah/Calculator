@@ -1,6 +1,26 @@
 import SwiftUI
 import BloomCore
 
+/// A UISwitch has a fixed intrinsic size of 51×31pt — putting `.frame(width: 22)`
+/// on it doesn't shrink it, it just centers the full-size switch in a 22pt slot
+/// so it overflows ~15pt into its neighbors (visibly colliding on small phones).
+/// The correct spacing math: scale the switch by s and reserve exactly 51s × 31s,
+/// so the row layout is deterministic on every screen width.
+private struct CompactToggle: View {
+    @Environment(ThemeStore.self) private var theme
+    let isOn: Binding<Bool>
+
+    private static let scale: CGFloat = 0.7   // 51×31 → ~36×22
+
+    var body: some View {
+        Toggle(isOn: isOn) { EmptyView() }
+            .labelsHidden()
+            .tint(theme.color("primaryStrong"))
+            .scaleEffect(Self.scale)
+            .frame(width: 51 * Self.scale, height: 31 * Self.scale)
+    }
+}
+
 struct CategoriesSection: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(BudgetStore.self) private var store
@@ -87,12 +107,7 @@ struct CategoriesSection: View {
             .frame(minHeight: 44)
             .contentShape(Rectangle())
 
-            Toggle(isOn: catSelectAllBinding(index)) {
-                EmptyView()
-            }
-            .labelsHidden()
-            .tint(theme.color("primaryStrong"))
-            .frame(width: 22)
+            CompactToggle(isOn: catSelectAllBinding(index))
 
             TextField("Category", text: catNameBinding(index), prompt: Text("Category").foregroundColor(theme.color("muted")))
                 .font(bloomBody(15, weight: .semibold))
@@ -128,12 +143,7 @@ struct CategoriesSection: View {
 
     private func rowView(category categoryIndex: Int, row rowIndex: Int) -> some View {
         HStack(spacing: 8) {
-            Toggle(isOn: rowSelBinding(categoryIndex, rowIndex)) {
-                EmptyView()
-            }
-            .labelsHidden()
-            .tint(theme.color("primaryStrong"))
-            .frame(width: 22)
+            CompactToggle(isOn: rowSelBinding(categoryIndex, rowIndex))
 
             TextField("Item", text: rowNameBinding(categoryIndex, rowIndex), prompt: Text("Item").foregroundColor(theme.color("muted")))
                 .font(bloomBody(14))

@@ -73,6 +73,19 @@ struct CalcView: View {
         .frame(maxWidth: .infinity)
         .background(themeStore.color("surfaceSoft"))
         .clipShape(RoundedRectangle(cornerRadius: themeStore.radius))
+        .overlay {
+            // The encircle traces the display card each time a result lands, and
+            // again whenever the tab remounts (RootView's .id(selectedTab)) —
+            // the same greet-on-arrival trace the kitchen pill and QR use.
+            if themeStore.shimmerOn {
+                EncircleOutline(
+                    trigger: calcStore.resultEpoch,
+                    cornerRadius: themeStore.radius,
+                    lineWidth: 1.5,
+                    settleOpacity: 0.4
+                )
+            }
+        }
         .background {
             // Bloom sits behind the opaque card and is left unclipped, so petals
             // only show where they rise past the card's edges.

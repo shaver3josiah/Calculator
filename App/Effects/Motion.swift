@@ -47,6 +47,51 @@ struct ShimmerSweep: View {
     }
 }
 
+/// The signature pink→gold hairline that traces once around a rounded rect on
+/// `trigger` change, then settles into a soft presence. This is the app-wide
+/// "encircling" language (first used on the mode buttons) — reuse this instead
+/// of hand-rolling per-view copies. Gate mounting behind `theme.shimmerOn`.
+struct EncircleOutline<Trigger: Equatable>: View {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let trigger: Trigger
+    var cornerRadius: CGFloat = 12
+    var lineWidth: CGFloat = 1
+    var settleOpacity: Double = 0.55
+
+    @State private var drawEnd: CGFloat = 0
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            .trim(from: 0, to: reduceMotion ? 1 : drawEnd)
+            .stroke(
+                LinearGradient(
+                    colors: [theme.color("primary"), theme.color("flowerCenter")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+            )
+            .opacity(reduceMotion ? settleOpacity * 0.8 : settleOpacity)
+            .allowsHitTesting(false)
+            // Trace on appear too: sites like the kitchen pill and the QR reveal
+            // mount a fresh instance with the new trigger value, so onChange alone
+            // would never fire for them.
+            .onAppear {
+                if reduceMotion { drawEnd = 1 } else { trace() }
+            }
+            .onChange(of: trigger) { _, _ in
+                guard !reduceMotion else { return }
+                trace()
+            }
+    }
+
+    private func trace() {
+        drawEnd = 0
+        withAnimation(BloomMotion.draw) { drawEnd = 1 }
+    }
+}
+
 /// Ambient "jewel glint" for the single hero CTA (the `=` key). Deliberately a
 /// low-contrast directional gloss that sweeps once, then rests ~4s — NOT a looping
 /// opacity/breathe pulse (the AI-slop "breathing CTA" fingerprint). One element only,

@@ -78,20 +78,19 @@ struct KitchenView: View {
                 .padding(.vertical, 8)
                 .background {
                     if isActive {
-                        // Sliding pill with the pink→gold hairline, matching the mode buttons.
+                        // Sliding pill; the hairline traces around it on each switch.
                         RoundedRectangle(cornerRadius: theme.radius - 4)
                             .fill(theme.color("surface"))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: theme.radius - 4)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [theme.color("primary"), theme.color("flowerCenter")],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1
+                            .overlay {
+                                if theme.shimmerOn {
+                                    EncircleOutline(
+                                        trigger: store.activeTab,
+                                        cornerRadius: theme.radius - 4,
+                                        lineWidth: 1,
+                                        settleOpacity: 0.7
                                     )
-                            )
+                                }
+                            }
                             .matchedGeometryEffect(id: "kitchenPill", in: pillSpace)
                     }
                 }
