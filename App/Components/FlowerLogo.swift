@@ -66,7 +66,8 @@ private struct RosePetalRing: Shape {
 /// itself pure so every other call site keeps compiling unchanged.
 ///
 /// Single tap → a spring twirl (overshoots ~360–540° and settles), a quick scale
-/// pop, and a one-shot glitter burst. Double tap → `onDoubleTap` (verse mode).
+/// pop, and a one-shot glitter burst. Double tap → the same twirl delight, then
+/// `onDoubleTap` (verse mode).
 /// Gesture order matters: the `count: 2` tap is attached *before* the `count: 1`
 /// tap, so SwiftUI holds the single recognizer until the double fails — a genuine
 /// double-tap fires only `onDoubleTap`, never the single handler.
@@ -95,7 +96,7 @@ struct TappableFlower: View {
         }
         .frame(width: size, height: size)
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { onDoubleTap() }
+        .onTapGesture(count: 2) { twirl(); onDoubleTap() }
         .onTapGesture(count: 1) { singleTap() }
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel("Hannah's flower")
@@ -103,6 +104,13 @@ struct TappableFlower: View {
 
     private func singleTap() {
         sound.play("easteregg")
+        twirl()
+    }
+
+    /// The spring twirl + glitter delight, shared by single- and double-tap.
+    /// (Double-tap's own sound is played by `onDoubleTap` → `toggleVerse`.)
+    /// Reduce Motion / petals off degrades to a gentle opacity pulse.
+    private func twirl() {
         guard theme.petalsOn, !reduceMotion else {
             // Reduce Motion / petals off: a gentle opacity pulse, no spin or glitter.
             withAnimation(.easeInOut(duration: 0.3)) { pulse = true }

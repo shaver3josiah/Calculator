@@ -41,22 +41,23 @@ struct RootView: View {
     private var header: some View {
         HStack(spacing: 12) {
             TappableFlower(size: 38, onDoubleTap: toggleVerse)
-            if !verseMode {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Hannah's")
-                        .font(bloomScript(28))
-                        .foregroundStyle(themeStore.color("deep"))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    Text("CALCULATOR & PROJECTIONS")
-                        .font(bloomBody(9, weight: .semibold))
-                        .foregroundStyle(themeStore.color("muted"))
-                        .tracking(1.2)
-                }
-                .transition(.opacity)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Hannah's")
+                    .font(bloomScript(28))
+                    .foregroundStyle(themeStore.color("deep"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("CALCULATOR & PROJECTIONS")
+                    .font(bloomBody(9, weight: .semibold))
+                    .foregroundStyle(themeStore.color("muted"))
+                    .tracking(1.2)
             }
             Spacer()
-            if !verseMode {
+            // Trailing slot: the icon buttons, or — in verse mode — the verse ticker.
+            if verseMode {
+                HeaderVerseTicker()
+                    .transition(.opacity)
+            } else {
                 headerButtons
                     .transition(.opacity)
             }
@@ -118,8 +119,6 @@ struct RootView: View {
                 PetalCurtainView(trigger: themeStore.curtainEpoch)
                     .allowsHitTesting(false)
             }
-            // Below the toast/poem/splash layers so those still land on top of it.
-            VerseOverlay(isPresented: $verseMode)
             ToastHost()
             PoemOverlay()
             SplashOverlay()

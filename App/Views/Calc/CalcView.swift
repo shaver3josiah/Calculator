@@ -52,29 +52,49 @@ struct CalcView: View {
         }
     }
 
+    // Result font grows to fill whatever vertical room the card was handed, up to
+    // 4x the old 58pt. innerHeight is the GeometryReader's height, which already sits
+    // inside the card's vertical padding. Reserve the expression line (bloomNumber 56
+    // ≈ 62pt tall) plus the 4pt VStack spacing; the rest is the result's budget.
+    // ponytail: font size == available pixel height (no line-height divisor) — matches
+    // the requested clamp(available, 58...232). Card clips + bottom-anchor absorb the
+    // ~1.2x line-height overhang; tune the 62/4 reserve if the expression ever clips.
+    private func resultFontSize(_ innerHeight: CGFloat) -> CGFloat {
+        let available = innerHeight - 62 - 4
+        return min(max(available, 58), 232)
+    }
+
     private var displayArea: some View {
-        HStack(alignment: .top, spacing: 12) {
-            calcLog
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(calcStore.expression)
-                    .font(bloomNumber(56, weight: .medium))   // the big "what is typed" line
-                    .foregroundStyle(themeStore.color("muted"))
+        GeometryReader { geo in
+            HStack(alignment: .top, spacing: 12) {
+                calcLog
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(calcStore.expression)
+                        .font(bloomNumber(56, weight: .medium))   // the big "what is typed" line
+                        .foregroundStyle(themeStore.color("muted"))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.3)   // long expressions shrink instead of clipping
+                    RollingNumberText(
+                        text: calcStore.display,
+                        font: bloomNumber(resultFontSize(geo.size.height), weight: .semibold),
+                        color: themeStore.color("text")
+                    )
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.3)   // long expressions shrink instead of clipping
-                RollingNumberText(
-                    text: calcStore.display,
-                    font: bloomNumber(58, weight: .semibold),
-                    color: themeStore.color("text")
-                )
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .lineLimit(1)
-                .minimumScaleFactor(0.35)   // long results shrink instead of clipping
+                    .minimumScaleFactor(0.15)   // 4x-tall glyphs: shrink hard so 8-10 digits still fit
+                }
             }
+            // GeometryReader places content top-leading at its ideal size; stretch to
+            // fill and pin bottom-trailing so the numbers sit at the card's base.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 22)
-        .frame(maxWidth: .infinity)
+        // maxHeight:.infinity makes displayArea the sole flexible child of the body
+        // VStack: it absorbs all leftover height above the fixed memoryBar + keypad.
+        // Every card decoration below attaches to this expanded frame.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(themeStore.color("surfaceSoft"))
         .clipShape(RoundedRectangle(cornerRadius: themeStore.radius))
         .overlay {

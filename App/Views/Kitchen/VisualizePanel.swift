@@ -245,7 +245,7 @@ struct VisualizePanel: View {
                     ForEach(0..<max(1, per), id: \.self) { c in
                         let k = r * per + c
                         if k < display {
-                            artUnit(glyph: item.glyph, artKey: item.artKey, size: copySize)
+                            artUnit(art: item.art, glyph: item.glyph, artKey: item.artKey, size: copySize)
                         }
                     }
                 }
@@ -291,8 +291,11 @@ struct VisualizePanel: View {
     }
 
     @ViewBuilder
-    private func artUnit(glyph: String, artKey: String?, size: CGFloat) -> some View {
-        if let key = artKey, Self.artNames.contains(key), let uiImage = Self.loadArt(key) {
+    private func artUnit(art: AnyView?, glyph: String, artKey: String?, size: CGFloat) -> some View {
+        if let art {
+            // Registry art fills the same square the PNG/emoji would occupy.
+            art.frame(width: size, height: size)
+        } else if let key = artKey, Self.artNames.contains(key), let uiImage = Self.loadArt(key) {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
@@ -362,6 +365,8 @@ struct VisualizePanel: View {
         let id: Int
         let glyph: String
         let artKey: String?
+        /// Registry art resolved by ingredient/food name; wins over PNG + glyph.
+        let art: AnyView?
         let name: String
         let qtyLabel: String
         let count: Int
@@ -373,10 +378,15 @@ struct VisualizePanel: View {
         for ing in parsed {
             let scaled = RecipeParse.scale(ing, by: scale)
             let food = FoodLibrary.match(ing.name)
+            // Registry first: matched Food name, then the raw parsed name (so
+            // "flour" still hits when FoodLibrary missed). Falls through to nil.
+            let art = food.flatMap { IngredientArt.view(for: $0.name) }
+                ?? IngredientArt.view(for: ing.name)
             out.append(Placement(
                 id: idx,
                 glyph: food?.glyph ?? "🥣",
                 artKey: food?.artKey,
+                art: art,
                 name: food?.name ?? scaled.name.capitalized,
                 qtyLabel: scaledLabel(scaled),
                 count: Self.copyCount(for: scaled)
@@ -388,6 +398,7 @@ struct VisualizePanel: View {
                 id: idx,
                 glyph: "🧺",
                 artKey: nil,
+                art: nil,
                 name: line.capitalized,
                 qtyLabel: "as written",
                 count: 1

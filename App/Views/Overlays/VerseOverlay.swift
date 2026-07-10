@@ -1,17 +1,27 @@
 import SwiftUI
 
-/// Verse mode — double-tapping the header flower opens this serene, swipeable
-/// gallery of seven proverbs on wisdom, wealth, and the noble woman. Full-screen
-/// overlay (lives in RootView's overlays ZStack). Dismiss by tapping the flower,
-/// the Close affordance, or swiping down.
-struct VerseOverlay: View {
+/// Verse mode — double-tapping the header flower fades out the header buttons and
+/// slots this compact ticker into the trailing region where they were. It walks
+/// through seven proverbs on wisdom, wealth, and the noble woman, one small slide
+/// at a time, auto-advancing with a gentle cross-fade. Tap the text to skip ahead;
+/// double-tap the flower again to leave. Lives inline in RootView's header row —
+/// not a full-screen overlay.
+struct HeaderVerseTicker: View {
     @Environment(ThemeStore.self) private var theme
-    @Environment(SoundStore.self) private var sound
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Binding var isPresented: Bool
 
-    @State private var page = 0
-    @State private var dragOffset: CGFloat = 0
+    @State private var index = 0
+    /// Bumped on tap to restart the dwell timer (`.task(id:)`) so the tapped
+    /// slide gets a full read before the next auto-advance.
+    @State private var cycle = 0
+
+    static let tickerWidth: CGFloat = 180
+    static let tickerHeight: CGFloat = 56   // fits 3 lines of bloomBody(12.5); fixed so slides don't jitter the header
+    static let slideSeconds: Double = 4.5
+    /// Word-boundary budget per slide. ~72 chars ≈ 3 lines of bloomBody(12.5) in a
+    /// ~180pt trailing region; minimumScaleFactor(0.9) is the safety net if a slide
+    /// runs long.
+    static let charBudget = 72
 
     /// Berean Standard Bible wording (verified verbatim against biblehub.com/bsb).
     static let verses: [(text: String, ref: String)] = [
@@ -31,121 +41,87 @@ struct VerseOverlay: View {
          "— Proverbs 16:16 (BSB)")
     ]
 
+    /// One rendered card: either a verse chunk (≤3 lines) or a verse's closing
+    /// reference line. Flattened across all seven verses; looping back to slide 0
+    /// naturally carries verse 7 → verse 1.
+    struct Slide: Equatable {
+        let text: String
+        let isRef: Bool
+    }
+
+    static let allSlides: [Slide] = verses.flatMap { verse in
+        Self.chunk(verse.text, budget: Self.charBudget).map { Slide(text: $0, isRef: false) }
+            + [Slide(text: verse.ref, isRef: true)]
+    }
+
+    /// Splits `text` into word-boundary slices, each at most `budget` characters —
+    /// as many as the whole verse needs. Pure: no view, no state.
+    static func chunk(_ text: String, budget: Int) -> [String] {
+        var slides: [String] = []
+        var current = ""
+        for word in text.split(separator: " ") {
+            if current.isEmpty {
+                current = String(word)
+            } else if current.count + 1 + word.count <= budget {
+                current += " " + word
+            } else {
+                slides.append(current)
+                current = String(word)
+            }
+        }
+        if !current.isEmpty { slides.append(current) }
+        return slides.isEmpty ? [text] : slides
+    }
+
     var body: some View {
-        if isPresented {
-            content
+        let slide = Self.allSlides[index]
+        // ZStack is the stable host: `.task` lives here so a slide change (which
+        // swaps the `.id`-tagged Text inside) never restarts the dwell timer.
+        return ZStack {
+            Text(slide.text)
+                .font(slide.isRef ? bloomBody(10.5, weight: .semibold)
+                                  : bloomBody(12.5, weight: .medium).italic())
+                .foregroundStyle(theme.color(slide.isRef ? "muted" : "text"))
+                .lineLimit(3)
+                .minimumScaleFactor(0.9)
+                .multilineTextAlignment(.trailing)
+                .lineSpacing(2)
+                .id(index)
                 .transition(.opacity)
         }
+        .frame(width: Self.tickerWidth, height: Self.tickerHeight, alignment: .trailing)
+        .contentShape(Rectangle())
+        .onTapGesture { advanceByTap() }
+        // `.task` runs while the ticker is mounted and is cancelled automatically
+        // when it leaves the tree (verse mode off == view disappears). Changing
+        // `cycle` (on tap) cancels + restarts it with a fresh dwell. No manual
+        // Timer, so nothing to leak.
+        .task(id: cycle) { await run() }
+        .accessibilityElement()
+        .accessibilityLabel(slide.text)
+        .accessibilityAddTraits(.isButton)
     }
 
-    private var content: some View {
-        ZStack {
-            theme.color("bg").opacity(0.97)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                Capsule()
-                    .fill(theme.color("muted").opacity(0.28))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 10)
-
-                FlowerLogo(size: 46)
-                    .contentShape(Rectangle())
-                    .onTapGesture { dismiss() }
-
-                TabView(selection: $page) {
-                    ForEach(Self.verses.indices, id: \.self) { i in
-                        verseCard(Self.verses[i])
-                            .tag(i)
-                    }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-
-                dots
-
-                Button(action: dismiss) {
-                    Text("Close")
-                        .font(bloomBody(13, weight: .semibold))
-                        .foregroundStyle(theme.color("muted"))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                }
-                .buttonStyle(.plain)
-                .padding(.bottom, 14)
-            }
-            .padding(.horizontal, 24)
-        }
-        .offset(y: dragOffset)
-        .simultaneousGesture(swipeDown)
-    }
-
-    private func verseCard(_ verse: (text: String, ref: String)) -> some View {
-        VStack(spacing: 22) {
-            Spacer(minLength: 0)
-            Text(verse.text)
-                .font(bloomBody(19))
-                .italic()
-                .foregroundStyle(theme.color("text"))
-                .multilineTextAlignment(.center)
-                .lineSpacing(7)
-            Text(verse.ref)
-                .font(bloomBody(12, weight: .semibold))
-                .foregroundStyle(theme.color("muted"))
-            Spacer(minLength: 0)
-        }
-        .padding(28)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: theme.radius, style: .continuous)
-                .fill(theme.color("surface"))
-                .shadow(color: theme.color("shadow"), radius: 22, y: 10)
-        )
-        .overlay {
-            if theme.shimmerOn {
-                EncircleOutline(trigger: page, cornerRadius: theme.radius)
-            }
-        }
-        .padding(.vertical, 22)
-        .padding(.horizontal, 2)
-    }
-
-    private var dots: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.verses.indices, id: \.self) { i in
-                Circle()
-                    .fill(theme.color(i == page ? "primaryStrong" : "muted"))
-                    .opacity(i == page ? 1 : 0.35)
-                    .frame(width: i == page ? 8 : 6, height: i == page ? 8 : 6)
-                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: page)
-            }
+    private func run() async {
+        guard Self.allSlides.count > 1 else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Self.slideSeconds))
+            guard !Task.isCancelled else { break }
+            advance(animated: !reduceMotion)
         }
     }
 
-    private var swipeDown: some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onChanged { value in
-                if value.translation.height > 0,
-                   value.translation.height > abs(value.translation.width) {
-                    dragOffset = value.translation.height
-                }
-            }
-            .onEnded { value in
-                if value.translation.height > 90,
-                   value.translation.height > abs(value.translation.width) {
-                    dismiss()
-                } else {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                        dragOffset = 0
-                    }
-                }
-            }
+    private func advanceByTap() {
+        advance(animated: !reduceMotion)
+        cycle += 1   // restart the dwell so the tapped slide gets a full read
     }
 
-    private func dismiss() {
-        sound.play("modeswitch")
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-            dragOffset = 0
-            isPresented = false
+    private func advance(animated: Bool) {
+        let next = (index + 1) % Self.allSlides.count
+        if animated {
+            withAnimation(.easeInOut(duration: 0.6)) { index = next }
+        } else {
+            index = next   // Reduce Motion: hard swap, still readable
         }
     }
 }
