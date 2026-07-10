@@ -60,12 +60,13 @@ struct CalcView: View {
                 .lineLimit(1)
             RollingNumberText(
                 text: calcStore.display,
-                font: bloomNumber(44, weight: .medium),
+                font: bloomNumber(58, weight: .semibold),
                 color: themeStore.color("text")
             )
             .frame(maxWidth: .infinity, alignment: .trailing)
             .lineLimit(1)
-            .minimumScaleFactor(0.5)
+            .minimumScaleFactor(0.35)   // long results shrink instead of clipping
+
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 22)

@@ -4,6 +4,10 @@ import BloomCore
 struct ConvertPanel: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(KitchenStore.self) private var store
+    @Environment(SoundStore.self) private var sound
+
+    @State private var swapSpin: Double = 0
+    @State private var illustrationBounce = false
 
     private static let maxGlyphs = 16
     private static let cupGlyphHeight: CGFloat = 50
@@ -13,7 +17,7 @@ struct ConvertPanel: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Amount")
                         .font(bloomBody(12))
@@ -38,6 +42,7 @@ struct ConvertPanel: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                 }
+                swapButton
                 VStack(alignment: .leading, spacing: 4) {
                     Text("To")
                         .font(bloomBody(12))
@@ -52,6 +57,16 @@ struct ConvertPanel: View {
 
             convertIllustration
                 .padding(.horizontal, 20)
+                .scaleEffect(illustrationBounce ? 0.94 : 1.0)
+                .animation(.spring(response: 0.32, dampingFraction: 0.55), value: illustrationBounce)
+                .onTapGesture {
+                    sound.play("tap1")
+                    guard theme.motionEnabled else { return }
+                    illustrationBounce = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        illustrationBounce = false
+                    }
+                }
 
             resultCard
 
@@ -65,6 +80,38 @@ struct ConvertPanel: View {
             RoundedRectangle(cornerRadius: theme.radius)
                 .fill(theme.color("surface"))
         )
+    }
+
+    /// Flip From/To with a half-spin — the little interactive moment of the panel.
+    private var swapButton: some View {
+        Button {
+            let from = store.convertFromUnit
+            store.convertFromUnit = store.convertToUnit
+            store.convertToUnit = from
+            sound.play("modeswitch")
+            guard theme.motionEnabled else { return }
+            withAnimation(BloomMotion.glide) { swapSpin += 180 }
+        } label: {
+            Image(systemName: "arrow.left.arrow.right")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(theme.color("primaryStrong"))
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(theme.color("surfaceSoft")))
+                .overlay(
+                    Circle().stroke(
+                        LinearGradient(
+                            colors: [theme.color("primary"), theme.color("flowerCenter")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+                )
+                .rotationEffect(.degrees(swapSpin))
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 18)   // optically aligns with the picker row, below the labels
+        .accessibilityLabel("Swap units")
     }
 
     private var unitOptions: some View {
@@ -109,16 +156,19 @@ struct ConvertPanel: View {
             Text(targetLabel(value, unit))
                 .font(bloomNumber(15, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.45, dampingFraction: 0.8), value: value)
         }
     }
 
-    @ViewBuilder
     private func measureGlyph(unit: String, fraction: Double) -> some View {
-        if unit == "cup" {
-            VesselFill(fraction: fraction, height: Self.cupGlyphHeight)
-        } else {
-            SpoonGlyphFill(fraction: fraction, height: Self.spoonGlyphHeight)
+        let kind: MeasureKind = switch unit {
+        case "cup": .cup
+        case "tbsp": .tablespoon
+        default: .teaspoon
         }
+        let height = unit == "cup" ? Self.cupGlyphHeight : Self.spoonGlyphHeight
+        return MeasureGlyph(kind: kind, fraction: fraction, height: height)
     }
 
     private func targetLabel(_ value: Double, _ unit: String) -> String {
@@ -129,9 +179,11 @@ struct ConvertPanel: View {
     private var resultCard: some View {
         VStack(spacing: 4) {
             if let converted = store.convertedValue {
-                Text(Formatters.fmt(converted))
-                    .font(bloomNumber(28, weight: .semibold))
-                    .foregroundStyle(theme.color("deep"))
+                RollingNumberText(
+                    text: Formatters.fmt(converted),
+                    font: bloomNumber(28, weight: .semibold),
+                    color: theme.color("deep")
+                )
                 Text(store.convertToUnit)
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("muted"))

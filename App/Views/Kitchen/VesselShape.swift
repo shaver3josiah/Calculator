@@ -1,59 +1,210 @@
 import SwiftUI
 
-struct VesselOutline: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let w = rect.width
-        let h = rect.height
-        let rimInset = w * 0.06
-        let baseInset = w * 0.16
+// Measuring vessels, redrawn after the classic "cute" sets: vintage cups have a
+// pour spout, a loop handle and embossed tick marks; spoon sets hang from a ring
+// on a slender handle, with the tablespoon a deep oval bowl and the teaspoon a
+// smaller sweetheart bowl. Outlines use the app's pink→gold gradient (the mode
+// button language), rims and rings pick out the gold.
 
-        path.move(to: CGPoint(x: rect.minX + rimInset, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - rimInset, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - baseInset, y: rect.maxY - h * 0.08))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX + baseInset, y: rect.maxY - h * 0.08),
-            control: CGPoint(x: rect.midX, y: rect.maxY + h * 0.04)
-        )
-        path.addLine(to: CGPoint(x: rect.minX + rimInset, y: rect.minY))
-        path.closeSubpath()
-        return path
+enum MeasureKind {
+    case cup, tablespoon, teaspoon
+
+    /// Fraction of the glyph height (from the bottom) that the bowl occupies —
+    /// liquid fills only this region, never the handle.
+    var bowlSpan: CGFloat {
+        switch self {
+        case .cup: return 0.88
+        case .tablespoon: return 0.56
+        case .teaspoon: return 0.50
+        }
     }
 }
 
-struct VesselFill: View {
+/// Vintage measuring-cup body: flared rim with a left pour spout, gently
+/// tapered walls, rounded bottom. Fillable (used for both outline and liquid).
+struct CupBody: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width, h = rect.height
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
+        }
+        p.move(to: pt(0.22, 0.10))                                  // rim, left of spout
+        p.addLine(to: pt(0.04, 0.02))                               // spout tip
+        p.addQuadCurve(to: pt(0.16, 0.24), control: pt(0.06, 0.16)) // spout underside
+        p.addLine(to: pt(0.26, 0.82))                               // left wall (tapers in)
+        p.addQuadCurve(to: pt(0.74, 0.82), control: pt(0.50, 0.98)) // rounded bottom
+        p.addLine(to: pt(0.84, 0.10))                               // right wall
+        p.addLine(to: pt(0.22, 0.10))                               // rim
+        p.closeSubpath()
+        return p
+    }
+}
+
+/// Loop handle on the cup's right side (stroke only).
+struct CupHandle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width, h = rect.height
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
+        }
+        p.move(to: pt(0.83, 0.24))
+        p.addQuadCurve(to: pt(0.98, 0.42), control: pt(1.02, 0.28))
+        p.addQuadCurve(to: pt(0.81, 0.60), control: pt(0.98, 0.60))
+        return p
+    }
+}
+
+/// Spoon silhouette: bowl at the bottom (so liquid fills it first), slender
+/// handle rising to a hang ring. Tablespoon = deep oval; teaspoon = heart.
+struct SpoonBody: Shape {
+    var heartBowl: Bool
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width, h = rect.height
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
+        }
+
+        let handleW: CGFloat = heartBowl ? 0.10 : 0.12
+        let handleTop: CGFloat = heartBowl ? 0.17 : 0.16
+        let handleBottom: CGFloat = heartBowl ? 0.56 : 0.50
+        p.addRoundedRect(
+            in: CGRect(
+                x: rect.minX + (0.5 - handleW / 2) * w,
+                y: rect.minY + handleTop * h,
+                width: handleW * w,
+                height: (handleBottom - handleTop) * h
+            ),
+            cornerSize: CGSize(width: handleW * w / 2, height: handleW * w / 2)
+        )
+
+        if heartBowl {
+            // Sweetheart bowl in box x 0.20–0.80, y 0.50–0.98.
+            func hp(_ u: CGFloat, _ v: CGFloat) -> CGPoint {
+                pt(0.20 + u * 0.60, 0.50 + v * 0.48)
+            }
+            p.move(to: hp(0.50, 0.98))
+            p.addCurve(to: hp(0.03, 0.42), control1: hp(0.24, 0.80), control2: hp(0.03, 0.64))
+            p.addCurve(to: hp(0.28, 0.10), control1: hp(0.03, 0.24), control2: hp(0.12, 0.10))
+            p.addCurve(to: hp(0.50, 0.28), control1: hp(0.40, 0.10), control2: hp(0.48, 0.18))
+            p.addCurve(to: hp(0.72, 0.10), control1: hp(0.52, 0.18), control2: hp(0.60, 0.10))
+            p.addCurve(to: hp(0.97, 0.42), control1: hp(0.88, 0.10), control2: hp(0.97, 0.24))
+            p.addCurve(to: hp(0.50, 0.98), control1: hp(0.97, 0.64), control2: hp(0.76, 0.80))
+            p.closeSubpath()
+        } else {
+            // Deep oval bowl.
+            p.addEllipse(in: CGRect(
+                x: rect.minX + 0.14 * w,
+                y: rect.minY + 0.44 * h,
+                width: 0.72 * w,
+                height: 0.54 * h
+            ))
+        }
+        return p
+    }
+}
+
+/// The hang ring at the top of a spoon handle (stroke only, picked out in gold).
+struct SpoonRing: Shape {
+    var small: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let r = (small ? 0.055 : 0.065) * rect.width
+        let center = CGPoint(x: rect.midX, y: rect.minY + (small ? 0.10 : 0.09) * rect.height)
+        return Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2))
+    }
+}
+
+/// One measuring vessel with an animated liquid fill. The single glyph used
+/// everywhere: big converter illustration and small count grids.
+struct MeasureGlyph: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let kind: MeasureKind
     let fraction: Double
     var height: CGFloat = 140
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                VesselOutline()
+                vesselPath(in: geo)
                     .fill(theme.color("surface"))
-                VesselOutline()
-                    .stroke(theme.color("line"), lineWidth: 2)
 
-                VesselOutline()
-                    .fill(
-                        LinearGradient(
-                            colors: [theme.color("primary"), theme.color("primaryStrong")],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .mask(alignment: .bottom) {
-                        Rectangle()
-                            .frame(height: geo.size.height * clampedFraction)
-                    }
-                    .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
+                liquid(in: geo)
 
-                VesselOutline()
-                    .stroke(theme.color("deep").opacity(0.25), lineWidth: 1)
+                vesselPath(in: geo)
+                    .stroke(outlineGradient, style: StrokeStyle(lineWidth: 1.6, lineJoin: .round))
+
+                goldDetails(in: geo)
             }
         }
         .frame(height: height)
+    }
+
+    private func vesselPath(in geo: GeometryProxy) -> Path {
+        switch kind {
+        case .cup: return CupBody().path(in: CGRect(origin: .zero, size: geo.size))
+        case .tablespoon: return SpoonBody(heartBowl: false).path(in: CGRect(origin: .zero, size: geo.size))
+        case .teaspoon: return SpoonBody(heartBowl: true).path(in: CGRect(origin: .zero, size: geo.size))
+        }
+    }
+
+    private func liquid(in geo: GeometryProxy) -> some View {
+        vesselPath(in: geo)
+            .fill(
+                LinearGradient(
+                    colors: [theme.color("primary"), theme.color("primaryStrong")],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .mask(alignment: .bottom) {
+                Rectangle()
+                    .frame(height: geo.size.height * kind.bowlSpan * clampedFraction)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+            .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
+    }
+
+    @ViewBuilder
+    private func goldDetails(in geo: GeometryProxy) -> some View {
+        let rect = CGRect(origin: .zero, size: geo.size)
+        let gold = theme.color("flowerCenter")
+        switch kind {
+        case .cup:
+            CupHandle().path(in: rect)
+                .stroke(outlineGradient, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+            // Gold rim + embossed-style measure ticks.
+            Path { p in
+                p.move(to: CGPoint(x: 0.22 * rect.width, y: 0.10 * rect.height))
+                p.addLine(to: CGPoint(x: 0.84 * rect.width, y: 0.10 * rect.height))
+            }
+            .stroke(gold, lineWidth: 1.4)
+            Path { p in
+                for y in [0.40, 0.60] {
+                    p.move(to: CGPoint(x: 0.32 * rect.width, y: y * rect.height))
+                    p.addLine(to: CGPoint(x: 0.46 * rect.width, y: y * rect.height))
+                }
+            }
+            .stroke(gold.opacity(0.7), lineWidth: 1)
+        case .tablespoon:
+            SpoonRing(small: false).path(in: rect)
+                .stroke(gold, lineWidth: 1.4)
+        case .teaspoon:
+            SpoonRing(small: true).path(in: rect)
+                .stroke(gold, lineWidth: 1.4)
+        }
+    }
+
+    private var outlineGradient: LinearGradient {
+        LinearGradient(
+            colors: [theme.color("primary"), theme.color("flowerCenter")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private var clampedFraction: Double {
@@ -61,6 +212,17 @@ struct VesselFill: View {
     }
 }
 
+/// Big converter cup — kept as the old name so call sites stay small.
+struct VesselFill: View {
+    let fraction: Double
+    var height: CGFloat = 140
+
+    var body: some View {
+        MeasureGlyph(kind: .cup, fraction: fraction, height: height)
+    }
+}
+
+// Kitchen scale (weight conversions), with the gradient dial to match.
 struct ScaleDial: Shape {
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.minY + rect.height * 0.34)
@@ -115,21 +277,38 @@ struct ScaleFill: View {
     let fraction: Double
 
     var body: some View {
-        GeometryReader { _ in
+        GeometryReader { geo in
             ZStack {
                 ScaleBase()
-                    .stroke(theme.color("line"), lineWidth: 2)
+                    .stroke(
+                        LinearGradient(
+                            colors: [theme.color("primary"), theme.color("flowerCenter")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.6
+                    )
                 ScaleDial()
                     .fill(theme.color("surface"))
                 ScaleDial()
-                    .stroke(theme.color("line"), lineWidth: 2)
+                    .stroke(
+                        LinearGradient(
+                            colors: [theme.color("primary"), theme.color("flowerCenter")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.6
+                    )
 
                 ScaleNeedle(angleDegrees: needleAngle)
                     .stroke(theme.color("primaryStrong"), style: StrokeStyle(lineWidth: 3, lineCap: .round))
                     .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
 
-                ScaleDial()
-                    .stroke(theme.color("deep").opacity(0.25), lineWidth: 1)
+                // Gold pivot cap over the needle base.
+                Circle()
+                    .fill(theme.color("flowerCenter"))
+                    .frame(width: 7, height: 7)
+                    .position(x: geo.size.width / 2, y: geo.size.height * 0.34)
             }
         }
         .frame(height: 140)
@@ -141,63 +320,5 @@ struct ScaleFill: View {
 
     private var needleAngle: Double {
         clampedFraction * 130
-    }
-}
-
-struct SpoonOutline: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let w = rect.width
-        let h = rect.height
-        let bowlW = w * 0.62
-        let bowlH = h * 0.5
-        let bowlRect = CGRect(x: rect.midX - bowlW / 2, y: rect.minY, width: bowlW, height: bowlH)
-        path.addEllipse(in: bowlRect)
-
-        let handleW = w * 0.16
-        let handleTop = rect.minY + bowlH * 0.78
-        let handleRect = CGRect(x: rect.midX - handleW / 2, y: handleTop, width: handleW, height: max(rect.maxY - handleTop, 0))
-        path.addRoundedRect(in: handleRect, cornerSize: CGSize(width: handleW / 2, height: handleW / 2))
-        return path
-    }
-}
-
-struct SpoonGlyphFill: View {
-    @Environment(ThemeStore.self) private var theme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let fraction: Double
-    var height: CGFloat = 46
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                SpoonOutline()
-                    .fill(theme.color("surface"))
-                SpoonOutline()
-                    .stroke(theme.color("line"), lineWidth: 2)
-
-                SpoonOutline()
-                    .fill(
-                        LinearGradient(
-                            colors: [theme.color("primary"), theme.color("primaryStrong")],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .mask(alignment: .bottom) {
-                        Rectangle()
-                            .frame(height: geo.size.height * clampedFraction)
-                    }
-                    .animation(reduceMotion ? nil : .spring(response: 0.6, dampingFraction: 0.85), value: fraction)
-
-                SpoonOutline()
-                    .stroke(theme.color("deep").opacity(0.25), lineWidth: 1)
-            }
-        }
-        .frame(height: height)
-    }
-
-    private var clampedFraction: Double {
-        min(max(fraction, 0), 1)
     }
 }
