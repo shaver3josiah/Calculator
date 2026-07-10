@@ -11,6 +11,7 @@ struct RootView: View {
     @State private var selectedTab: BloomTab = .calc
     @State private var showThemeEditor = false
     @State private var slideForward = true
+    @State private var verseMode = false
 
     var body: some View {
         ZStack {
@@ -39,20 +40,26 @@ struct RootView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            FlowerLogo(size: 38)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Hannah's")
-                    .font(bloomScript(28))
-                    .foregroundStyle(themeStore.color("deep"))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text("CALCULATOR & PROJECTIONS")
-                    .font(bloomBody(9, weight: .semibold))
-                    .foregroundStyle(themeStore.color("muted"))
-                    .tracking(1.2)
+            TappableFlower(size: 38, onDoubleTap: toggleVerse)
+            if !verseMode {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Hannah's")
+                        .font(bloomScript(28))
+                        .foregroundStyle(themeStore.color("deep"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text("CALCULATOR & PROJECTIONS")
+                        .font(bloomBody(9, weight: .semibold))
+                        .foregroundStyle(themeStore.color("muted"))
+                        .tracking(1.2)
+                }
+                .transition(.opacity)
             }
             Spacer()
-            headerButtons
+            if !verseMode {
+                headerButtons
+                    .transition(.opacity)
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, 12)
@@ -111,10 +118,19 @@ struct RootView: View {
                 PetalCurtainView(trigger: themeStore.curtainEpoch)
                     .allowsHitTesting(false)
             }
+            // Below the toast/poem/splash layers so those still land on top of it.
+            VerseOverlay(isPresented: $verseMode)
             ToastHost()
             PoemOverlay()
             SplashOverlay()
         }
+    }
+
+    private func toggleVerse() {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            verseMode.toggle()
+        }
+        soundStore.play("modeswitch")
     }
 
     // Outgoing panel glides off, incoming glides in on the expo-out glide token.

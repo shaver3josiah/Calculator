@@ -4,6 +4,7 @@ import BloomCore
 struct CalcView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(CalcStore.self) private var calcStore
+    @Environment(HistoryStore.self) private var historyStore
     @State private var activeSolver: MathSolver?
 
     private let keypadRows: [[KeyDef]] = [
@@ -52,21 +53,24 @@ struct CalcView: View {
     }
 
     private var displayArea: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text(calcStore.expression)
-                .font(bloomBody(14))
-                .foregroundStyle(themeStore.color("muted"))
+        HStack(alignment: .top, spacing: 12) {
+            calcLog
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(calcStore.expression)
+                    .font(bloomNumber(56, weight: .medium))   // the big "what is typed" line
+                    .foregroundStyle(themeStore.color("muted"))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.3)   // long expressions shrink instead of clipping
+                RollingNumberText(
+                    text: calcStore.display,
+                    font: bloomNumber(58, weight: .semibold),
+                    color: themeStore.color("text")
+                )
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .lineLimit(1)
-            RollingNumberText(
-                text: calcStore.display,
-                font: bloomNumber(58, weight: .semibold),
-                color: themeStore.color("text")
-            )
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .lineLimit(1)
-            .minimumScaleFactor(0.35)   // long results shrink instead of clipping
-
+                .minimumScaleFactor(0.35)   // long results shrink instead of clipping
+            }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 22)
@@ -95,6 +99,34 @@ struct CalcView: View {
                     .allowsHitTesting(false)
             }
         }
+    }
+
+    // Left-side running log: last 3 completed calcs, oldest→newest top-to-bottom.
+    // Sourced from history (calc entries carry extra["tokens"] + value); tapping a
+    // line replays it via the same replayTokens the recycle sheet uses. Fixed width
+    // so the result column never reflows between the empty and populated states.
+    private var calcLog: some View {
+        let recent = historyStore.entries
+            .filter { $0.type == "calc" && !($0.extra["tokens"] ?? "").isEmpty }
+            .prefix(3)
+            .reversed()
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(Array(recent)) { entry in
+                Button {
+                    if let tokens = entry.extra["tokens"] {
+                        calcStore.replayTokens(tokens)
+                    }
+                } label: {
+                    Text("\(entry.extra["tokens"] ?? "") = \(entry.value)")
+                        .font(bloomBody(11))
+                        .foregroundStyle(themeStore.color("muted"))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(width: 110, alignment: .leading)   // reserved even when empty
     }
 
     private var memoryBar: some View {

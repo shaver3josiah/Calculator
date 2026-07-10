@@ -36,25 +36,23 @@ struct YearWrap: View {
                 .foregroundStyle(theme.color("deep"))
             Spacer()
             HStack(spacing: 6) {
-                Button {
+                EncirclePressButton(cornerRadius: 12, lineWidth: 1.5) {
                     store.shiftYear(by: -1)
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
                 .accessibilityLabel("Previous year")
-                Button {
+                EncirclePressButton(cornerRadius: 12, lineWidth: 1.5) {
                     store.shiftYear(by: 1)
                 } label: {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
                 .accessibilityLabel("Next year")
             }
             .foregroundStyle(theme.color("primaryStrong"))

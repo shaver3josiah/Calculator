@@ -16,11 +16,21 @@ enum KitchenTab: String, CaseIterable {
     case convert, recipe, visualize
 }
 
+/// The two procedurally-drawn Visualize countertop finishes.
+enum CounterFinish: String, CaseIterable {
+    case marble, wood
+}
+
 @Observable
 final class KitchenStore {
     var activeTab: KitchenTab = .convert
     var savedRecipes: [SavedRecipe] {
         didSet { JSONStore.shared.set(.recipes, savedRecipes) }
+    }
+
+    // Persisted the same way as savedRecipes: raw value written on every change.
+    var counterFinish: CounterFinish {
+        didSet { JSONStore.shared.set(.counterTop, counterFinish.rawValue) }
     }
 
     var convertAmount: Double = 1
@@ -29,6 +39,8 @@ final class KitchenStore {
 
     init() {
         savedRecipes = JSONStore.shared.get(.recipes, as: [SavedRecipe].self) ?? []
+        let savedFinish = JSONStore.shared.get(.counterTop, as: String.self) ?? ""
+        counterFinish = CounterFinish(rawValue: savedFinish) ?? .marble
     }
 
     func saveRecipe(_ recipe: SavedRecipe) {

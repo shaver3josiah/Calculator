@@ -61,7 +61,7 @@ struct BudgetView: View {
 
     private var monthBar: some View {
         HStack {
-            Button {
+            EncirclePressButton(cornerRadius: 22, lineWidth: 1.5) {
                 store.shiftMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
@@ -71,7 +71,6 @@ struct BudgetView: View {
                     .background(theme.color("surfaceSoft"))
                     .clipShape(Circle())
             }
-            .buttonStyle(.plain)
             .opacity(store.view == "month" ? 1 : 0)
             .disabled(store.view != "month")
             .accessibilityLabel("Previous month")
@@ -84,7 +83,7 @@ struct BudgetView: View {
 
             Spacer()
 
-            Button {
+            EncirclePressButton(cornerRadius: 22, lineWidth: 1.5) {
                 store.shiftMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
@@ -94,7 +93,6 @@ struct BudgetView: View {
                     .background(theme.color("surfaceSoft"))
                     .clipShape(Circle())
             }
-            .buttonStyle(.plain)
             .opacity(store.view == "month" ? 1 : 0)
             .disabled(store.view != "month")
             .accessibilityLabel("Next month")

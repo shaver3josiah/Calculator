@@ -5,9 +5,17 @@ struct ConvertPanel: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(KitchenStore.self) private var store
     @Environment(SoundStore.self) private var sound
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var swapSpin: Double = 0
     @State private var illustrationBounce = false
+
+    // Pinch-zoom state for the big illustration. zoomBaseScale/panBase carry the
+    // committed value between gestures; zoomScale/panOffset are the live values.
+    @State private var zoomScale: CGFloat = 1.0
+    @State private var zoomBaseScale: CGFloat = 1.0
+    @State private var panOffset: CGSize = .zero
+    @State private var panBase: CGSize = .zero
 
     private static let maxGlyphs = 16
     private static let cupGlyphHeight: CGFloat = 50
@@ -59,6 +67,15 @@ struct ConvertPanel: View {
                 .padding(.horizontal, 20)
                 .scaleEffect(illustrationBounce ? 0.94 : 1.0)
                 .animation(.spring(response: 0.32, dampingFraction: 0.55), value: illustrationBounce)
+                .scaleEffect(zoomScale)
+                .offset(panOffset)
+                .clipped()
+                .contentShape(Rectangle())
+                .gesture(magnifyGesture)
+                // Pan only while zoomed, so at rest the drag neither eats the
+                // single-tap nor fights KitchenView's ScrollView.
+                .simultaneousGesture(panGesture, including: zoomScale > 1.01 ? .all : .subviews)
+                .onTapGesture(count: 2) { resetZoom() }
                 .onTapGesture {
                     sound.play("tap1")
                     guard theme.motionEnabled else { return }
@@ -80,6 +97,47 @@ struct ConvertPanel: View {
             RoundedRectangle(cornerRadius: theme.radius)
                 .fill(theme.color("surface"))
         )
+    }
+
+    // MARK: Pinch-zoom
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                zoomScale = min(max(zoomBaseScale * value.magnification, 1.0), 3.0)
+            }
+            .onEnded { _ in
+                if zoomScale <= 1.01 {
+                    resetZoom()
+                } else {
+                    zoomBaseScale = zoomScale
+                }
+            }
+    }
+
+    private var panGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                panOffset = CGSize(
+                    width: panBase.width + value.translation.width,
+                    height: panBase.height + value.translation.height
+                )
+            }
+            .onEnded { _ in panBase = panOffset }
+    }
+
+    private func resetZoom() {
+        if reduceMotion || !theme.motionEnabled {
+            zoomScale = 1.0
+            panOffset = .zero
+        } else {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                zoomScale = 1.0
+                panOffset = .zero
+            }
+        }
+        zoomBaseScale = 1.0
+        panBase = .zero
     }
 
     /// Flip From/To with a half-spin — the little interactive moment of the panel.

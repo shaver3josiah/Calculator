@@ -29,9 +29,11 @@ private struct ToolHeader: View {
 }
 
 private struct TipSplitCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @State private var pressEpoch = 0
     @State private var billText = "80"
     @State private var tipPctText = "20"
     @State private var peopleText = "4"
@@ -46,7 +48,11 @@ private struct TipSplitCard: View {
                 ToolHeader(title: "Tip and split")
                 ProjectionFieldRow(leftLabel: "Bill amount", leftText: $billText, rightLabel: "Tip %", rightText: $tipPctText)
                 ProjectionFormField(label: "Split between", text: $peopleText)
-                ProjectionCalcButton(label: "Work it out", action: calculate)
+                ProjectionCalcButton(label: "Work it out") {
+                    calculate()
+                    pressEpoch += 1
+                }
+                .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
                 if showResult {
                     HStack(spacing: 16) {
                         ProjectionResultStat(label: "Tip", value: Formatters.money(tipResult))
@@ -84,6 +90,7 @@ private struct PercentageCard: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @State private var pressEpoch = 0
     @State private var mode = "of"
     @State private var aText = "15"
     @State private var bText = "80"
@@ -103,7 +110,11 @@ private struct PercentageCard: View {
                 ToolHeader(title: "Percentage")
                 modePicker
                 ProjectionFieldRow(leftLabel: currentLabels.0, leftText: $aText, rightLabel: currentLabels.1, rightText: $bText)
-                ProjectionCalcButton(label: "Calculate", action: calculate)
+                ProjectionCalcButton(label: "Calculate") {
+                    calculate()
+                    pressEpoch += 1
+                }
+                .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
                 if showResult {
                     ProjectionResultStat(label: resultLabel, value: formattedResult, isGrowth: true)
                 }
@@ -172,9 +183,11 @@ private struct PercentageCard: View {
 }
 
 private struct LoanPaymentCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @State private var pressEpoch = 0
     @State private var amountText = "20000"
     @State private var rateText = "6"
     @State private var yearsText = "5"
@@ -188,7 +201,11 @@ private struct LoanPaymentCard: View {
                 ToolHeader(title: "Loan payment")
                 ProjectionFieldRow(leftLabel: "Amount", leftText: $amountText, rightLabel: "Rate % / yr", rightText: $rateText)
                 ProjectionFormField(label: "Years", text: $yearsText)
-                ProjectionCalcButton(label: "Find the payment", action: calculate)
+                ProjectionCalcButton(label: "Find the payment") {
+                    calculate()
+                    pressEpoch += 1
+                }
+                .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
                 if showResult {
                     HStack(spacing: 20) {
                         ProjectionResultStat(label: "Monthly", value: Formatters.money(monthlyResult), isGrowth: true)
@@ -219,9 +236,11 @@ private struct LoanPaymentCard: View {
 }
 
 private struct SavingsGoalCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @State private var pressEpoch = 0
     @State private var targetText = "15000"
     @State private var yearsText = "5"
     @State private var rateText = "4"
@@ -235,7 +254,11 @@ private struct SavingsGoalCard: View {
                 ToolHeader(title: "Savings goal")
                 ProjectionFieldRow(leftLabel: "Target", leftText: $targetText, rightLabel: "Years", rightText: $yearsText)
                 ProjectionFieldRow(leftLabel: "Rate % / yr", leftText: $rateText, rightLabel: "Starting", rightText: $startText)
-                ProjectionCalcButton(label: "How much per month", action: calculate)
+                ProjectionCalcButton(label: "How much per month") {
+                    calculate()
+                    pressEpoch += 1
+                }
+                .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
                 if showResult {
                     HStack(spacing: 20) {
                         ProjectionResultStat(label: "Save monthly", value: Formatters.money(monthlyResult), isGrowth: true)
@@ -262,5 +285,52 @@ private struct SavingsGoalCard: View {
             extra: ["target": targetText, "years": yearsText, "ratePct": rateText, "start": startText]
         )
         soundStore.play("success")
+    }
+}
+
+/// Brief press-feedback ring: on each `epoch` bump, trace the shared
+/// `EncircleOutline` around the control, then unmount it after ~1s so it fades
+/// away instead of leaving a permanent glow. (EncircleOutline settles at its
+/// `settleOpacity` forever, so a lingering mount would stay lit — hence the
+/// timed unmount.) Gated behind `theme.shimmerOn`. Shared by ToolsView and
+/// MusicView via `.encircleOnPress`.
+/// ponytail: plain timed unmount; a stale timer is guarded by `generation`
+/// so a rapid re-press never clears a newer ring early.
+private struct PressEncircleModifier: ViewModifier {
+    @Environment(ThemeStore.self) private var theme
+    let epoch: Int
+    var cornerRadius: CGFloat = 12
+    var lineWidth: CGFloat = 1.5
+
+    @State private var showing = false
+    @State private var generation = 0
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if theme.shimmerOn && showing {
+                    EncircleOutline(trigger: epoch, cornerRadius: cornerRadius, lineWidth: lineWidth)
+                        .transition(.opacity)
+                }
+            }
+            .onChange(of: epoch) { _, newValue in
+                guard newValue > 0 else { return }
+                showing = true
+                generation += 1
+                let expected = generation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    if generation == expected {
+                        withAnimation(.easeOut(duration: 0.35)) { showing = false }
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    /// Trace the encircle hairline around this control for ~1s whenever `epoch`
+    /// bumps. See `PressEncircleModifier`.
+    func encircleOnPress(_ epoch: Int, cornerRadius: CGFloat = 12, lineWidth: CGFloat = 1.5) -> some View {
+        modifier(PressEncircleModifier(epoch: epoch, cornerRadius: cornerRadius, lineWidth: lineWidth))
     }
 }

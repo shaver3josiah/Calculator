@@ -5,6 +5,16 @@ struct MusicView: View {
     @Environment(MusicStore.self) private var store
     @Environment(SoundStore.self) private var sound
 
+    // Press-feedback epochs for the encircle hairline.
+    @State private var loadEpoch = 0
+    @State private var toggleEpoch = 0
+    @State private var pressedChip: String? = nil
+    @State private var chipEpoch = 0
+    @State private var chipGeneration = 0
+    @State private var pressedPad: Int? = nil
+    @State private var padEpoch = 0
+    @State private var padGeneration = 0
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -12,7 +22,11 @@ struct MusicView: View {
                 textBox
                 sampleChips
                 loadButton
+                    .encircleOnPress(loadEpoch, cornerRadius: 999)
                 keyChordToggles
+                    .encircleOnPress(toggleEpoch, cornerRadius: theme.radius)
+                    .onChange(of: store.playOnKeys) { _, _ in toggleEpoch += 1 }
+                    .onChange(of: store.cycleOnTabSwitch) { _, _ in toggleEpoch += 1 }
 
                 if !store.chords.isEmpty {
                     controls
@@ -53,11 +67,18 @@ struct MusicView: View {
             ForEach(MusicStore.samples, id: \.0) { key, label in
                 Button(label) {
                     store.loadSample(key)
+                    bumpChip(key)
                 }
                 .font(bloomBody(12, weight: .medium))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(RoundedRectangle(cornerRadius: 999).fill(theme.color("surfaceSoft")))
+                .overlay {
+                    if theme.shimmerOn && pressedChip == key {
+                        EncircleOutline(trigger: chipEpoch, cornerRadius: 999, lineWidth: 1)
+                            .transition(.opacity)
+                    }
+                }
             }
         }
     }
@@ -67,6 +88,7 @@ struct MusicView: View {
             store.loadChords()
             sound.play("modeswitch")
             theme.triggerCurtain()
+            loadEpoch += 1
         }
         .font(bloomBody(15, weight: .semibold))
         .frame(maxWidth: .infinity)
@@ -140,14 +162,47 @@ struct MusicView: View {
 
     private var chordPads: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 10)], spacing: 10) {
-            ForEach(Array(store.chords.enumerated()), id: \.offset) { _, chord in
+            ForEach(Array(store.chords.enumerated()), id: \.offset) { index, chord in
                 Button(chord.symbol) {
                     store.playChord(chord)
+                    bumpPad(index)
                 }
                 .font(bloomNumber(16, weight: .semibold))
                 .frame(width: 76, height: 56)
                 .background(RoundedRectangle(cornerRadius: 14).fill(theme.color("surfaceSoft")))
                 .foregroundStyle(theme.color("deep"))
+                .overlay {
+                    if theme.shimmerOn && pressedPad == index {
+                        EncircleOutline(trigger: padEpoch, cornerRadius: 14, lineWidth: 1.5)
+                            .transition(.opacity)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Encircle the tapped chip for ~1s, then clear (guarded so a newer tap wins).
+    private func bumpChip(_ key: String) {
+        pressedChip = key
+        chipEpoch += 1
+        chipGeneration += 1
+        let expected = chipGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if chipGeneration == expected {
+                withAnimation(.easeOut(duration: 0.35)) { pressedChip = nil }
+            }
+        }
+    }
+
+    /// Encircle the tapped chord pad for ~1s, then clear (guarded so a newer tap wins).
+    private func bumpPad(_ index: Int) {
+        pressedPad = index
+        padEpoch += 1
+        padGeneration += 1
+        let expected = padGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if padGeneration == expected {
+                withAnimation(.easeOut(duration: 0.35)) { pressedPad = nil }
             }
         }
     }

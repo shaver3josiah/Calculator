@@ -49,9 +49,11 @@ struct CupHandle: Shape {
         func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
         }
+        // Loop bulges a touch further right than a wire handle would, so the 2×
+        // stroke (goldDetails) still leaves a visible opening against the body.
         p.move(to: pt(0.83, 0.22))
-        p.addQuadCurve(to: pt(1.00, 0.42), control: pt(1.06, 0.26))
-        p.addQuadCurve(to: pt(0.80, 0.62), control: pt(1.02, 0.62))
+        p.addQuadCurve(to: pt(1.02, 0.42), control: pt(1.10, 0.25))
+        p.addQuadCurve(to: pt(0.80, 0.62), control: pt(1.05, 0.62))
         return p
     }
 }
@@ -175,23 +177,34 @@ struct MeasureGlyph: View {
         let gold = theme.color("flowerCenter")
         switch kind {
         case .cup:
-            // Handle reads as a solid loop, not a wire — proportional to the glyph
-            // so the small count-grid cups keep the same sturdy look as the hero.
+            // Handle reads as a solid loop, not a wire — 2× the old weight,
+            // proportional to the glyph so the small count-grid cups keep the
+            // same sturdy look as the hero.
             CupHandle().path(in: rect)
-                .stroke(outlineGradient, style: StrokeStyle(lineWidth: max(rect.height * 0.045, 2.6), lineCap: .round))
-            // Gold rim + embossed-style measure ticks.
+                .stroke(outlineGradient, style: StrokeStyle(lineWidth: max(rect.height * 0.09, 5.2), lineCap: .round))
+            // Gold rim.
             Path { p in
                 p.move(to: CGPoint(x: 0.22 * rect.width, y: 0.10 * rect.height))
                 p.addLine(to: CGPoint(x: 0.84 * rect.width, y: 0.10 * rect.height))
             }
             .stroke(gold, lineWidth: 1.4)
+            // Embossed ¼/½/¾ measure lines, mapped bottom-up onto the body.
             Path { p in
-                for y in [0.40, 0.60] {
-                    p.move(to: CGPoint(x: 0.32 * rect.width, y: y * rect.height))
-                    p.addLine(to: CGPoint(x: 0.46 * rect.width, y: y * rect.height))
+                for tick in cupTicks {
+                    p.move(to: CGPoint(x: 0.32 * rect.width, y: tick.y * rect.height))
+                    p.addLine(to: CGPoint(x: 0.46 * rect.width, y: tick.y * rect.height))
                 }
             }
             .stroke(gold.opacity(0.7), lineWidth: 1)
+            // Labels only on the large hero glyph; small count-grid cups stay clean.
+            if height >= 100 {
+                ForEach(cupTicks.indices, id: \.self) { i in
+                    Text(cupTicks[i].label)
+                        .font(bloomBody(8, weight: .semibold))
+                        .foregroundStyle(gold.opacity(0.8))
+                        .position(x: 0.52 * rect.width, y: cupTicks[i].y * rect.height)
+                }
+            }
         case .tablespoon:
             SpoonRing(small: false).path(in: rect)
                 .stroke(gold, lineWidth: 1.4)
@@ -211,6 +224,13 @@ struct MeasureGlyph: View {
 
     private var clampedFraction: Double {
         min(max(fraction, 0), 1)
+    }
+
+    /// Embossed measure lines at ¼/½/¾ of the cup body. The body reads from
+    /// rim (y≈0.10) to bottom (y≈0.86), a 0.76 span; liquid rises bottom-up, so
+    /// fill fraction f sits at y = 0.86 − f·0.76 (¾ highest, ¼ lowest).
+    private var cupTicks: [(y: CGFloat, label: String)] {
+        [(0.29, "¾"), (0.48, "½"), (0.67, "¼")]
     }
 }
 

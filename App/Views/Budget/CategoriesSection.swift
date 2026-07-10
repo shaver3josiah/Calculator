@@ -21,19 +21,61 @@ private struct CompactToggle: View {
     }
 }
 
+/// A plain button that traces the pink→gold `EncircleOutline` hairline once on
+/// each press (~1s, then removes it) rather than leaving a resident outline.
+/// Gated behind `theme.shimmerOn`. Shared by the budget tab's press moments
+/// (add-category, add-item, import, month/year nav).
+struct EncirclePressButton<Label: View>: View {
+    @Environment(ThemeStore.self) private var theme
+    var cornerRadius: CGFloat = 12
+    var lineWidth: CGFloat = 1.5
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+
+    @State private var epoch = 0
+    @State private var lit = false
+
+    var body: some View {
+        Button {
+            pulse()
+            action()
+        } label: {
+            label()
+        }
+        .buttonStyle(.plain)
+        .overlay {
+            if theme.shimmerOn, lit {
+                EncircleOutline(trigger: epoch, cornerRadius: cornerRadius, lineWidth: lineWidth)
+            }
+        }
+    }
+
+    private func pulse() {
+        guard theme.shimmerOn else { return }
+        epoch += 1
+        lit = true
+        let current = epoch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            if epoch == current { lit = false }
+        }
+    }
+}
+
 struct CategoriesSection: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(BudgetStore.self) private var store
     @State private var showAddCat = false
     @State private var importTarget: Int?
     @State private var showImportList = false
+    @State private var headerPulseIndex: Int?
+    @State private var headerPulseEpoch = 0
 
     var body: some View {
         VStack(spacing: 12) {
             ForEach(store.month.cats.indices, id: \.self) { index in
                 categoryCard(index)
             }
-            Button {
+            EncirclePressButton(cornerRadius: theme.radius, lineWidth: 1.5) {
                 showAddCat = true
             } label: {
                 Text("+ Add a category")
@@ -42,7 +84,6 @@ struct CategoriesSection: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
             }
-            .buttonStyle(.plain)
             .background(RoundedRectangle(cornerRadius: theme.radius).strokeBorder(theme.color("line"), lineWidth: 1.5))
         }
         .sheet(isPresented: $showAddCat) {
@@ -65,16 +106,15 @@ struct CategoriesSection: View {
                         rowView(category: index, row: rowIndex)
                     }
                     HStack {
-                        Button {
+                        EncirclePressButton(cornerRadius: 8, lineWidth: 1) {
                             store.addRow(to: index)
                         } label: {
                             Text("+ Add item")
                                 .font(bloomBody(13, weight: .semibold))
                                 .foregroundStyle(theme.color("primaryStrong"))
                         }
-                        .buttonStyle(.plain)
                         Spacer()
-                        Button {
+                        EncirclePressButton(cornerRadius: 8, lineWidth: 1) {
                             importTarget = index
                             showImportList = true
                         } label: {
@@ -82,7 +122,6 @@ struct CategoriesSection: View {
                                 .font(bloomBody(13, weight: .semibold))
                                 .foregroundStyle(theme.color("muted"))
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding(.top, 4)
                 }
@@ -96,15 +135,16 @@ struct CategoriesSection: View {
     private func categoryHeader(_ index: Int, category: BudgetCategory) -> some View {
         HStack(spacing: 8) {
             Button {
+                pulseHeader(index)
                 store.toggleCategoryOpen(index)
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("muted"))
                     .rotationEffect(.degrees(category.open ? 90 : 0))
             }
             .buttonStyle(.plain)
-            .frame(minHeight: 44)
+            .frame(width: 40, height: 44)
             .contentShape(Rectangle())
 
             CompactToggle(isOn: catSelectAllBinding(index))
@@ -135,9 +175,25 @@ struct CategoriesSection: View {
                 .accessibilityLabel("Remove category")
             }
         }
+        .overlay {
+            if theme.shimmerOn, headerPulseIndex == index {
+                EncircleOutline(trigger: headerPulseEpoch, cornerRadius: 12, lineWidth: 1.5)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture {
+            pulseHeader(index)
             store.toggleCategoryOpen(index)
+        }
+    }
+
+    private func pulseHeader(_ index: Int) {
+        guard theme.shimmerOn else { return }
+        headerPulseEpoch += 1
+        headerPulseIndex = index
+        let epoch = headerPulseEpoch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            if headerPulseEpoch == epoch { headerPulseIndex = nil }
         }
     }
 
@@ -175,11 +231,11 @@ struct CategoriesSection: View {
     private func reorderButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(theme.color("muted"))
         }
         .buttonStyle(.plain)
-        .frame(minHeight: 44)
+        .frame(width: 32, height: 40)
         .contentShape(Rectangle())
     }
 

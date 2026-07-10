@@ -14,8 +14,31 @@ enum BloomMotion {
     static let draw = Animation.timingCurve(0.35, 0, 0.15, 1, duration: outlineDraw)
 }
 
-/// A glossy highlight band that sweeps once across on each `trigger` flip.
-/// `intense` gives the darker-pink keys a brighter shine. Reduce-motion safe.
+/// Feathered clear→white→clear gloss, angled 18° and sized to half the given
+/// `full` width. Shared by the idle glint and the per-press echo so they are
+/// literally the same band of light — same angle, width and direction; only the
+/// `peak` white opacity differs (the press burns brighter). The soft shoulders
+/// (feathered stops instead of a hard white middle) make it read as light on a
+/// surface, not a printed stripe.
+private func glossBand(peak: Double, full: CGFloat) -> some View {
+    LinearGradient(
+        stops: [
+            .init(color: .clear, location: 0),
+            .init(color: .white.opacity(peak * 0.3), location: 0.38),
+            .init(color: .white.opacity(peak), location: 0.5),
+            .init(color: .white.opacity(peak * 0.3), location: 0.62),
+            .init(color: .clear, location: 1),
+        ],
+        startPoint: .leading, endPoint: .trailing
+    )
+    .frame(width: full * 0.5)
+    .rotationEffect(.degrees(18))
+}
+
+/// A glossy highlight band that sweeps once across on each `trigger` flip — the
+/// brighter, faster echo of the `=` key's idle glint (same 18° band, same
+/// left→right direction). `intense` gives the darker-pink keys a brighter
+/// shine. Reduce-motion safe.
 struct ShimmerSweep: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let trigger: Bool
@@ -29,13 +52,8 @@ struct ShimmerSweep: View {
             Color.clear
         } else {
             GeometryReader { geo in
-                LinearGradient(
-                    colors: [.clear, .white.opacity(intense ? 0.5 : 0.28), .clear],
-                    startPoint: .leading, endPoint: .trailing
-                )
-                .frame(width: geo.size.width * 0.55)
-                .rotationEffect(.degrees(18))
-                .offset(x: phase * geo.size.width * 1.25)
+                glossBand(peak: intense ? 0.5 : 0.28, full: geo.size.width)
+                    .offset(x: phase * geo.size.width * 1.25)
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .allowsHitTesting(false)
@@ -93,10 +111,15 @@ struct EncircleOutline<Trigger: Equatable>: View {
 }
 
 /// Ambient "jewel glint" for the single hero CTA (the `=` key). Deliberately a
-/// low-contrast directional gloss that sweeps once, then rests ~4s — NOT a looping
-/// opacity/breathe pulse (the AI-slop "breathing CTA" fingerprint). One element only,
-/// gated behind the motion toggle + Reduce Motion, so it reads as specular material,
-/// not a status indicator. See the motion-design debate in v0.1.19.
+/// low-contrast directional gloss that eases once across — slow in, quick through
+/// the middle, soft out (smoothstep position mapping over a plain linear clock) —
+/// then parks off-screen and rests ~3.9s before the next glint. It is NOT a looping
+/// opacity/breathe pulse (the AI-slop "breathing CTA" fingerprint): the clock loops,
+/// the light does not; each cycle is a single glint→rest, never a continuous shimmer.
+/// The band itself is feathered (soft shoulders, peak white ≤0.2) so it reads as
+/// light on a surface, and a static top-left specular dot gives the key material
+/// depth. One element only, gated behind the motion toggle + Reduce Motion, so it
+/// reads as specular material, not a status indicator. See the debate in v0.1.19.
 struct AmbientShimmer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var cornerRadius: CGFloat = 12
@@ -109,15 +132,20 @@ struct AmbientShimmer: View {
         if reduceMotion {
             Color.clear
         } else {
-            GeometryReader { geo in
-                let sweep = min(t / sweepFraction, 1)   // races across, then holds off-screen right
-                LinearGradient(
-                    colors: [.clear, .white.opacity(0.2), .clear],
-                    startPoint: .leading, endPoint: .trailing
+            ZStack {
+                // Static specular highlight, pinned top-left — pure material depth,
+                // never animates.
+                RadialGradient(
+                    colors: [.white.opacity(0.15), .clear],
+                    center: UnitPoint(x: 0.3, y: 0.25),
+                    startRadius: 0, endRadius: 20
                 )
-                .frame(width: geo.size.width * 0.5)
-                .rotationEffect(.degrees(18))
-                .offset(x: (-1.1 + sweep * 2.2) * geo.size.width)
+                GeometryReader { geo in
+                    let p = min(t / sweepFraction, 1)   // races across, then holds off-screen right
+                    let eased = p * p * (3 - 2 * p)      // smoothstep: soft ends, fast centre
+                    glossBand(peak: 0.2, full: geo.size.width)
+                        .offset(x: (-1.1 + eased * 2.2) * geo.size.width)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .allowsHitTesting(false)

@@ -9,6 +9,14 @@ struct SoundStudioView: View {
     @State private var showCredits = false
     @State private var playEpoch = 0
 
+    // Positioned petal bursts: each play button reports its frame in the "studio"
+    // coordinate space; on preview we convert its center to fractions of the
+    // container so the burst erupts from the button that was pressed.
+    @State private var playFrames: [String: CGRect] = [:]
+    @State private var containerSize: CGSize = .zero
+    @State private var burstX: Double = 0.5
+    @State private var burstY: Double = 0.25
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -66,13 +74,24 @@ struct SoundStudioView: View {
                 }
                 .ignoresSafeArea()
             }
+            // Measure the container (viewport) that the burst overlay fills, so
+            // the play-button fractions below map onto the same area.
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: StudioSizeKey.self, value: proxy.size)
+                }
+            )
+            .coordinateSpace(.named("studio"))
             .overlay {
-                // Every preview scatters a few petals over the studio.
+                // Every preview scatters a few petals — erupting from the pressed
+                // play button (burstX/burstY are fractions of this same container).
                 if theme.petalsOn {
-                    PetalBurstView(trigger: playEpoch, originX: 0.5, originY: 0.25)
+                    PetalBurstView(trigger: playEpoch, originX: burstX, originY: burstY)
                         .allowsHitTesting(false)
                 }
             }
+            .onPreferenceChange(PlayButtonFrameKey.self) { playFrames = $0 }
+            .onPreferenceChange(StudioSizeKey.self) { containerSize = $0 }
             .navigationTitle("Sound Studio")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -142,6 +161,7 @@ struct SoundStudioView: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button {
                 preview(eventId)
@@ -163,8 +183,18 @@ struct SoundStudioView: View {
                     )
             }
             .buttonStyle(.plain)
+            // Report this button's on-screen center so the burst starts here.
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: PlayButtonFrameKey.self,
+                        value: [eventId: proxy.frame(in: .named("studio"))]
+                    )
+                }
+            )
             .accessibilityLabel("Preview sound")
         }
+        .frame(maxWidth: .infinity)
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -174,6 +204,12 @@ struct SoundStudioView: View {
 
     private func preview(_ eventId: String) {
         sound.preview(currentValue(eventId))
+        // Aim the burst at the pressed button: its center as a fraction of the
+        // container, clamped so an off-viewport reading can't escape 0...1.
+        if containerSize.width > 0, containerSize.height > 0, let frame = playFrames[eventId] {
+            burstX = min(max(frame.midX / containerSize.width, 0), 1)
+            burstY = min(max(frame.midY / containerSize.height, 0), 1)
+        }
         playEpoch += 1   // flowers bloom with every note
     }
 
@@ -186,6 +222,23 @@ struct SoundStudioView: View {
             get: { currentValue(eventId) },
             set: { sound.setEvent(eventId, to: $0) }
         )
+    }
+}
+
+/// Each play button's frame within the "studio" coordinate space, keyed by event id.
+private struct PlayButtonFrameKey: PreferenceKey {
+    static let defaultValue: [String: CGRect] = [:]
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
+/// The size of the container the burst overlay fills (used to normalise origins).
+private struct StudioSizeKey: PreferenceKey {
+    static let defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        if next != .zero { value = next }
     }
 }
 
