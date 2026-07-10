@@ -33,8 +33,13 @@ struct CalcView: View {
     var body: some View {
         VStack(spacing: 16) {
             displayArea
+            // Display card owns the full 700 column (big result + log look glorious
+            // wide); the tappable cluster caps at 460 centered so keys don't become
+            // ~160pt slabs on iPad. On compact phones (<460) these don't constrain.
             memoryBar
+                .frame(maxWidth: 460)
             keypad
+                .frame(maxWidth: 460)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)

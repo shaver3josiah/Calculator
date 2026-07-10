@@ -16,6 +16,10 @@ struct RootView: View {
     var body: some View {
         ZStack {
             themeStore.color("bg").ignoresSafeArea()
+            // iPad readable-column cap: header + content + tab bar stay within 700pt,
+            // centered. The bg fill and the overlays are siblings OUTSIDE this cap, so
+            // they stay full-bleed edge-to-edge on wide screens. Tab bar is kept inside
+            // the column so its buttons sit under the content, thumb-reachable.
             VStack(spacing: 0) {
                 header
                 content
@@ -24,6 +28,8 @@ struct RootView: View {
                     .transition(contentTransition)
                 BloomTabBar(selection: $selectedTab, onSelect: switchTab)
             }
+            .frame(maxWidth: 700)
+            .frame(maxWidth: .infinity)
             overlays
         }
         .onAppear { _ = themeStore.firstVisit(selectedTab.rawValue) }   // launch tab: seen, no curtain
@@ -39,29 +45,37 @@ struct RootView: View {
     }
 
     private var header: some View {
+        // The flower always stays. In verse mode the app name AND the buttons fade
+        // out and the ticker owns the full width from the flower to the trailing
+        // edge; the if/else swaps the whole subtree so no orphan HStack gap is left
+        // behind the flower.
         HStack(spacing: 12) {
             TappableFlower(size: 38, onDoubleTap: toggleVerse)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Hannah's")
-                    .font(bloomScript(28))
-                    .foregroundStyle(themeStore.color("deep"))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text("CALCULATOR & PROJECTIONS")
-                    .font(bloomBody(9, weight: .semibold))
-                    .foregroundStyle(themeStore.color("muted"))
-                    .tracking(1.2)
-            }
-            Spacer()
-            // Trailing slot: the icon buttons, or — in verse mode — the verse ticker.
             if verseMode {
                 HeaderVerseTicker()
+                    .frame(maxWidth: .infinity)
                     .transition(.opacity)
             } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Hannah's")
+                        .font(bloomScript(28))
+                        .foregroundStyle(themeStore.color("deep"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text("CALCULATOR & PROJECTIONS")
+                        .font(bloomBody(9, weight: .semibold))
+                        .foregroundStyle(themeStore.color("muted"))
+                        .tracking(1.2)
+                }
+                .transition(.opacity)
+                Spacer()
                 headerButtons
                     .transition(.opacity)
             }
         }
+        // Pin the header band to the ticker's height in BOTH modes so toggling verse
+        // mode never jumps the header (the 66pt ticker is taller than the name/buttons).
+        .frame(minHeight: HeaderVerseTicker.tickerHeight)
         .padding(.horizontal, 18)
         .padding(.top, 12)
         .padding(.bottom, 10)

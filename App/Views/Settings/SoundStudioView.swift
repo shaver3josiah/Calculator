@@ -12,7 +12,12 @@ struct SoundStudioView: View {
     // Positioned petal bursts: each play button reports its frame in the "studio"
     // coordinate space; on preview we convert its center to fractions of the
     // container so the burst erupts from the button that was pressed.
-    @State private var playFrames: [String: CGRect] = [:]
+    //
+    // The frames live in a plain reference box, NOT @State: they change on every
+    // scroll frame (viewport-relative), and a @State write per frame re-evaluates
+    // the whole view while scrolling for zero visual benefit. The box mutation
+    // publishes nothing; the value is only read at tap time in preview().
+    @State private var frameBox = FrameBox()
     @State private var containerSize: CGSize = .zero
     @State private var burstX: Double = 0.5
     @State private var burstY: Double = 0.25
@@ -90,7 +95,7 @@ struct SoundStudioView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .onPreferenceChange(PlayButtonFrameKey.self) { playFrames = $0 }
+            .onPreferenceChange(PlayButtonFrameKey.self) { frameBox.frames = $0 }   // no view invalidation
             .onPreferenceChange(StudioSizeKey.self) { containerSize = $0 }
             .navigationTitle("Sound Studio")
             .navigationBarTitleDisplayMode(.inline)
@@ -206,7 +211,7 @@ struct SoundStudioView: View {
         sound.preview(currentValue(eventId))
         // Aim the burst at the pressed button: its center as a fraction of the
         // container, clamped so an off-viewport reading can't escape 0...1.
-        if containerSize.width > 0, containerSize.height > 0, let frame = playFrames[eventId] {
+        if containerSize.width > 0, containerSize.height > 0, let frame = frameBox.frames[eventId] {
             burstX = min(max(frame.midX / containerSize.width, 0), 1)
             burstY = min(max(frame.midY / containerSize.height, 0), 1)
         }
@@ -223,6 +228,12 @@ struct SoundStudioView: View {
             set: { sound.setEvent(eventId, to: $0) }
         )
     }
+}
+
+/// Reference box for the play-button frames — a plain class (not @Observable) so
+/// per-scroll-frame updates mutate silently instead of invalidating the view.
+private final class FrameBox {
+    var frames: [String: CGRect] = [:]
 }
 
 /// Each play button's frame within the "studio" coordinate space, keyed by event id.

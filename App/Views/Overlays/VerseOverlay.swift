@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Verse mode — double-tapping the header flower fades out the header buttons and
-/// slots this compact ticker into the trailing region where they were. It walks
-/// through seven proverbs on wisdom, wealth, and the noble woman, one small slide
-/// at a time, auto-advancing with a gentle cross-fade. Tap the text to skip ahead;
-/// double-tap the flower again to leave. Lives inline in RootView's header row —
-/// not a full-screen overlay.
+/// Verse mode — double-tapping the header flower fades out the app name *and* the
+/// header buttons, and hands this ticker the full width from the flower to the
+/// trailing edge. It walks through seven proverbs on wisdom, wealth, and the noble
+/// woman, one leading-aligned slide at a time, auto-advancing with a gentle
+/// cross-fade — reading like a line of scripture flowing from the bloom. Tap the
+/// text to skip ahead; double-tap the flower again to leave. Lives inline in
+/// RootView's header row — not a full-screen overlay.
 struct HeaderVerseTicker: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -15,13 +16,14 @@ struct HeaderVerseTicker: View {
     /// slide gets a full read before the next auto-advance.
     @State private var cycle = 0
 
-    static let tickerWidth: CGFloat = 180
-    static let tickerHeight: CGFloat = 56   // fits 3 lines of bloomBody(12.5); fixed so slides don't jitter the header
+    static let tickerHeight: CGFloat = 66   // 3 lines of bloomBody(15).italic() + lineSpacing(2) + breathing room; fixed so slide changes never jitter the header. RootView pins the header band to this so verse-mode height == name/buttons height.
     static let slideSeconds: Double = 4.5
-    /// Word-boundary budget per slide. ~72 chars ≈ 3 lines of bloomBody(12.5) in a
-    /// ~180pt trailing region; minimumScaleFactor(0.9) is the safety net if a slide
-    /// runs long.
-    static let charBudget = 72
+    /// Word-boundary budget per slide. ~110 chars ≈ 3 lines of bloomBody(15) in the
+    /// now-wide slot (flower→trailing edge): ~289pt on iPhone SE (375) up to ~307pt
+    /// on iPhone 16 (393) → ~36–38 chars/line in Quicksand at 15pt → ~3 lines with
+    /// margin. Wider slots (iPad inside the 700 cap ≈ 614pt) just use fewer lines.
+    /// minimumScaleFactor(0.9) is the safety net if a slide runs long.
+    static let charBudget = 110
 
     /// Berean Standard Bible wording (verified verbatim against biblehub.com/bsb).
     static let verses: [(text: String, ref: String)] = [
@@ -79,17 +81,17 @@ struct HeaderVerseTicker: View {
         // swaps the `.id`-tagged Text inside) never restarts the dwell timer.
         return ZStack {
             Text(slide.text)
-                .font(slide.isRef ? bloomBody(10.5, weight: .semibold)
-                                  : bloomBody(12.5, weight: .medium).italic())
+                .font(slide.isRef ? bloomBody(12, weight: .semibold)
+                                  : bloomBody(15, weight: .medium).italic())
                 .foregroundStyle(theme.color(slide.isRef ? "muted" : "text"))
                 .lineLimit(3)
                 .minimumScaleFactor(0.9)
-                .multilineTextAlignment(.trailing)
+                .multilineTextAlignment(.leading)
                 .lineSpacing(2)
                 .id(index)
                 .transition(.opacity)
         }
-        .frame(width: Self.tickerWidth, height: Self.tickerHeight, alignment: .trailing)
+        .frame(maxWidth: .infinity, height: Self.tickerHeight, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { advanceByTap() }
         // `.task` runs while the ticker is mounted and is cancelled automatically

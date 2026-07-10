@@ -60,17 +60,20 @@ private struct RosePetalRing: Shape {
     }
 }
 
-// MARK: - Interactive header flower (single-tap twirl + glitter, double-tap → verse mode)
+// MARK: - Interactive header flower (tap twirl · double-tap verse · 3s hold white-noise)
 
 /// The header's flower wrapped with its signature tap delight. Leaves `FlowerLogo`
 /// itself pure so every other call site keeps compiling unchanged.
 ///
 /// Single tap → a spring twirl (overshoots ~360–540° and settles), a quick scale
 /// pop, and a one-shot glitter burst. Double tap → the same twirl delight, then
-/// `onDoubleTap` (verse mode).
+/// `onDoubleTap` (verse mode). 3-second hold → toggles gentle looping white-noise
+/// (`WhiteNoisePlayer`); while it plays the flower slowly breathes (or shows a
+/// static gold dot under reduce motion), a cue driven by the player's `isPlaying`.
 /// Gesture order matters: the `count: 2` tap is attached *before* the `count: 1`
 /// tap, so SwiftUI holds the single recognizer until the double fails — a genuine
-/// double-tap fires only `onDoubleTap`, never the single handler.
+/// double-tap fires only `onDoubleTap`, never the single handler. The long press is
+/// a `.simultaneousGesture`, independent of that arbitration.
 struct TappableFlower: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(SoundStore.self) private var sound
@@ -82,15 +85,26 @@ struct TappableFlower: View {
     @State private var pop: CGFloat = 1
     @State private var pulse = false
     @State private var glitter = 0
+    @State private var breathe = false
+    @State private var suppressNextTap = false
 
     var body: some View {
         ZStack {
             FlowerLogo(size: size)
                 .rotationEffect(.degrees(spin))
-                .scaleEffect(pop)
+                .scaleEffect(pop * (breathe ? 1.04 : 1.0))
                 .opacity(pulse ? 0.55 : 1)
             if theme.petalsOn && !reduceMotion {
                 GlitterBurst(trigger: glitter, size: size)
+                    .allowsHitTesting(false)
+            }
+            // White-noise-active cue when the gentle breathing can't run (reduce
+            // motion / motion off): a static small gold dot at the flower's corner.
+            if WhiteNoisePlayer.shared.isPlaying && !breathingActive {
+                Circle()
+                    .fill(theme.color("flowerCenter"))
+                    .frame(width: size * 0.16, height: size * 0.16)
+                    .offset(x: size * 0.36, y: -size * 0.36)
                     .allowsHitTesting(false)
             }
         }
@@ -98,13 +112,61 @@ struct TappableFlower: View {
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { twirl(); onDoubleTap() }
         .onTapGesture(count: 1) { singleTap() }
+        // 3-second hold → toggle the white-noise. `.simultaneousGesture` keeps the
+        // long press fully independent of the delicate double-before-single tap
+        // arbitration above, so those still resolve exactly as before; its `onEnded`
+        // fires at the 3s mark while the finger is still down.
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 3).onEnded { _ in handleHold() }
+        )
+        .onChange(of: breathingActive) { _, active in animateBreathing(active) }
+        .onAppear { animateBreathing(breathingActive) }
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel("Hannah's flower")
     }
 
     private func singleTap() {
+        // A single tap that is really the release after a successful 3s hold
+        // (a simultaneous long-press can leak one) — consume it, don't twirl.
+        if suppressNextTap {
+            suppressNextTap = false
+            return
+        }
         sound.play("easteregg")
         twirl()
+    }
+
+    /// The breathing cue runs only when noise is on AND motion is allowed.
+    private var breathingActive: Bool {
+        WhiteNoisePlayer.shared.isPlaying && theme.motionEnabled && !reduceMotion
+    }
+
+    private func animateBreathing(_ active: Bool) {
+        if active {
+            withAnimation(.easeInOut(duration: 4).repeatForever(autoreverses: true)) {
+                breathe = true
+            }
+        } else {
+            withAnimation(.easeInOut(duration: 0.4)) { breathe = false }
+        }
+    }
+
+    /// 3-second hold toggles the white-noise. Fully gated on SoundStore.enabled:
+    /// if sounds are off, the hold is inert. Only the *start* plays a cue.
+    private func handleHold() {
+        guard sound.enabled else { return }
+        if WhiteNoisePlayer.shared.isPlaying {
+            WhiteNoisePlayer.shared.stop()
+        } else {
+            sound.play("success")
+            WhiteNoisePlayer.shared.start()
+        }
+        // Swallow the single-tap the release can leak. Self-heals after 1.5s so a
+        // genuine later tap is never wrongly eaten.
+        // ponytail: 1.5s window; only misses if the finger stays down >1.5s past
+        // the 3s fire, which wouldn't register as a tap anyway.
+        suppressNextTap = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { suppressNextTap = false }
     }
 
     /// The spring twirl + glitter delight, shared by single- and double-tap.

@@ -62,6 +62,7 @@ struct ConvertPanel: View {
                     .labelsHidden()
                 }
             }
+            .frame(maxWidth: 520)   // keep the amount + pickers from stretching stringy on iPad
 
             convertIllustration
                 .padding(.horizontal, 20)

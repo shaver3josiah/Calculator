@@ -22,7 +22,7 @@ targets:
         product: BloomCore
     settings:
       base:
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
         PRODUCT_BUNDLE_IDENTIFIER: com.shaver.bloomcalculator
         MARKETING_VERSION: "1.0"
@@ -50,6 +50,13 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
+        # iPad: fullscreen gift app, all four orientations, no Split View/multitasking.
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: true
         UILaunchScreen:
           UIColorName: LaunchBackground
 schemes:

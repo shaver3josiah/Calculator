@@ -8,6 +8,7 @@ struct VisualizePanel: View {
     @Environment(ListsStore.self) private var lists
     @Environment(SoundStore.self) private var sound
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var hSize
 
     @State private var rawText = ""
     @State private var scale: Double = 1.0
@@ -186,7 +187,9 @@ struct VisualizePanel: View {
             .highPriorityGesture(panGesture(size: geo.size), including: zoom > 1 ? .all : .subviews)
             .onTapGesture(count: 2) { resetZoom() }
         }
-        .frame(height: Self.counterHeight)
+        // Grow the counter on iPad (regular width) so it doesn't read as a thin
+        // band in the wide column; phones (compact) keep the 300pt height.
+        .frame(height: hSize == .regular ? 380 : Self.counterHeight)
     }
 
     private func miseView(_ items: [Placement], in size: CGSize) -> some View {
@@ -315,11 +318,16 @@ struct VisualizePanel: View {
                 pan = clampPan(pan, size: size)
             }
             .onEnded { _ in
-                zoomBase = zoom
-                if zoom <= 1.001 {
+                // Snap to exactly 1 below a perceptible epsilon: the pan mask engages
+                // on `zoom > 1`, so a pinch left resting at e.g. 1.005 would silently
+                // steal one-finger scrolls from the outer ScrollView forever.
+                if zoom <= 1.02 {
+                    zoom = 1
+                    zoomBase = 1
                     pan = .zero
                     panBase = .zero
                 } else {
+                    zoomBase = zoom
                     panBase = pan
                 }
             }
