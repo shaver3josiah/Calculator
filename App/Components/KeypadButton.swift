@@ -8,6 +8,7 @@ struct KeypadButton: View {
     var soundEvent: String
     var isAccent: Bool = false
     var isStrong: Bool = false
+    var height: CGFloat = 58   // compresses on small phones so the grid never clips
     var action: () -> Void
 
     @State private var isPressed = false
@@ -22,7 +23,7 @@ struct KeypadButton: View {
                 .font(bloomNumber(22, weight: .medium))
                 .foregroundStyle(labelColor)
                 .frame(maxWidth: .infinity)
-                .frame(height: 58)
+                .frame(height: height)
                 .background(backgroundColor)
                 .clipShape(RoundedRectangle(cornerRadius: themeStore.radius * 0.6))
                 .overlay {

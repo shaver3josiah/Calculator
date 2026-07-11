@@ -33,22 +33,25 @@ struct CalcView: View {
     ]
 
     var body: some View {
-        // The card gets EXACTLY the slot height minus the fixed chrome below it —
-        // measured from CalcView's real slot (post header/tab bar), so there's no
-        // container-semantics guessing and no VStack arbitration to lose. Reserve:
-        // 8 top pad + 16 spacing + ~42 memory bar + 16 spacing + 330 keypad ≈ 416.
-        // Floor 140 keeps the result readable on an iPhone SE (which has clipped
-        // the keypad slightly since long before this change — pre-existing).
+        // Everything is sized from CalcView's real slot so NOTHING can clip:
+        // fixed chrome = 8 top pad + ~42 memory bar + 2×16 spacing = 82. The
+        // remainder splits between keypad and display card — keys run at their
+        // ideal 58pt when there's room and compress (never below 44pt) on small
+        // phones like the SE, with the card taking all the rest. Bigger devices
+        // therefore scale the display up while the keypad stays hand-sized.
         GeometryReader { geo in
+            let slack = geo.size.height - 82
+            let keyHeight = min(58.0, max(44.0, (slack - 120 - 40) / 5))
+            let cardHeight = max(120, slack - (keyHeight * 5 + 40))
             VStack(spacing: 16) {
                 displayArea
-                    .frame(height: max(140, geo.size.height - 416))
+                    .frame(height: cardHeight)
                 // Display card owns the full 700 column (big result + log look glorious
                 // wide); the tappable cluster caps at 460 centered so keys don't become
                 // ~160pt slabs on iPad. On compact phones (<460) these don't constrain.
                 memoryBar
                     .frame(maxWidth: 460)
-                keypad
+                keypad(keyHeight: keyHeight)
                     .frame(maxWidth: 460)
             }
             .frame(maxWidth: .infinity)
@@ -116,27 +119,20 @@ struct CalcView: View {
         }
     }
 
-    // Result column: expression line on top, giant auto-shrinking result below. The
-    // 280pt font is a ceiling — minimumScaleFactor(0.1) + the fill frame let SwiftUI
-    // scale glyphs down to fit BOTH the card width and height, so short answers render
-    // enormous and long ones still fit on one line, pinned bottom-trailing.
+    // Result column: just the giant auto-shrinking number. The old expression line
+    // ("7 + 6") is gone — the calc log at top-left already tells that story, and
+    // removing it hands its height to the result. The 280pt font is a ceiling —
+    // minimumScaleFactor(0.1) + the fill frame let SwiftUI scale glyphs down to fit
+    // BOTH the card width and height, so short answers render enormous and long
+    // ones still fit on one line, pinned bottom-trailing.
     private var resultColumn: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text(calcStore.expression)
-                .font(bloomNumber(56, weight: .medium))   // the "what is typed" line
-                .foregroundStyle(themeStore.color("muted"))
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .lineLimit(1)
-                .minimumScaleFactor(0.3)   // long expressions shrink instead of clipping
-            RollingNumberText(
-                text: calcStore.display,
-                font: bloomNumber(280, weight: .semibold),
-                color: themeStore.color("text")
-            )
-            .lineLimit(1)
-            .minimumScaleFactor(0.1)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        }
+        RollingNumberText(
+            text: calcStore.display,
+            font: bloomNumber(280, weight: .semibold),
+            color: themeStore.color("text")
+        )
+        .lineLimit(1)
+        .minimumScaleFactor(0.1)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
@@ -331,7 +327,7 @@ struct CalcView: View {
         .buttonStyle(.plain)
     }
 
-    private var keypad: some View {
+    private func keypad(keyHeight: CGFloat) -> some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
         return LazyVGrid(columns: columns, spacing: 10) {
             ForEach(keypadRows.flatMap { $0 }) { def in
@@ -339,7 +335,8 @@ struct CalcView: View {
                     label: def.label,
                     soundEvent: def.event,
                     isAccent: def.accent,
-                    isStrong: def.strong
+                    isStrong: def.strong,
+                    height: keyHeight
                 ) {
                     calcStore.press(def.key)
                 }
