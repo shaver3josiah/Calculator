@@ -32,6 +32,13 @@ struct RootView: View {
             .frame(maxWidth: .infinity)
             overlays
         }
+        // Chrome integrity: the header band, verse ticker, display card, and tab bar
+        // are fixed-height jewel layouts designed at standard type size. On a phone
+        // with larger Dynamic Type the custom fonts scale up and burst those bands
+        // (header text wrapping under the card, verse lines clipping — seen in the
+        // field). Cap the app at the standard size so it renders as designed on every
+        // device; sheets/covers inherit this through the presentation environment.
+        .dynamicTypeSize(...DynamicTypeSize.large)
         .onAppear { _ = themeStore.firstVisit(selectedTab.rawValue) }   // launch tab: seen, no curtain
         .fullScreenCover(isPresented: historyPresentedBinding) {
             HistoryOverlay()
@@ -66,6 +73,8 @@ struct RootView: View {
                         .font(bloomBody(9, weight: .semibold))
                         .foregroundStyle(themeStore.color("muted"))
                         .tracking(1.2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)   // squeeze, never wrap under the card
                 }
                 .transition(.opacity)
                 Spacer()

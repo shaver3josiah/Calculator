@@ -49,11 +49,14 @@ struct CupHandle: Shape {
         func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
             CGPoint(x: rect.minX + x * w, y: rect.minY + y * h)
         }
-        // Loop bulges a touch further right than a wire handle would, so the 2×
-        // stroke (goldDetails) still leaves a visible opening against the body.
-        p.move(to: pt(0.83, 0.22))
-        p.addQuadCurve(to: pt(1.02, 0.42), control: pt(1.10, 0.25))
-        p.addQuadCurve(to: pt(0.80, 0.62), control: pt(1.05, 0.62))
+        // Both endpoints sit INSIDE the body silhouette (the right wall runs
+        // x≈0.82→0.77 over this y-range), so the thick stroke overlaps the cup
+        // paint and reads as one welded ceramic piece — the old endpoints landed
+        // just outside the tapered wall, leaving the handle floating (seen in a
+        // user photo). The loop still bulges right for a visible opening.
+        p.move(to: pt(0.78, 0.20))
+        p.addQuadCurve(to: pt(1.00, 0.42), control: pt(1.06, 0.24))
+        p.addQuadCurve(to: pt(0.72, 0.64), control: pt(1.02, 0.62))
         return p
     }
 }
@@ -177,11 +180,12 @@ struct MeasureGlyph: View {
         let gold = theme.color("flowerCenter")
         switch kind {
         case .cup:
-            // Handle reads as a solid loop, not a wire — 2× the old weight,
-            // proportional to the glyph so the small count-grid cups keep the
-            // same sturdy look as the hero.
+            // Handle reads as a solid loop, not a wire — but capped at 12pt: the
+            // old uncapped 9%-of-height stroke hit ~22pt on the hero cup, which
+            // looked like a pool noodle (user photo). 4pt floor keeps the small
+            // count-grid cups sturdy.
             CupHandle().path(in: rect)
-                .stroke(outlineGradient, style: StrokeStyle(lineWidth: max(rect.height * 0.09, 5.2), lineCap: .round))
+                .stroke(outlineGradient, style: StrokeStyle(lineWidth: min(max(rect.height * 0.07, 4), 12), lineCap: .round))
             // Gold rim.
             Path { p in
                 p.move(to: CGPoint(x: 0.22 * rect.width, y: 0.10 * rect.height))

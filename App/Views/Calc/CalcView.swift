@@ -34,21 +34,24 @@ struct CalcView: View {
 
     var body: some View {
         // Everything is sized from CalcView's real slot so NOTHING can clip:
-        // fixed chrome = 8 top pad + ~42 memory bar + 2×16 spacing = 82. The
-        // remainder splits between keypad and display card — keys run at their
-        // ideal 58pt when there's room and compress (never below 44pt) on small
-        // phones like the SE, with the card taking all the rest. Bigger devices
-        // therefore scale the display up while the keypad stays hand-sized.
+        // fixed chrome = 8 top pad + ~42 memory bar + 3×16 gaps = 98. Keys grow
+        // toward 64pt when there's room and compress (never below 44pt) on small
+        // phones; the display card is CAPPED at 180 — the user doesn't want a
+        // billboard, and an empty oversized card reads as wasted space. Any
+        // remaining slack collects as clean background between the card and the
+        // controls (visible only on very tall screens / iPad, where it reads as
+        // an intentional split layout).
         GeometryReader { geo in
-            let slack = geo.size.height - 82
-            let keyHeight = min(58.0, max(44.0, (slack - 120 - 40) / 5))
-            let cardHeight = max(120, slack - (keyHeight * 5 + 40))
+            let slack = geo.size.height - 98
+            let keyHeight = min(64.0, max(44.0, (slack - 180 - 40) / 5))
+            let cardHeight = min(180, max(132, slack - (keyHeight * 5 + 40)))
             VStack(spacing: 16) {
                 displayArea
                     .frame(height: cardHeight)
-                // Display card owns the full 700 column (big result + log look glorious
-                // wide); the tappable cluster caps at 460 centered so keys don't become
-                // ~160pt slabs on iPad. On compact phones (<460) these don't constrain.
+                Spacer(minLength: 0)
+                // Display card owns the full 700 column; the tappable cluster caps
+                // at 460 centered so keys don't become ~160pt slabs on iPad. On
+                // compact phones (<460) these don't constrain.
                 memoryBar
                     .frame(maxWidth: 460)
                 keypad(keyHeight: keyHeight)
@@ -119,20 +122,17 @@ struct CalcView: View {
         }
     }
 
-    // Result column: just the giant auto-shrinking number. The old expression line
-    // ("7 + 6") is gone — the calc log at top-left already tells that story, and
-    // removing it hands its height to the result. The 280pt font is a ceiling —
-    // minimumScaleFactor(0.1) + the fill frame let SwiftUI scale glyphs down to fit
-    // BOTH the card width and height, so short answers render enormous and long
-    // ones still fit on one line, pinned bottom-trailing.
+    // Result column: one bold-but-not-billboard number (user feedback: 280pt "fills
+    // the screen" sizing read as wasted space). 96pt ceiling, shrink-to-fit for
+    // long values, pinned bottom-trailing; the log/wheel column fills the top-left.
     private var resultColumn: some View {
         RollingNumberText(
             text: calcStore.display,
-            font: bloomNumber(280, weight: .semibold),
+            font: bloomNumber(96, weight: .semibold),
             color: themeStore.color("text")
         )
         .lineLimit(1)
-        .minimumScaleFactor(0.1)
+        .minimumScaleFactor(0.15)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
