@@ -155,7 +155,12 @@ struct VisualizePanel: View {
     private var countertop: some View {
         GeometryReader { geo in
             ZStack {
-                CounterFinishView(finish: store.counterFinish)
+                CounterFinishView(finish: store.counterFinish, veinTint: theme.color("deep"))
+                // Clean-polished glint: marble only (wood is satin — a travelling
+                // specular band would misread its finish). Gated + reduce-motion safe.
+                if store.counterFinish == .marble && theme.shimmerOn && !reduceMotion {
+                    CounterShimmer(grainAngle: CounterFinishView.grainAngle)
+                }
                 if placements.isEmpty {
                     Text("Paste a recipe and tap Visualize to set the counter.")
                         .font(bloomBody(12))
@@ -530,51 +535,162 @@ struct VisualizePanel: View {
 /// Seeds are fixed constants so veins/planks/knots never shift between renders.
 private struct CounterFinishView: View {
     let finish: CounterFinish
+    /// Theme "deep" tone, mixed in a hint into the vein ink so the stone quietly
+    /// echoes the active palette. Marble only; wood ignores it.
+    var veinTint: Color = Color(red: 0.40, green: 0.20, blue: 0.30)
+
+    /// Diagonal grain shared by the veins and the specular shimmer, so the stone
+    /// and the light that slides over it read as one material.
+    static let grainAngle: Double = 20   // degrees; veins descend left→right
 
     var body: some View {
         Canvas { context, size in
             switch finish {
-            case .marble: Self.drawMarble(context, size)
+            case .marble: Self.drawMarble(context, size, tint: veinTint)
             case .wood: Self.drawWood(context, size)
             }
         }
     }
 
-    private static func drawMarble(_ ctx: GraphicsContext, _ size: CGSize) {
-        let full = Path(CGRect(origin: .zero, size: size))
-        // Warm-white base.
-        ctx.fill(full, with: .color(Color(red: 0.972, green: 0.965, blue: 0.952)))
+    // MARK: Marble (Carrara-style: warm-white base, soft clouds, diagonal veins)
 
-        // 3 faint meandering gray veins.
-        for v in 0..<3 {
-            var rng = SeededGenerator(seed: v &* 8231 &+ 101)
-            var path = Path()
-            let startY = size.height * CGFloat(Double.random(in: 0.15...0.85, using: &rng))
-            path.move(to: CGPoint(x: -12, y: startY))
-            let segs = 4
-            var x: CGFloat = 0
-            for s in 0..<segs {
-                let nx = size.width * CGFloat(s + 1) / CGFloat(segs) + 12
-                let ny = size.height * CGFloat(Double.random(in: 0.1...0.9, using: &rng))
-                let cx = (x + nx) / 2
-                let cy = size.height * CGFloat(Double.random(in: 0.1...0.9, using: &rng))
-                path.addQuadCurve(to: CGPoint(x: nx, y: ny), control: CGPoint(x: cx, y: cy))
-                x = nx
-            }
-            ctx.stroke(
-                path,
-                with: .color(Color(white: 0.45).opacity(0.14 + 0.03 * Double(v))),
-                lineWidth: CGFloat(1.6 - 0.3 * Double(v))
-            )
+    private static func drawMarble(_ ctx: GraphicsContext, _ size: CGSize, tint: Color) {
+        let w = size.width, h = size.height
+        let full = Path(CGRect(origin: .zero, size: size))
+
+        // 1. Barely-warm near-white base.
+        ctx.fill(full, with: .color(Color(red: 0.975, green: 0.969, blue: 0.958)))
+
+        // 2. Big soft tonal clouds so the slab isn't flat — three low-opacity gray
+        //    radial washes; the fade-to-clear gives a blurred blob for free.
+        for c in 0..<3 {
+            var rng = SeededGenerator(seed: c &* 7331 &+ 41)
+            let cx = w * CGFloat(Double.random(in: 0.1...0.9, using: &rng))
+            let cy = h * CGFloat(Double.random(in: 0.1...0.9, using: &rng))
+            let r = max(w, h) * CGFloat(Double.random(in: 0.45...0.75, using: &rng))
+            let gray = Double.random(in: 0.60...0.72, using: &rng)
+            let blob = Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2))
+            ctx.fill(blob, with: .radialGradient(
+                Gradient(colors: [Color(white: gray).opacity(0.06), Color(white: gray).opacity(0)]),
+                center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r
+            ))
         }
 
-        // Subtle top-leading white sheen.
-        let sheen = Gradient(colors: [Color.white.opacity(0.35), Color.white.opacity(0)])
+        // Vein ink: cool gray carrying a hint of the theme's deep tone.
+        let ink = blend(Color(red: 0.34, green: 0.36, blue: 0.40), tint, 0.22)
+        let slope = CGFloat(tan(grainAngle * .pi / 180))
+
+        // 3. Two primary veins on the shared grain, each a soft wide underlay + a
+        //    crisp darker core, plus one short tapering tributary that fades out.
+        for v in 0..<2 {
+            var rng = SeededGenerator(seed: v &* 9173 &+ 211)
+            let y0 = h * CGFloat(Double.random(in: 0.30...0.70, using: &rng))
+            let pts = veinPoints(w: w, h: h, y0: y0, slope: slope, rng: &rng)
+            let path = smoothPath(pts)
+            ctx.stroke(path, with: .color(ink.opacity(0.10)), style: StrokeStyle(lineWidth: 3.4, lineCap: .round))
+            ctx.stroke(path, with: .color(ink.opacity(0.20)), style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+            drawBranch(ctx, from: pts, slope: slope, ink: ink, rng: &rng)
+        }
+
+        // 4. Faint hairline veins parallel-ish to the grain, very low opacity.
+        for f in 0..<4 {
+            var rng = SeededGenerator(seed: f &* 4909 &+ 83)
+            let y0 = h * CGFloat(Double.random(in: 0.12...0.88, using: &rng))
+            let pts = veinPoints(w: w, h: h, y0: y0, slope: slope, rng: &rng)
+            ctx.stroke(smoothPath(pts), with: .color(ink.opacity(0.06)), style: StrokeStyle(lineWidth: 0.7, lineCap: .round))
+        }
+
+        // 5. A couple of tiny speckle clusters.
+        for s in 0..<2 {
+            var rng = SeededGenerator(seed: s &* 6607 &+ 29)
+            let bx = w * CGFloat(Double.random(in: 0.2...0.8, using: &rng))
+            let by = h * CGFloat(Double.random(in: 0.2...0.8, using: &rng))
+            for _ in 0..<7 {
+                let dx = CGFloat(Double.random(in: -10...10, using: &rng))
+                let dy = CGFloat(Double.random(in: -10...10, using: &rng))
+                let d = CGFloat(Double.random(in: 0.6...1.6, using: &rng))
+                ctx.fill(Path(ellipseIn: CGRect(x: bx + dx, y: by + dy, width: d, height: d)),
+                         with: .color(ink.opacity(0.14)))
+            }
+        }
+
+        // 6. Faint static top-leading sheen for baseline depth. The live "clean"
+        //    glint is the animated CounterShimmer layered on top when motion is on.
         ctx.fill(full, with: .linearGradient(
-            sheen,
-            startPoint: .zero,
-            endPoint: CGPoint(x: size.width * 0.7, y: size.height * 0.7)
+            Gradient(colors: [Color.white.opacity(0.16), Color.white.opacity(0)]),
+            startPoint: .zero, endPoint: CGPoint(x: w * 0.6, y: h * 0.7)
         ))
+    }
+
+    /// Points for one vein: a straight baseline on the grain plus a single gentle
+    /// low-frequency sine bow (seeded phase/amplitude). One slow wave — never a
+    /// zigzag — so `smoothPath` renders it as geology, not a scribble.
+    private static func veinPoints(w: CGFloat, h: CGFloat, y0: CGFloat, slope: CGFloat, rng: inout SeededGenerator) -> [CGPoint] {
+        let margin: CGFloat = 24
+        let n = 8
+        let phase = Double.random(in: 0...(.pi * 2), using: &rng)
+        let waves = Double.random(in: 0.8...1.6, using: &rng)   // < 2 gentle bows across
+        let amp = h * CGFloat(Double.random(in: 0.03...0.06, using: &rng))
+        var pts: [CGPoint] = []
+        for i in 0...n {
+            let t = Double(i) / Double(n)
+            let x = -margin + CGFloat(t) * (w + margin * 2)
+            let baseY = y0 + (x - w / 2) * slope
+            let wander = amp * CGFloat(sin(phase + t * waves * .pi * 2))
+            pts.append(CGPoint(x: x, y: baseY + wander))
+        }
+        return pts
+    }
+
+    /// Chained quad curves through midpoints (C1-smooth) — no sharp corners even
+    /// if the input points jitter.
+    private static func smoothPath(_ pts: [CGPoint]) -> Path {
+        var path = Path()
+        guard let first = pts.first else { return path }
+        path.move(to: first)
+        guard pts.count >= 3 else {
+            for p in pts.dropFirst() { path.addLine(to: p) }
+            return path
+        }
+        for i in 1..<(pts.count - 1) {
+            let mid = CGPoint(x: (pts[i].x + pts[i + 1].x) / 2, y: (pts[i].y + pts[i + 1].y) / 2)
+            path.addQuadCurve(to: mid, control: pts[i])
+        }
+        path.addLine(to: pts[pts.count - 1])
+        return path
+    }
+
+    /// Short tributary forking off a vein at a shallow angle, drawn as three
+    /// successive segments with decreasing opacity + width so it tapers away.
+    private static func drawBranch(_ ctx: GraphicsContext, from pts: [CGPoint], slope: CGFloat, ink: Color, rng: inout SeededGenerator) {
+        guard pts.count > 3 else { return }
+        let start = pts[Int.random(in: 2...(pts.count - 2), using: &rng)]
+        let kick = CGFloat(Double.random(in: -0.35...0.35, using: &rng))   // shallow angular offset from the grain
+        let dir = CGVector(dx: 1, dy: slope + kick)
+        let len = hypot(dir.dx, dir.dy)
+        let ux = dir.dx / len, uy = dir.dy / len
+        let step = CGFloat(Double.random(in: 26...40, using: &rng))
+        let opacities: [Double] = [0.16, 0.10, 0.05]
+        let widths: [CGFloat] = [1.1, 0.8, 0.5]
+        var p = start
+        for k in 0..<3 {
+            let next = CGPoint(x: p.x + ux * step, y: p.y + uy * step)
+            var seg = Path()
+            seg.move(to: p)
+            let ctrl = CGPoint(x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 - step * 0.12)
+            seg.addQuadCurve(to: next, control: ctrl)
+            ctx.stroke(seg, with: .color(ink.opacity(opacities[k])), style: StrokeStyle(lineWidth: widths[k], lineCap: .round))
+            p = next
+        }
+    }
+
+    /// Linear RGB blend of two Colors (t = 0 → a, 1 → b).
+    private static func blend(_ a: Color, _ b: Color, _ t: CGFloat) -> Color {
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        UIColor(a).getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        UIColor(b).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        return Color(red: r1 + (r2 - r1) * t, green: g1 + (g2 - g1) * t, blue: b1 + (b2 - b1) * t)
     }
 
     private static func drawWood(_ ctx: GraphicsContext, _ size: CGSize) {
@@ -615,5 +731,44 @@ private struct CounterFinishView: View {
             startPoint: .zero,
             endPoint: CGPoint(x: 0, y: size.height * 0.5)
         ))
+    }
+}
+
+/// Slow specular band that glides once across the polished marble (~1.5s) then
+/// rests off-slab for the rest of a ~6.5s loop — the counter-scale echo of
+/// AmbientShimmer's glint-then-rest philosophy. Transform-only: a single animated
+/// `.offset` on a static gradient (no TimelineView, no Canvas, no per-frame body
+/// re-eval). Mount is gated to marble + `shimmerOn && !reduceMotion` at the call
+/// site; the band is narrow versus its travel, so the loop reset lands off-slab
+/// and never reads as a continuous strobe.
+private struct CounterShimmer: View {
+    var grainAngle: Double
+    var cornerRadius: CGFloat = 20
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .white.opacity(0.04), location: 0.42),
+                    .init(color: .white.opacity(0.12), location: 0.5),
+                    .init(color: .white.opacity(0.04), location: 0.58),
+                    .init(color: .clear, location: 1),
+                ],
+                startPoint: .leading, endPoint: .trailing
+            )
+            .frame(width: geo.size.width * 0.42)
+            .rotationEffect(.degrees(grainAngle))
+            // Travel ~6w against a 0.42w band → on the stone only ~1/4 of the loop.
+            .offset(x: (-1.3 + phase * 6) * geo.size.width)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.linear(duration: 6.5).repeatForever(autoreverses: false)) {
+                phase = 1
+            }
+        }
     }
 }

@@ -9,6 +9,14 @@ final class ThemeStore {
     var showTabLabels: Bool = true {
         didSet { JSONStore.shared.set(.tabLabels, showTabLabels) }
     }
+    // Calc display-card left column visibility (both default on). Same persistence
+    // shape as showTabLabels — a plain Bool file, loaded in init, saved on didSet.
+    var showCalcLog: Bool = true {
+        didSet { JSONStore.shared.set(.calcLog, showCalcLog) }
+    }
+    var showChordWheel: Bool = true {
+        didSet { JSONStore.shared.set(.chordWheel, showChordWheel) }
+    }
 
     // Motion preferences + first-visit tracking. Kept here because ThemeStore is
     // already injected into every view that needs to gate an animation.
@@ -53,6 +61,8 @@ final class ThemeStore {
         spec = initialSpec
         radius = ThemeStore.parseRadius(initialSpec.tokens["radius"])
         showTabLabels = JSONStore.shared.get(.tabLabels, as: Bool.self) ?? true
+        showCalcLog = JSONStore.shared.get(.calcLog, as: Bool.self) ?? true
+        showChordWheel = JSONStore.shared.get(.chordWheel, as: Bool.self) ?? true
 
         let motion = JSONStore.shared.get(.motion, as: MotionPrefs.self)
         seenTabs = Set(motion?.seenTabs ?? [])   // before the prefs — their didSet persists seenTabs

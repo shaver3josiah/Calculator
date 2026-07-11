@@ -14,7 +14,17 @@ struct BudgetView: View {
                 monthBar
                 HStack(spacing: 8) {
                     KTabBar(items: modes, selection: viewModeBinding)
-                    ShareLink(item: store.exportText()) {
+                    Menu {
+                        ShareLink(item: store.exportText()) {
+                            Label("Share as text", systemImage: "doc.plaintext")
+                        }
+                        if let xlsx = store.exportXLSXURL() {
+                            ShareLink(item: xlsx) {
+                                Label("Share as spreadsheet", systemImage: "tablecells")
+                            }
+                            .accessibilityLabel("Share as spreadsheet")
+                        }
+                    } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(theme.color("primaryStrong"))

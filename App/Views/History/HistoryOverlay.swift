@@ -20,6 +20,7 @@ struct HistoryOverlay: View {
         NavigationStack {
             VStack(spacing: 0) {
                 searchBar
+                displaySection
                 if history.groupedEntries().isEmpty {
                     emptyState
                 } else {
@@ -112,6 +113,40 @@ struct HistoryOverlay: View {
                 .fill(theme.color("surfaceSoft"))
         )
         .padding(16)
+    }
+
+    // Display preferences for the calc card's left column. Styled like SoundStudio's
+    // togglesSection: toggle rows on a surface card, primaryStrong tint.
+    private var displaySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Display")
+                .font(bloomBody(11, weight: .semibold))
+                .foregroundStyle(theme.color("muted"))
+            Toggle(isOn: Binding(
+                get: { theme.showCalcLog },
+                set: { theme.showCalcLog = $0 }
+            )) {
+                Text("Show calc log")
+                    .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
+            }
+            Toggle(isOn: Binding(
+                get: { theme.showChordWheel },
+                set: { theme.showChordWheel = $0 }
+            )) {
+                Text("Show chord scroller")
+                    .font(bloomBody(15, weight: .medium))
+                    .foregroundStyle(theme.color("text"))
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: theme.radius)
+                .fill(theme.color("surface"))
+        )
+        .tint(theme.color("primaryStrong"))
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     private var emptyState: some View {

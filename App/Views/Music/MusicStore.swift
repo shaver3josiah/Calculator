@@ -11,6 +11,10 @@ final class MusicStore {
     var transpose: Int = 0
     var isPlaying: Bool = false
     var savedSongName: String = ""
+    // Chords that have actually sounded this run, newest first, capped at 24. Feeds
+    // the calc display's chord-memory wheel. ponytail: session-only, not persisted —
+    // it's a "what did I just play" viewer, meaningless across launches.
+    var playedChordNames: [String] = []
     var playOnKeys: Bool = false {
         didSet { persistKeyChords() }
     }
@@ -59,9 +63,15 @@ final class MusicStore {
     }
 
     func playChord(_ voice: ChordVoice) {
+        recordPlayed(voice)
         let notes = voice.midiNotes.map { $0 + transpose }
         let duration = 60.0 / tempo * 2.2
         synth.playChord(midiNotes: notes, strum: strum, duration: duration)
+    }
+
+    private func recordPlayed(_ voice: ChordVoice) {
+        playedChordNames.insert(voice.symbol, at: 0)
+        if playedChordNames.count > 24 { playedChordNames.removeLast() }
     }
 
     func playDigitChord(_ digit: Int) {
@@ -69,6 +79,7 @@ final class MusicStore {
         let count = chords.count
         let index = ((digit % count) + count) % count
         let voice = chords[index]
+        recordPlayed(voice)
         let notes = voice.midiNotes.map { $0 + transpose }
         let duration = 60.0 / tempo * 1.7
         synth.playChord(midiNotes: notes, strum: strum, duration: duration)
@@ -112,6 +123,7 @@ final class MusicStore {
     }
 
     func soundCycledChord(_ voice: ChordVoice) {
+        recordPlayed(voice)
         let notes = voice.midiNotes.map { $0 + transpose }
         synth.playChord(midiNotes: notes, strum: strum, duration: Self.cycleDuration)
     }

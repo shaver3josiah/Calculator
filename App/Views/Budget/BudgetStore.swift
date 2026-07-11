@@ -223,6 +223,18 @@ final class BudgetStore {
         BudgetShare.export(db: db)
     }
 
+    /// Writes the current budget as an .xlsx to a temp file, returns its URL (nil on failure).
+    func exportXLSXURL() -> URL? {
+        let safe = String(db.cur.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "-" })
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Hannahs-Budget-\(safe).xlsx")
+        do {
+            try BudgetXLSX.workbook(db: db).write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     @discardableResult
     func importShared(_ text: String) -> Bool {
         guard let parsed = BudgetShare.parse(text), let m = parsed.months[parsed.cur] else { return false }
