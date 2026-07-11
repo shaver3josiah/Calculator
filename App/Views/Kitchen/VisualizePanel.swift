@@ -1,6 +1,7 @@
 import SwiftUI
 import BloomCore
 import UIKit
+import ImageIO   // re-exported by UIKit; explicit for the downsampling APIs below
 
 struct VisualizePanel: View {
     @Environment(ThemeStore.self) private var theme
@@ -450,37 +451,83 @@ struct VisualizePanel: View {
 
     // MARK: - Art loading
 
-    private static var artCache: [String: UIImage] = [:]
+    /// Bounded, self-evicting cache of downsampled FoodArt. `countLimit` caps the
+    /// entry count and `totalCostLimit` caps decoded bytes (cost = pixel bytes);
+    /// NSCache also evicts on its own under memory pressure, unlike the old
+    /// unbounded `[String: UIImage]` that never released.
+    private static let artCache: NSCache<NSString, UIImage> = {
+        let cache = NSCache<NSString, UIImage>()
+        cache.countLimit = 24
+        cache.totalCostLimit = 8 * 1024 * 1024   // ~8 MB of decoded pixels
+        return cache
+    }()
+
+    /// Thumbnail ceiling. On-screen art is ≤ 46pt (see `miseView`/`clusterView`);
+    /// even a 64pt slot at 3x is 192px, so 192 is oversharp for every device and
+    /// the decoded backing never exceeds what's drawn.
+    private static let artMaxPixel: CGFloat = 192
+
+    /// One-time memory-warning registration. A static-let initializer runs the
+    /// first time it's referenced (from `loadArt`), so `_ = registersPurge` wires
+    /// the purge handler up exactly once for the app's lifetime. Belt-and-braces
+    /// over NSCache's own under-pressure eviction.
+    private static let registersPurge: Void = {
+        MemoryPressure.onWarning { artCache.removeAllObjects() }
+    }()
 
     private static func loadArt(_ key: String) -> UIImage? {
-        if let cached = artCache[key] {
+        _ = registersPurge   // force the one-time purge registration
+        let nsKey = key as NSString
+        if let cached = artCache.object(forKey: nsKey) {
             return cached
         }
         guard let resolved = resolveArt(key) else {
             return nil
         }
-        artCache[key] = resolved
+        // Cost in decoded bytes: pixel count (points × scale²) × 4 (RGBA8).
+        let pxW = resolved.size.width * resolved.scale
+        let pxH = resolved.size.height * resolved.scale
+        artCache.setObject(resolved, forKey: nsKey, cost: Int(pxW * pxH) * 4)
         return resolved
     }
 
     private static func resolveArt(_ key: String) -> UIImage? {
-        if let named = UIImage(named: key) {
-            return named
-        }
+        // Same keys and same subdirectory search order as before; only the decode
+        // changed (ImageIO downsample instead of a full-size UIImage(data:)).
         let subdirectories = ["FoodArt/png", "Resources/FoodArt/png"]
         for subdirectory in subdirectories {
             if let url = Bundle.main.url(forResource: key, withExtension: "png", subdirectory: subdirectory),
-               let data = try? Data(contentsOf: url),
-               let image = UIImage(data: data) {
+               let image = downsampledImage(at: url) {
                 return image
             }
         }
         if let url = Bundle.main.url(forResource: key, withExtension: "png"),
-           let data = try? Data(contentsOf: url),
-           let image = UIImage(data: data) {
+           let image = downsampledImage(at: url) {
             return image
         }
-        return nil
+        // Asset-catalog fallback LAST: can't be downsampled here, but catalog art
+        // is already delivered at the device-appropriate size.
+        return UIImage(named: key)
+    }
+
+    /// Decode straight to a ≤`artMaxPixel` thumbnail via ImageIO so the backing
+    /// bitmap is created at draw size, never the full source resolution.
+    private static func downsampledImage(at url: URL) -> UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+            return nil
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: artMaxPixel,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            return nil
+        }
+        // scale 1.0 matches the old UIImage(data:) path; the view already sizes it
+        // with .resizable().scaledToFit() into a ≤46pt frame, so rendering is identical.
+        return UIImage(cgImage: cgImage)
     }
 
     // MARK: - Actions

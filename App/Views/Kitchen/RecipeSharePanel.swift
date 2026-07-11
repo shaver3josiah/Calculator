@@ -100,10 +100,13 @@ struct RecipeSharePanel: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// One shared CIContext for every QR render. A CIContext holds multi-MB
+    /// GPU/colorspace state, so building one per tap churned that memory needlessly.
+    private static let ciContext = CIContext(options: [.cacheIntermediates: false])
+
     private func generateQR() {
         let cleaned = RecipeParse.cleanUrl(rawUrl)
         guard !cleaned.isEmpty else { return }
-        let context = CIContext()
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(cleaned.utf8)
         filter.correctionLevel = "M"
@@ -112,7 +115,7 @@ struct RecipeSharePanel: View {
         let scale = 200.0 / outputImage.extent.width
         let scaled = outputImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
 
-        guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return }
+        guard let cgImage = Self.ciContext.createCGImage(scaled, from: scaled.extent) else { return }
         withAnimation(theme.motionEnabled && !reduceMotion ? BloomMotion.glide : nil) {
             qrImage = Image(decorative: cgImage, scale: 1.0)
         }

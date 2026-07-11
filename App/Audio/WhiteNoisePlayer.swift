@@ -49,6 +49,13 @@ final class WhiteNoisePlayer: @unchecked Sendable {
             // Phone call etc. — stop cleanly (already on main). No auto-resume: minimal.
             self.stop()
         }
+
+        // Under memory pressure, free the ~700KB buffer + render graph — but only
+        // when idle. NEVER interrupt active playback for a warning. (Fires on main.)
+        MemoryPressure.onWarning { [weak self] in
+            guard let self, !self.isPlaying else { return }
+            self.teardown()
+        }
     }
 
     // MARK: - Public API
@@ -76,9 +83,23 @@ final class WhiteNoisePlayer: @unchecked Sendable {
         setPlaying(false)               // cue clears immediately (incl. the 3-min cap)
         guard player.isPlaying else { return }
         rampVolume(to: 0, over: Self.fadeOut) { [weak self] in
-            self?.player.stop()
-            self?.engine.pause()        // keep graph attached; don't touch the session
+            self?.teardown()            // full teardown so the buffer + graph free
         }
+    }
+
+    /// Stop and release everything except the session: stops the node + engine,
+    /// detaches the node, and drops the ~700KB noise buffer. Idempotent — safe to
+    /// call when already torn down. start() rebuilds it all via attachIfNeeded().
+    /// A restart mid-fade-out never reaches here: start()'s cancelTimers() kills
+    /// the fade-out ramp before its completion (this) can run.
+    private func teardown() {
+        player.stop()                   // releases the scheduled buffer ref first
+        engine.stop()
+        if attached {
+            engine.detach(player)       // symmetric with attachIfNeeded's attach
+            attached = false
+        }
+        buffer = nil                    // last strong ref → ~700KB freed
     }
 
     // MARK: - Engine graph
