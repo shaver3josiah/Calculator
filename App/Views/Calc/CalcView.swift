@@ -33,32 +33,34 @@ struct CalcView: View {
     ]
 
     var body: some View {
-        // Everything is sized from CalcView's real slot so NOTHING can clip:
-        // fixed chrome = 8 top pad + ~42 memory bar + 3×16 gaps = 98. Keys grow
-        // toward 64pt when there's room and compress (never below 44pt) on small
-        // phones. The card is deliberately COMPACT (128–156) so it fits its content
-        // — expression line + big result — with no empty band; extra slack on tall
-        // screens collects in the Spacer as clean background, not an inflated card.
-        // resultFont depends only on the card height (the DEVICE), never on how many
-        // digits are typed, so the number is a constant size and long values scroll.
+        // Everything is sized from CalcView's real slot so NOTHING can clip, and it
+        // scales up (never just leaves a void) on larger devices:
+        //   • keys grow 44→72pt (44 floor keeps them tappable on an SE)
+        //   • the card is the residual after the keypad, clamped 128–210 — so on
+        //     phones it fills (cluster ≈ slot, keypad sits near the bottom) and on a
+        //     tablet it caps at a generous 210 rather than ballooning
+        //   • resultFont tracks the card (the DEVICE), never the digit count, so the
+        //     number is a constant size and long values scroll instead of shrinking
+        // The cluster is CENTERED: on phones the residual card makes the margin ~14pt
+        // (still bottom-anchored feel); on iPad the capped elements center with
+        // balanced margins instead of dumping a ~380pt gap under the card.
         GeometryReader { geo in
-            let slack = geo.size.height - 98
-            let keyHeight = min(64.0, max(44.0, (slack - 150 - 40) / 5))
-            let cardHeight = min(156, max(128, slack - (keyHeight * 5 + 40)))
-            let resultFont = min(96, max(40, cardHeight * 0.44))
+            let slack = geo.size.height - 98            // 98 = ~memory bar + gaps
+            let keyHeight = min(72.0, max(44.0, (slack - 190) / 5))
+            let keypadBlock = keyHeight * 5 + 40        // 5 rows + 4×10 gaps
+            let cardHeight = min(210.0, max(128.0, slack - keypadBlock))
+            let resultFont = min(92.0, max(40.0, cardHeight * 0.44))
             VStack(spacing: 16) {
                 displayArea(resultFont: resultFont)
                     .frame(height: cardHeight)
-                Spacer(minLength: 0)
-                // Display card owns the full 700 column; the tappable cluster caps
-                // at 460 centered so keys don't become ~160pt slabs on iPad. On
-                // compact phones (<460) these don't constrain.
+                // The tappable cluster caps at 460 centered so keys don't become
+                // ~160pt slabs on iPad. On compact phones (<460) these don't constrain.
                 memoryBar
                     .frame(maxWidth: 460)
                 keypad(keyHeight: keyHeight)
                     .frame(maxWidth: 460)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
@@ -168,20 +170,26 @@ struct CalcView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
-    // Fixed-width (100) left stack, top-aligned: calc log above, chord strip below.
-    // Each element is gated by its own toggle; showLeftColumn removes the whole
-    // reservation when both are off so the numbers get the full width.
+    // Fixed-width (100) left stack: calc log above, chord strip below. Wrapped in a
+    // scroll view that only scrolls when the content genuinely exceeds the card's
+    // inner height (a short SE card with chords present) — so it can never clip a
+    // strip, and on taller cards it shows everything with no scroll. Each element is
+    // gated by its own toggle; showLeftColumn removes the whole reservation when both
+    // are off so the numbers get the full width.
     private var leftColumn: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if themeStore.showCalcLog {
-                calcLog
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 10) {
+                if themeStore.showCalcLog {
+                    calcLog
+                }
+                if themeStore.showChordWheel {
+                    chordStrip
+                }
             }
-            if themeStore.showChordWheel {
-                chordStrip
-            }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(width: 100, alignment: .leading)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(width: 100)
     }
 
     // Recently played chords, newest first, as a soft-pink scrollable strip — the
