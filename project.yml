@@ -50,6 +50,8 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         # iPad: fullscreen gift app, all four orientations, no Split View/multitasking.
         "UISupportedInterfaceOrientations~ipad":
           - UIInterfaceOrientationPortrait

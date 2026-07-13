@@ -383,6 +383,7 @@ struct CalcView: View {
                     soundEvent: def.event,
                     isAccent: def.accent,
                     isStrong: def.strong,
+                    isPending: calcStore.pendingOpKey == def.key,
                     height: keyHeight
                 ) {
                     calcStore.press(def.key)

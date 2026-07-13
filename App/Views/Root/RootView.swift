@@ -8,12 +8,27 @@ struct RootView: View {
     @Environment(MusicStore.self) private var musicStore
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var vSize
     @State private var selectedTab: BloomTab = .calc
     @State private var showThemeEditor = false
     @State private var slideForward = true
     @State private var verseMode = false
 
+    // Fail-safe landscape branch. verticalSizeClass == .compact is iPhone landscape
+    // ONLY (iPad landscape stays .regular → falls through to portraitBody, its normal
+    // layout). On the calc tab in phone-landscape we show the full-screen scientific
+    // keypad; every other case renders the UNTOUCHED portrait path verbatim, so
+    // portrait can never break — the guarantee is that portraitBody is byte-for-byte
+    // the original body.
     var body: some View {
+        if vSize == .compact && selectedTab == .calc {
+            ScientificCalcView()
+        } else {
+            portraitBody
+        }
+    }
+
+    private var portraitBody: some View {
         ZStack {
             themeStore.color("bg").ignoresSafeArea()
             // iPad readable-column cap: header + content + tab bar stay within 700pt,
