@@ -217,10 +217,13 @@ struct CalcView: View {
                 .frame(height: 70)
             }
             .padding(8)
-            .frame(width: 100)
+            .frame(width: 72)
             .background(
                 RoundedRectangle(cornerRadius: 12).fill(themeStore.color("surface2"))
             )
+            // Narrower than the 100pt column and pinned trailing, so the card's
+            // right edge is flush with the full-width history above it.
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 

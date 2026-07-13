@@ -144,6 +144,16 @@ struct MusicView: View {
             }
 
             HStack {
+                Text("Chord volume")
+                    .font(bloomBody(13))
+                    .foregroundStyle(theme.color("muted"))
+                Slider(value: chordVolumeBinding, in: 0.5...1.8)
+                Text("\(Int(store.chordVolume * 100))%")
+                    .font(bloomNumber(15))
+                    .frame(width: 44)
+            }
+
+            HStack {
                 Text("Transpose")
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("muted"))
@@ -215,6 +225,9 @@ struct MusicView: View {
     }
     private var tempoBinding: Binding<Double> {
         Binding(get: { store.tempo }, set: { store.tempo = $0 })
+    }
+    private var chordVolumeBinding: Binding<Double> {
+        Binding(get: { store.chordVolume }, set: { store.chordVolume = $0 })
     }
     private var playOnKeysBinding: Binding<Bool> {
         Binding(get: { store.playOnKeys }, set: { store.playOnKeys = $0 })

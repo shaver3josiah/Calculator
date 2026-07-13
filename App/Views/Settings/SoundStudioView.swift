@@ -8,6 +8,9 @@ struct SoundStudioView: View {
 
     @State private var showCredits = false
     @State private var playEpoch = 0
+    // Snapshot of eventMap taken right before a preset is applied, so "Undo" can
+    // restore the exact prior mapping with one tap. nil = nothing to undo.
+    @State private var mapBeforePreset: [String: String]?
 
     // Positioned petal bursts: each play button reports its frame in the "studio"
     // coordinate space; on preview we convert its center to fractions of the
@@ -46,8 +49,23 @@ struct SoundStudioView: View {
                         }
                     }
 
+                    groupLabel("Presets")
+                    HStack(spacing: 8) {
+                        presetButton(title: "Fun", systemImage: "sparkles", fill: "surface") {
+                            mapBeforePreset = sound.eventMap   // snapshot for one-tap undo
+                            sound.applyFunPreset()
+                        }
+                        if let snapshot = mapBeforePreset {
+                            presetButton(title: "Undo", systemImage: "arrow.uturn.backward", fill: "surface2") {
+                                sound.eventMap = snapshot
+                                mapBeforePreset = nil
+                            }
+                        }
+                    }
+
                     Button("Reset to defaults") {
                         sound.resetToDefaults()
+                        mapBeforePreset = nil
                     }
                     .font(bloomBody(14, weight: .medium))
                     .frame(maxWidth: .infinity)
@@ -153,51 +171,68 @@ struct SoundStudioView: View {
     }
 
     private func eventRow(eventId: String, symbol: String) -> some View {
-        HStack(spacing: 10) {
-            Text(symbol)
-                .font(bloomBody(14, weight: .semibold))
-                .frame(width: 64, alignment: .leading)
-                .foregroundStyle(theme.color("text"))
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Text(symbol)
+                    .font(bloomBody(14, weight: .semibold))
+                    .frame(width: 64, alignment: .leading)
+                    .foregroundStyle(theme.color("text"))
 
-            Picker("", selection: bindingFor(eventId)) {
-                ForEach(SoundStore.optionChoices, id: \.0) { value, label in
-                    Text(label).tag(value)
+                Picker("", selection: bindingFor(eventId)) {
+                    ForEach(SoundStore.optionChoices, id: \.0) { value, label in
+                        Text(label).tag(value)
+                    }
                 }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button {
-                preview(eventId)
-            } label: {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(theme.color("primaryStrong"))
-                    .frame(width: 30, height: 30)
-                    .background(Circle().fill(theme.color("surface")))
-                    .overlay(
-                        Circle().stroke(
-                            LinearGradient(
-                                colors: [theme.color("primary"), theme.color("flowerCenter")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
+                Button {
+                    preview(eventId)
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(theme.color("primaryStrong"))
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(theme.color("surface")))
+                        .overlay(
+                            Circle().stroke(
+                                LinearGradient(
+                                    colors: [theme.color("primary"), theme.color("flowerCenter")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                         )
-                    )
-            }
-            .buttonStyle(.plain)
-            // Report this button's on-screen center so the burst starts here.
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(
-                        key: PlayButtonFrameKey.self,
-                        value: [eventId: proxy.frame(in: .named("studio"))]
-                    )
                 }
-            )
-            .accessibilityLabel("Preview sound")
+                .buttonStyle(.plain)
+                // Report this button's on-screen center so the burst starts here.
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: PlayButtonFrameKey.self,
+                            value: [eventId: proxy.frame(in: .named("studio"))]
+                        )
+                    }
+                )
+                .accessibilityLabel("Preview sound")
+            }
+
+            // Per-event volume: slim slider 0…1.5 with a tiny % label. Preview
+            // above plays at this level so the change is audible immediately.
+            HStack(spacing: 8) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(theme.color("muted"))
+                Slider(value: volumeBinding(eventId), in: 0...1.5)
+                    .tint(theme.color("primaryStrong"))
+                Text(volumeLabel(eventId))
+                    .font(bloomBody(11, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(theme.color("muted"))
+                    .frame(width: 40, alignment: .trailing)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(10)
@@ -207,8 +242,34 @@ struct SoundStudioView: View {
         )
     }
 
+    private func presetButton(title: String, systemImage: String, fill: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(bloomBody(14, weight: .medium))
+                .foregroundStyle(theme.color("text"))
+                .frame(maxWidth: .infinity)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: theme.radius)
+                        .fill(theme.color(fill))
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func volumeBinding(_ eventId: String) -> Binding<Double> {
+        Binding(
+            get: { Double(sound.volume(for: eventId)) },
+            set: { sound.setVolume(eventId, to: Float($0)) }
+        )
+    }
+
+    private func volumeLabel(_ eventId: String) -> String {
+        "\(Int((sound.volume(for: eventId) * 100).rounded()))%"
+    }
+
     private func preview(_ eventId: String) {
-        sound.preview(currentValue(eventId))
+        sound.preview(event: eventId)
         // Aim the burst at the pressed button: its center as a fraction of the
         // container, clamped so an off-viewport reading can't escape 0...1.
         if containerSize.width > 0, containerSize.height > 0, let frame = frameBox.frames[eventId] {
