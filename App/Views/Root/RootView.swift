@@ -14,17 +14,94 @@ struct RootView: View {
     @State private var slideForward = true
     @State private var verseMode = false
 
-    // Fail-safe landscape branch. verticalSizeClass == .compact is iPhone landscape
-    // ONLY (iPad landscape stays .regular → falls through to portraitBody, its normal
-    // layout). On the calc tab in phone-landscape we show the full-screen scientific
-    // keypad; every other case renders the UNTOUCHED portrait path verbatim, so
-    // portrait can never break — the guarantee is that portraitBody is byte-for-byte
-    // the original body.
+    // `landscape` is the DEBOUNCED effective orientation, not the raw size class:
+    // a rotation only takes effect after a 300ms settle (see scheduleFlip), so
+    // tilting the phone near the threshold doesn't thrash between layouts.
+    // verticalSizeClass == .compact is iPhone landscape ONLY (iPad landscape stays
+    // .regular → landscape never becomes true → iPad keeps portraitBody). portraitBody
+    // is byte-for-byte the original body, so portrait can never regress.
+    @State private var landscape = false
+    @State private var didInitOrientation = false
+    @State private var flipGeneration = 0
+
     var body: some View {
-        if vSize == .compact && selectedTab == .calc {
+        Group {
+            if landscape {
+                landscapeBody
+            } else {
+                portraitBody
+            }
+        }
+        .onAppear {
+            // Seed the initial orientation with no delay (launching in landscape
+            // shouldn't wait 300ms); subsequent changes go through the debounce.
+            if !didInitOrientation {
+                landscape = (vSize == .compact)
+                didInitOrientation = true
+            }
+        }
+        .onChange(of: vSize) { _, newValue in
+            scheduleFlip(to: newValue == .compact)
+        }
+    }
+
+    /// Debounced portrait⇄landscape switch: only the last change within a 300ms
+    /// quiet window is applied, so rapid re-orientation can't flip the UI repeatedly.
+    private func scheduleFlip(to want: Bool) {
+        guard want != landscape else { return }
+        flipGeneration &+= 1
+        let generation = flipGeneration
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard generation == flipGeneration else { return }   // superseded by a newer change
+            landscape = want
+        }
+    }
+
+    // Landscape layout — the "bottom nodes on the right" look, for ALL tabs: content
+    // fills the height on the left, the tab rail is a vertical strip on the right.
+    // Calc shows the scientific keypad (it still clears ≥44pt keys after losing the
+    // 68pt rail); every other tab shows its normal scroll view, now with the full
+    // landscape height instead of losing it to a bottom bar.
+    private var landscapeBody: some View {
+        ZStack {
+            themeStore.color("bg").ignoresSafeArea()
+            HStack(spacing: 0) {
+                landscapeContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VerticalTabRail(selection: $selectedTab, onSelect: switchTab)
+            }
+            overlays
+        }
+        .dynamicTypeSize(...DynamicTypeSize.large)
+        .fullScreenCover(isPresented: historyPresentedBinding) {
+            HistoryOverlay()
+        }
+        .sheet(isPresented: $showThemeEditor) {
+            ThemeEditorView()
+        }
+        .sheet(isPresented: studioPresentedBinding) {
+            SoundStudioView()
+        }
+    }
+
+    @ViewBuilder
+    private var landscapeContent: some View {
+        switch selectedTab {
+        case .calc:
             ScientificCalcView()
-        } else {
-            portraitBody
+        case .proj:
+            ProjectionView()
+        case .lists:
+            ListsView()
+        case .kitchen:
+            KitchenView()
+        case .tools:
+            ToolsView()
+        case .budget:
+            BudgetView()
+        case .music:
+            MusicView()
         }
     }
 
