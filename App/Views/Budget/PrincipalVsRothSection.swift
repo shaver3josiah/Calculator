@@ -25,30 +25,54 @@ struct PrincipalVsRothSection: View {
     @State private var horizonYears = 24.0
     @State private var itemize = false
     @State private var bracket = 0.22
+    @State private var investIdx = 0   // index into investPresets — seeds the return
+    @State private var loanIdx = 0     // index into loanPresets — seeds the APR + which fields show
 
     private let brackets: [Double] = [0.10, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37]
 
+    // Vehicle presets. Picking one seeds the matching slider; the slider still
+    // overrides afterward. Rates are illustrative defaults, not guarantees.
+    private struct Vehicle { let name: String; let rate: Double; let note: String }
+    private struct Loan { let name: String; let rate: Double; let note: String; let isMortgage: Bool }
+
+    private static let investPresets: [Vehicle] = [
+        Vehicle(name: "Index / Roth", rate: 10,  note: "Broad market, tax-free in a Roth."),
+        Vehicle(name: "Real estate",  rate: 8,   note: "Leverage can amplify returns; illiquid. Not fully modeled."),
+        Vehicle(name: "Bonds",        rate: 4.5, note: "Steadier, lower expected return."),
+        Vehicle(name: "401(k)",       rate: 9,   note: "An employer match is free return this tool doesn't add."),
+        Vehicle(name: "ESOP",         rate: 10,  note: "Concentrated in one company \u{2014} higher risk."),
+    ]
+    private static let loanPresets: [Loan] = [
+        Loan(name: "Mortgage",            rate: 5.7, note: "Home value, PMI, and appreciation are all part of the picture.", isMortgage: true),
+        Loan(name: "Small business loan", rate: 9,   note: "Paying it down is guaranteed \u{2014} but the business itself may return MORE than the rate, the upside prepaying gives up.", isMortgage: false),
+        Loan(name: "Solar panels",        rate: 6,   note: "The panels also cut your power bill \u{2014} an effective return on top of the debt.", isMortgage: false),
+        Loan(name: "Electric car",        rate: 6.5, note: "Fuel + maintenance savings offset the rate.", isMortgage: false),
+    ]
+
     // MARK: derived
+
+    private var isMortgage: Bool { Self.loanPresets[loanIdx].isMortgage }
+    private var effItemize: Bool { isMortgage && itemize }   // interest deduction is mortgage-only here
 
     private var inputs: MortgageInputs {
         MortgageInputs(
             balance: parse(balanceStr, 180_000),
             apr: aprPct / 100,
-            itemize: itemize,
+            itemize: effItemize,
             tax: bracket,
             payment: parse(paymentStr, 1161),
             home: parse(homeStr, 200_000),
-            pmi: parse(pmiStr, 0),
+            pmi: isMortgage ? parse(pmiStr, 0) : 0,                 // PMI/appreciation are mortgage-only
             extra: extra,
             roth0: parse(rothStr, 17_500),
             annualReturn: returnPct / 100,
-            appreciation: appreciationPct / 100,
+            appreciation: isMortgage ? appreciationPct / 100 : 0,
             horizonYears: horizonYears
         )
     }
 
     private var result: MortgageResult { MortgageMath.simulate(inputs) }
-    private var effRate: Double { inputs.apr * (1 - (itemize ? bracket : 0)) }
+    private var effRate: Double { inputs.apr * (1 - (effItemize ? bracket : 0)) }
     private var minPayment: Double { inputs.balance * inputs.apr / 12 }
     private var paymentCoversInterest: Bool { inputs.payment > minPayment }
 
@@ -65,7 +89,8 @@ struct PrincipalVsRothSection: View {
                         verdictSection
                         statStrip
                         chartOne
-                        chartTwo
+                        if isMortgage { chartTwo }   // home-vs-balance only applies to a mortgage
+                        chartThree
                     } else {
                         Text("That payment doesn't cover interest — set it above \(Formatters.usd(minPayment))/mo to run the comparison.")
                             .font(bloomBody(13))
@@ -109,13 +134,17 @@ struct PrincipalVsRothSection: View {
 
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 14) {
+            vehicleSection
+
             HStack(spacing: 12) {
                 moneyField("Balance", $balanceStr)
                 moneyField("Payment / mo", $paymentStr)
             }
-            HStack(spacing: 12) {
-                moneyField("Home value", $homeStr)
-                moneyField("PMI / mo", $pmiStr)
+            if isMortgage {
+                HStack(spacing: 12) {
+                    moneyField("Home value", $homeStr)
+                    moneyField("PMI / mo", $pmiStr)
+                }
             }
             moneyField("Current Roth", $rothStr)
 
@@ -125,33 +154,92 @@ struct PrincipalVsRothSection: View {
                    display: Formatters.usd(extra))
             slider("Assumed annual return", value: $returnPct, in: 3...14, step: 0.1,
                    display: pct(returnPct))
-            slider("Home appreciation / yr", value: $appreciationPct, in: 0...8, step: 0.1,
-                   display: pct(appreciationPct))
+            if isMortgage {
+                slider("Home appreciation / yr", value: $appreciationPct, in: 0...8, step: 0.1,
+                       display: pct(appreciationPct))
+            }
             slider("Compare over", value: $horizonYears, in: 5...40, step: 1,
                    display: "\(Int(horizonYears)) yrs")
 
-            Toggle(isOn: $itemize) {
-                Text("I itemize & deduct mortgage interest")
-                    .font(bloomBody(13, weight: .medium))
-                    .foregroundStyle(theme.color("text"))
-            }
-            .tint(pink)
-
-            if itemize {
-                HStack {
-                    Text("Marginal bracket")
+            if isMortgage {
+                Toggle(isOn: $itemize) {
+                    Text("I itemize & deduct mortgage interest")
                         .font(bloomBody(13, weight: .medium))
-                        .foregroundStyle(theme.color("muted"))
-                    Spacer()
-                    Picker("Marginal bracket", selection: $bracket) {
-                        ForEach(brackets, id: \.self) { b in
-                            Text("\(Int(b * 100))%").tag(b)
+                        .foregroundStyle(theme.color("text"))
+                }
+                .tint(pink)
+
+                if itemize {
+                    HStack {
+                        Text("Marginal bracket")
+                            .font(bloomBody(13, weight: .medium))
+                            .foregroundStyle(theme.color("muted"))
+                        Spacer()
+                        Picker("Marginal bracket", selection: $bracket) {
+                            ForEach(brackets, id: \.self) { b in
+                                Text("\(Int(b * 100))%").tag(b)
+                            }
                         }
+                        .pickerStyle(.menu)
+                        .tint(pink)
                     }
-                    .pickerStyle(.menu)
-                    .tint(pink)
                 }
             }
+        }
+    }
+
+    // MARK: vehicle pickers — seed the return / APR, then the sliders override
+
+    private var vehicleSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            pickerBlock(title: "Invest the extra in",
+                        titles: Self.investPresets.map(\.name),
+                        selected: investIdx, accent: pink,
+                        note: Self.investPresets[investIdx].note) { idx in
+                investIdx = idx
+                returnPct = min(max(Self.investPresets[idx].rate, 3), 14)   // clamp to slider range
+            }
+            pickerBlock(title: "Debt to pay down",
+                        titles: Self.loanPresets.map(\.name),
+                        selected: loanIdx, accent: deep,
+                        note: Self.loanPresets[loanIdx].note) { idx in
+                loanIdx = idx
+                aprPct = min(max(Self.loanPresets[idx].rate, 0.25), 15)
+            }
+        }
+    }
+
+    private func pickerBlock(title: String, titles: [String], selected: Int,
+                             accent: Color, note: String,
+                             pick: @escaping (Int) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(bloomBody(12, weight: .medium))
+                .foregroundStyle(theme.color("muted"))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(Array(titles.enumerated()), id: \.offset) { idx, name in
+                        let on = idx == selected
+                        Button {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { pick(idx) }
+                        } label: {
+                            Text(name)
+                                .font(bloomBody(12, weight: .medium))
+                                .foregroundStyle(on ? .white : theme.color("muted"))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(on ? accent : theme.color("surfaceSoft"))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+            Text(note)
+                .font(bloomBody(11))
+                .foregroundStyle(theme.color("muted"))
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -219,8 +307,12 @@ struct PrincipalVsRothSection: View {
         return diff > 0 ? "Investing the extra wins." : "Paying down the loan wins."
     }
 
+    private var rateWord: String {
+        if effItemize { return "effective mortgage cost" }
+        return isMortgage ? "mortgage rate" : "loan rate"
+    }
+
     private var verdictSub: String {
-        let rateWord = itemize ? "effective mortgage cost" : "mortgage rate"
         if isTie {
             return "At a \(pct(returnPct)) return — exactly your \(rateWord) — both futures land within pennies after \(Int(horizonYears)) years. Below it prepaying wins; above it investing wins."
         }
@@ -238,7 +330,7 @@ struct PrincipalVsRothSection: View {
             HStack(alignment: .top, spacing: 12) {
                 stat(signedMoney(diff), diff >= 0 ? "invest advantage" : "prepay advantage",
                      color: diff >= 0 ? pink : deep)
-                stat(result.payoffA.map(yrs) ?? "beyond horizon", "mortgage-free if you prepay",
+                stat(result.payoffA.map(yrs) ?? "beyond horizon", "debt-free if you prepay",
                      color: deep)
             }
             HStack(alignment: .top, spacing: 12) {
@@ -296,6 +388,24 @@ struct PrincipalVsRothSection: View {
                     LineSpec(name: "Loan · prepaying", color: deep, values: result.rows.map(\.balanceA), dashed: false),
                 ],
                 milestones: [],
+                includesZero: true
+            )
+        }
+    }
+
+    // MARK: chart 3 — interest handed to the lender (cumulative, straight from rows)
+
+    private var chartThree: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            chartTitle("Interest paid to the lender",
+                       "Cumulative interest each path hands over. Prepaying bends its curve down early — that gap is the guaranteed saving.")
+            legend([("Normal schedule", pink), ("Prepaying", deep)])
+            lineChart(
+                specs: [
+                    LineSpec(name: "Normal schedule", color: pink, values: result.rows.map(\.interestB), dashed: false),
+                    LineSpec(name: "Prepaying", color: deep, values: result.rows.map(\.interestA), dashed: false),
+                ],
+                milestones: result.payoffA.map { [Milestone(year: Double($0) / 12, color: deep, label: "paid off")] } ?? [],
                 includesZero: true
             )
         }

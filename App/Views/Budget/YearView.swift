@@ -18,14 +18,18 @@ struct YearWrap: View {
     }
 
     var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 14) {
-                header
-                legendLine
-                yearChart
-                headRow
-                monthRows
+        VStack(spacing: 16) {
+            Card {
+                VStack(alignment: .leading, spacing: 14) {
+                    header
+                    legendLine
+                    yearChart
+                    headRow
+                    monthRows
+                }
             }
+            YearSavingsChart()
+            YearCategoryChart()
         }
     }
 

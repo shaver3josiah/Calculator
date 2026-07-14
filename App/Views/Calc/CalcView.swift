@@ -89,7 +89,7 @@ struct CalcView: View {
     // the live expression fills the top band (previously empty), the fixed-size result
     // sits below it and scrolls horizontally instead of shrinking.
     private func displayArea(resultFont: CGFloat) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 8) {
             if showLeftColumn {
                 leftColumn
             }
@@ -152,7 +152,7 @@ struct CalcView: View {
                         )
                         .lineLimit(1)
                         .fixedSize()                                         // never shrink
-                        .padding(.leading, 24)                               // scroll headroom
+                        .padding(.leading, 6)                                // minimal scroll headroom
                         .frame(minWidth: geo.size.width, alignment: .trailing)
                         .frame(height: geo.size.height, alignment: .bottom)  // sit on the baseline
                         .id("bloomResult")
@@ -189,7 +189,7 @@ struct CalcView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .frame(width: 100)
+        .frame(width: 54)   // narrow, tucked column; frees width so the result stops clipping
     }
 
     // Recently played chords, newest first, as a soft-pink scrollable strip — the
@@ -202,7 +202,9 @@ struct CalcView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("CHORDS")
                     .font(bloomBody(8, weight: .semibold))
-                    .tracking(0.6)
+                    .tracking(0.4)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .foregroundStyle(themeStore.color("muted"))
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 3) {
@@ -216,13 +218,12 @@ struct CalcView: View {
                 }
                 .frame(height: 70)
             }
-            .padding(8)
-            .frame(width: 76)
+            .padding(7)
             .background(
-                RoundedRectangle(cornerRadius: 12).fill(themeStore.color("surface2"))
+                RoundedRectangle(cornerRadius: 10).fill(themeStore.color("surface2"))
             )
-            // Left-aligned and snug beneath the history, so the two read as one
-            // tucked column rather than a card floating off to the right.
+            // Fills the narrow left column, tucked directly under the history so the
+            // two read as one compact column.
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
