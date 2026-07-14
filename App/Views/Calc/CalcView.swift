@@ -178,7 +178,7 @@ struct CalcView: View {
     // are off so the numbers get the full width.
     private var leftColumn: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
                 if themeStore.showCalcLog {
                     calcLog
                 }
@@ -217,13 +217,13 @@ struct CalcView: View {
                 .frame(height: 70)
             }
             .padding(8)
-            .frame(width: 72)
+            .frame(width: 76)
             .background(
                 RoundedRectangle(cornerRadius: 12).fill(themeStore.color("surface2"))
             )
-            // Narrower than the 100pt column and pinned trailing, so the card's
-            // right edge is flush with the full-width history above it.
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            // Left-aligned and snug beneath the history, so the two read as one
+            // tucked column rather than a card floating off to the right.
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

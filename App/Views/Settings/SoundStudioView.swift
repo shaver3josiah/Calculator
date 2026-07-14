@@ -8,9 +8,6 @@ struct SoundStudioView: View {
 
     @State private var showCredits = false
     @State private var playEpoch = 0
-    // Snapshot of eventMap taken right before a preset is applied, so "Undo" can
-    // restore the exact prior mapping with one tap. nil = nothing to undo.
-    @State private var mapBeforePreset: [String: String]?
 
     // Positioned petal bursts: each play button reports its frame in the "studio"
     // coordinate space; on preview we convert its center to fractions of the
@@ -50,30 +47,17 @@ struct SoundStudioView: View {
                     }
 
                     groupLabel("Presets")
-                    HStack(spacing: 8) {
-                        presetButton(title: "Fun", systemImage: "sparkles", fill: "surface") {
-                            mapBeforePreset = sound.eventMap   // snapshot for one-tap undo
-                            sound.applyFunPreset()
-                        }
-                        if let snapshot = mapBeforePreset {
-                            presetButton(title: "Undo", systemImage: "arrow.uturn.backward", fill: "surface2") {
-                                sound.eventMap = snapshot
-                                mapBeforePreset = nil
+                    Text("Tap to try a whole vibe — freely switch between them.")
+                        .font(bloomBody(11))
+                        .foregroundStyle(theme.color("muted"))
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(SoundStore.presets) { preset in
+                                presetChip(preset)
                             }
                         }
+                        .padding(.vertical, 2)
                     }
-
-                    Button("Reset to defaults") {
-                        sound.resetToDefaults()
-                        mapBeforePreset = nil
-                    }
-                    .font(bloomBody(14, weight: .medium))
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: theme.radius)
-                            .fill(theme.color("surfaceSoft"))
-                    )
 
                     Button("Credits") {
                         showCredits = true
@@ -242,16 +226,26 @@ struct SoundStudioView: View {
         )
     }
 
-    private func presetButton(title: String, systemImage: String, fill: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(bloomBody(14, weight: .medium))
-                .foregroundStyle(theme.color("text"))
-                .frame(maxWidth: .infinity)
-                .padding(12)
+    private func presetChip(_ preset: SoundStore.Preset) -> some View {
+        let active = (preset.map ?? [:]) == sound.eventMap
+        return Button {
+            sound.applyPreset(preset)
+            sound.preview(event: "equals")   // a taste of the new vibe
+            // Confetti erupts from the top of the studio on every preset pick.
+            burstX = 0.5
+            burstY = 0.22
+            playEpoch += 1
+        } label: {
+            Label(preset.name, systemImage: preset.systemImage)
+                .font(bloomBody(13, weight: .semibold))
+                .foregroundStyle(active ? .white : theme.color("primaryStrong"))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
                 .background(
-                    RoundedRectangle(cornerRadius: theme.radius)
-                        .fill(theme.color(fill))
+                    Capsule().fill(active ? theme.color("primaryStrong") : theme.color("surface"))
+                )
+                .overlay(
+                    Capsule().stroke(theme.color("line"), lineWidth: active ? 0 : 1)
                 )
         }
         .buttonStyle(.plain)

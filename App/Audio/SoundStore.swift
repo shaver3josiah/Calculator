@@ -52,6 +52,43 @@ final class SoundStore {
         "error": "error", "easteregg": "easteregg", "memory": "rotate"
     ]
 
+    /// Dreamy + lush: music box on every key, an uplifting rise to finish.
+    static let beautifulMap: [String: String] = [
+        "d0": "rotate", "d1": "rotate", "d2": "rotate", "d3": "rotate", "d4": "rotate",
+        "d5": "rotate", "d6": "rotate", "d7": "rotate", "d8": "rotate", "d9": "rotate",
+        "dot": "rotate", "sign": "rotate", "percent": "rotate",
+        "op+": "rotate", "op-": "rotate", "op*": "rotate", "op/": "rotate",
+        "equals": "cue", "clear": "tap3",
+        "modeswitch": "cue", "success": "cue", "startup": "cue",
+        "error": "error", "easteregg": "easteregg", "memory": "rotate"
+    ]
+
+    /// Restrained + refined: one quiet tap per key, a clean chime on the result.
+    static let elegantMap: [String: String] = [
+        "d0": "tap4", "d1": "tap4", "d2": "tap4", "d3": "tap4", "d4": "tap4",
+        "d5": "tap4", "d6": "tap4", "d7": "tap4", "d8": "tap4", "d9": "tap4",
+        "dot": "tap1", "sign": "tap2", "percent": "tap2",
+        "op+": "tap2", "op-": "tap2", "op*": "tap2", "op/": "tap2",
+        "equals": "success", "clear": "tap5",
+        "modeswitch": "cue", "success": "success", "startup": "cue",
+        "error": "error", "easteregg": "easteregg", "memory": "tap3"
+    ]
+
+    /// Named sound presets shown in the Sound Studio (freely switchable). A nil map
+    /// means "back to the built-in defaults" (the Classic set).
+    struct Preset: Identifiable {
+        let id: String
+        let systemImage: String
+        let map: [String: String]?
+        var name: String { id }
+    }
+    static let presets: [Preset] = [
+        Preset(id: "Classic", systemImage: "music.note", map: nil),
+        Preset(id: "Fun", systemImage: "sparkles", map: funMap),
+        Preset(id: "Beautiful", systemImage: "heart.fill", map: beautifulMap),
+        Preset(id: "Elegant", systemImage: "crown.fill", map: elegantMap)
+    ]
+
     static let eventOrder: [String] = [
         "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9",
         "dot", "sign", "percent", "op+", "op-", "op*", "op/", "equals", "clear",
@@ -166,8 +203,9 @@ final class SoundStore {
         eventVolumes[event] = min(max(value, 0), 1.5)
     }
 
-    func applyFunPreset() {
-        eventMap = Self.funMap
+    /// Apply a named preset. `nil` map resets to the built-in defaults (Classic).
+    func applyPreset(_ preset: Preset) {
+        eventMap = preset.map ?? [:]
     }
 
     func resetToDefaults() {
