@@ -17,6 +17,7 @@ public enum StoreKey: String, CaseIterable, Sendable {
     case counterTop = "bloom_countertop"
     case calcLog = "bloom_calclog"
     case chordWheel = "bloom_chordwheel"
+    case stewardship = "bloom_stewardship"
 }
 
 public final class JSONStore: @unchecked Sendable {
