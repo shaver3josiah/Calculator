@@ -71,7 +71,6 @@ struct PrincipalVsRothSection: View {
         )
     }
 
-    private var result: MortgageResult { MortgageMath.simulate(inputs) }
     private var effRate: Double { inputs.apr * (1 - (effItemize ? bracket : 0)) }
     private var minPayment: Double { inputs.balance * inputs.apr / 12 }
     private var paymentCoversInterest: Bool { inputs.payment > minPayment }
@@ -86,11 +85,13 @@ struct PrincipalVsRothSection: View {
                 if expanded {
                     inputSection
                     if paymentCoversInterest {
-                        verdictSection
-                        statStrip
-                        chartOne
-                        if isMortgage { chartTwo }   // home-vs-balance only applies to a mortgage
-                        chartThree
+                        // Simulate once per body evaluation — the helpers below all read it.
+                        let result = MortgageMath.simulate(inputs)
+                        verdictSection(result)
+                        statStrip(result)
+                        chartOne(result)
+                        if isMortgage { chartTwo(result) }   // home-vs-balance only applies to a mortgage
+                        chartThree(result)
                     } else {
                         Text("That payment doesn't cover interest — set it above \(Formatters.usd(minPayment))/mo to run the comparison.")
                             .font(bloomBody(13))
@@ -279,17 +280,17 @@ struct PrincipalVsRothSection: View {
 
     // MARK: verdict
 
-    private var diff: Double { result.last.netB - result.last.netA }        // + favors investing
-    private var intSaved: Double { result.interestB - result.interestA }
-    private var isTie: Bool { abs(inputs.annualReturn - effRate) < 0.0005 && abs(diff) < 1 }
+    private func diff(_ result: MortgageResult) -> Double { result.last.netB - result.last.netA }        // + favors investing
+    private func intSaved(_ result: MortgageResult) -> Double { result.interestB - result.interestA }
+    private func isTie(_ result: MortgageResult) -> Bool { abs(inputs.annualReturn - effRate) < 0.0005 && abs(diff(result)) < 1 }
 
-    private var verdictSection: some View {
+    private func verdictSection(_ result: MortgageResult) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(verdictHeadline)
+            Text(verdictHeadline(result))
                 .font(bloomNumber(21, weight: .semibold))
-                .foregroundStyle(verdictColor)
+                .foregroundStyle(verdictColor(result))
                 .fixedSize(horizontal: false, vertical: true)
-            Text(verdictSub)
+            Text(verdictSub(result))
                 .font(bloomBody(13))
                 .foregroundStyle(theme.color("muted"))
                 .fixedSize(horizontal: false, vertical: true)
@@ -297,14 +298,14 @@ struct PrincipalVsRothSection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var verdictColor: Color {
-        if isTie { return deep }
-        return diff > 0 ? pink : deep
+    private func verdictColor(_ result: MortgageResult) -> Color {
+        if isTie(result) { return deep }
+        return diff(result) > 0 ? pink : deep
     }
 
-    private var verdictHeadline: String {
-        if isTie { return "The two strategies tie." }
-        return diff > 0 ? "Investing the extra wins." : "Paying down the loan wins."
+    private func verdictHeadline(_ result: MortgageResult) -> String {
+        if isTie(result) { return "The two strategies tie." }
+        return diff(result) > 0 ? "Investing the extra wins." : "Paying down the loan wins."
     }
 
     private var rateWord: String {
@@ -312,29 +313,30 @@ struct PrincipalVsRothSection: View {
         return isMortgage ? "mortgage rate" : "loan rate"
     }
 
-    private var verdictSub: String {
-        if isTie {
+    private func verdictSub(_ result: MortgageResult) -> String {
+        if isTie(result) {
             return "At a \(pct(returnPct)) return — exactly your \(rateWord) — both futures land within pennies after \(Int(horizonYears)) years. Below it prepaying wins; above it investing wins."
         }
-        if diff > 0 {
-            return "At an assumed \(pct(returnPct)) return, investing \(Formatters.usd(extra))/mo ends \(Int(horizonYears)) years ahead by \(Formatters.usd(diff)). The catch is the word assumed: prepaying's \(pct(effRate * 100)) is contractual; the market's isn't. Below \(pct(effRate * 100)) it reverses."
+        if diff(result) > 0 {
+            return "At an assumed \(pct(returnPct)) return, investing \(Formatters.usd(extra))/mo ends \(Int(horizonYears)) years ahead by \(Formatters.usd(diff(result))). The catch is the word assumed: prepaying's \(pct(effRate * 100)) is contractual; the market's isn't. Below \(pct(effRate * 100)) it reverses."
         }
-        return "At an assumed \(pct(returnPct)) return — below your \(pct(effRate * 100)) \(rateWord) — prepaying wins by \(Formatters.usd(-diff)) after \(Int(horizonYears)) years, and its return is guaranteed."
+        return "At an assumed \(pct(returnPct)) return — below your \(pct(effRate * 100)) \(rateWord) — prepaying wins by \(Formatters.usd(-diff(result))) after \(Int(horizonYears)) years, and its return is guaranteed."
     }
 
     // MARK: stat strip
 
-    private var statStrip: some View {
+    private func statStrip(_ result: MortgageResult) -> some View {
         let L = result.last
+        let d = diff(result)
         return VStack(spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                stat(signedMoney(diff), diff >= 0 ? "invest advantage" : "prepay advantage",
-                     color: diff >= 0 ? pink : deep)
+                stat(signedMoney(d), d >= 0 ? "invest advantage" : "prepay advantage",
+                     color: d >= 0 ? pink : deep)
                 stat(result.payoffA.map(yrs) ?? "beyond horizon", "debt-free if you prepay",
                      color: deep)
             }
             HStack(alignment: .top, spacing: 12) {
-                stat(Formatters.usd(intSaved), "interest saved by prepaying", color: deep)
+                stat(Formatters.usd(intSaved(result)), "interest saved by prepaying", color: deep)
                 stat(Formatters.usd(L.investedB), "the extra dollars, invested", color: pink)
             }
         }
@@ -358,12 +360,13 @@ struct PrincipalVsRothSection: View {
 
     // MARK: chart 1 — two strategies compared (net position)
 
-    private var chartOne: some View {
+    private func chartOne(_ result: MortgageResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             chartTitle("Two strategies compared",
                        "Net position = savings − remaining debt. The house cancels, so this is the whole gap.")
             legend([("House first", deep), ("Roth first", pink)])
             lineChart(
+                result: result,
                 specs: [
                     LineSpec(name: "House first", color: deep, values: result.rows.map(\.netA), dashed: false),
                     LineSpec(name: "Roth first", color: pink, values: result.rows.map(\.netB), dashed: false),
@@ -376,12 +379,13 @@ struct PrincipalVsRothSection: View {
 
     // MARK: chart 2 — the home as an asset
 
-    private var chartTwo: some View {
+    private func chartTwo(_ result: MortgageResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             chartTitle("The home as an asset",
                        "Appreciating value against the shrinking loan. The gap between the lines is your equity.")
             legend([("Home value", theme.color("muted")), ("Loan · normal", pink), ("Loan · prepaying", deep)])
             lineChart(
+                result: result,
                 specs: [
                     LineSpec(name: "Home value", color: theme.color("muted"), values: result.rows.map(\.homeValue), dashed: true),
                     LineSpec(name: "Loan · normal", color: pink, values: result.rows.map(\.balanceB), dashed: false),
@@ -395,12 +399,13 @@ struct PrincipalVsRothSection: View {
 
     // MARK: chart 3 — interest handed to the lender (cumulative, straight from rows)
 
-    private var chartThree: some View {
+    private func chartThree(_ result: MortgageResult) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             chartTitle("Interest paid to the lender",
                        "Cumulative interest each path hands over. Prepaying bends its curve down early — that gap is the guaranteed saving.")
             legend([("Normal schedule", pink), ("Prepaying", deep)])
             lineChart(
+                result: result,
                 specs: [
                     LineSpec(name: "Normal schedule", color: pink, values: result.rows.map(\.interestB), dashed: false),
                     LineSpec(name: "Prepaying", color: deep, values: result.rows.map(\.interestA), dashed: false),
@@ -460,7 +465,7 @@ struct PrincipalVsRothSection: View {
         }
     }
 
-    private func lineChart(specs: [LineSpec], milestones: [Milestone], includesZero: Bool) -> some View {
+    private func lineChart(result: MortgageResult, specs: [LineSpec], milestones: [Milestone], includesZero: Bool) -> some View {
         let maxYear = Double(result.months) / 12
         let strideYears: Double = maxYear > 24 ? 10 : maxYear > 12 ? 5 : 2
         return Chart {

@@ -30,7 +30,7 @@ struct ConvertPanel: View {
                     Text("Amount")
                         .font(bloomBody(12))
                         .foregroundStyle(theme.color("muted"))
-                    TextField("1", value: amountBinding, format: .number, prompt: Text("1").foregroundColor(theme.color("muted")))
+                    TextField("1", value: amountBinding, format: .number, prompt: Text("1").foregroundStyle(theme.color("muted")))
                         .keyboardType(.decimalPad)
                         .font(bloomNumber(18))
                         .foregroundStyle(theme.color("text"))
@@ -80,7 +80,7 @@ struct ConvertPanel: View {
                 .onTapGesture(count: 2) { resetZoom() }
                 .onTapGesture {
                     sound.play("tap1")
-                    guard theme.motionEnabled else { return }
+                    guard theme.motionEnabled && !reduceMotion else { return }
                     illustrationBounce = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                         illustrationBounce = false
@@ -133,7 +133,7 @@ struct ConvertPanel: View {
             zoomScale = 1.0
             panOffset = .zero
         } else {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            withAnimation(BloomMotion.springSoft) {
                 zoomScale = 1.0
                 panOffset = .zero
             }
@@ -149,7 +149,7 @@ struct ConvertPanel: View {
             store.convertFromUnit = store.convertToUnit
             store.convertToUnit = from
             sound.play("modeswitch")
-            guard theme.motionEnabled else { return }
+            guard theme.motionEnabled && !reduceMotion else { return }
             withAnimation(BloomMotion.glide) { swapSpin += 180 }
         } label: {
             Image(systemName: "arrow.left.arrow.right")
@@ -217,7 +217,7 @@ struct ConvertPanel: View {
                 .font(bloomNumber(15, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
                 .contentTransition(.numericText())
-                .animation(.spring(response: 0.45, dampingFraction: 0.8), value: value)
+                .animation(BloomMotion.springSoft, value: value)
         }
     }
 

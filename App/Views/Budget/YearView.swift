@@ -83,14 +83,14 @@ struct YearWrap: View {
                 let (idx, entry) = pair
                 if entry.has {
                     BarMark(
-                        x: .value("Month", monthLetter(idx)),
+                        x: .value("Month", Double(idx + 1)),
                         y: .value("Take-home", entry.takeHome),
                         width: .ratio(0.32)
                     )
                     .foregroundStyle(theme.color("good").opacity(0.45))
                     .position(by: .value("Series", "th"))
                     BarMark(
-                        x: .value("Month", monthLetter(idx)),
+                        x: .value("Month", Double(idx + 1)),
                         y: .value("Planned", entry.planned),
                         width: .ratio(0.32)
                     )
@@ -100,9 +100,14 @@ struct YearWrap: View {
             }
         }
         .chartYScale(domain: 0...maxValue)
+        .chartXScale(domain: 0.5...12.5)
         .chartXAxis {
-            AxisMarks(preset: .aligned) { _ in
-                AxisValueLabel()
+            AxisMarks(values: (1...12).map(Double.init)) { value in
+                if let m = value.as(Double.self) {
+                    AxisValueLabel {
+                        Text(monthLetter(Int(m) - 1))
+                    }
+                }
             }
         }
         .chartYAxis(.hidden)

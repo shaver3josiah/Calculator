@@ -149,16 +149,6 @@ final class CalcStore {
         }
     }
 
-    func recycle(tokens: [String]) {
-        muted = true
-        defer { muted = false }
-        engine.clearAll()
-        sequence.removeAll()
-        for token in tokens {
-            press(token)
-        }
-    }
-
     /// Rebuild a plain display value (e.g. a negative result) silently, treating a
     /// leading "-" as a sign toggle rather than the subtract operator.
     func replayValue(_ value: String) {

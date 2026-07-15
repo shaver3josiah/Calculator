@@ -71,7 +71,7 @@ struct WifeySplash: View {
         if reduceMotion {
             appeared = true
         } else {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            withAnimation(BloomMotion.springSoft) {
                 appeared = true
             }
         }

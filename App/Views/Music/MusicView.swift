@@ -50,7 +50,7 @@ struct MusicView: View {
             "Paste chords, e.g.   C  G  Am  F      (Dm7 G7 Cmaj7 and C/E also work)",
             text: chordTextBinding,
             prompt: Text("Paste chords, e.g.   C  G  Am  F      (Dm7 G7 Cmaj7 and C/E also work)")
-                .foregroundColor(theme.color("muted")),
+                .foregroundStyle(theme.color("muted")),
             axis: .vertical
         )
         .font(bloomBody(14))

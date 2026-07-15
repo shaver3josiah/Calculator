@@ -158,7 +158,7 @@ struct StewardshipCard: View {
                 Text("$")
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("muted"))
-                TextField("0", text: innovationBinding, prompt: Text("0").foregroundColor(theme.color("muted")))
+                TextField("0", text: innovationBinding, prompt: Text("0").foregroundStyle(theme.color("muted")))
                     .keyboardType(.decimalPad)
                     .font(bloomNumber(14, weight: .semibold))
                     .multilineTextAlignment(.trailing)

@@ -19,6 +19,7 @@ struct VisualizePanel: View {
     @State private var failed: [String] = []
     @State private var placements: [Placement] = []
     @State private var addedFlash = false   // "Added!" confirmation pulse on the shopping-list button
+    @State private var flashGeneration = 0   // invalidates a pending flash reset when re-tapped
     @State private var addBurst = 0          // fires a petal burst from the button
     @FocusState private var textFocused: Bool
 
@@ -45,7 +46,7 @@ struct VisualizePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Paste recipe text", text: $rawText, prompt: Text("Paste recipe text").foregroundColor(theme.color("muted")), axis: .vertical)
+            TextField("Paste recipe text", text: $rawText, prompt: Text("Paste recipe text").foregroundStyle(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(4...8)
@@ -126,7 +127,7 @@ struct VisualizePanel: View {
                 }
                 .buttonStyle(.plain)
             }
-            TextField("custom", text: $customScale, prompt: Text("custom").foregroundColor(theme.color("muted")))
+            TextField("custom", text: $customScale, prompt: Text("custom").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(13))
                 .foregroundStyle(theme.color("text"))
@@ -387,7 +388,7 @@ struct VisualizePanel: View {
 
     private func resetZoom() {
         if theme.motionEnabled && !reduceMotion {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            withAnimation(BloomMotion.springSoft) {
                 zoom = 1; zoomBase = 1; pan = .zero; panBase = .zero
             }
         } else {
@@ -594,13 +595,20 @@ struct VisualizePanel: View {
     /// plus a petal burst, settling back after ~1.4s. Respects the motion gates.
     private func flashAdded() {
         addBurst += 1   // PetalBurstView is gated on petalsOn at the call site
+        flashGeneration += 1
+        let expected = flashGeneration
         if theme.motionEnabled && !reduceMotion {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { addedFlash = true }
         } else {
             addedFlash = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            withAnimation(.easeOut(duration: 0.3)) { addedFlash = false }
+            guard flashGeneration == expected else { return }
+            if theme.motionEnabled && !reduceMotion {
+                withAnimation(.easeOut(duration: 0.3)) { addedFlash = false }
+            } else {
+                addedFlash = false
+            }
         }
     }
 

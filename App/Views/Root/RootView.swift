@@ -241,7 +241,7 @@ struct RootView: View {
     }
 
     private func toggleVerse() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+        withAnimation(BloomMotion.springSoft) {
             verseMode.toggle()
         }
         soundStore.play("modeswitch")

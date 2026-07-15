@@ -37,7 +37,15 @@ public final class JSONStore: @unchecked Sendable {
             guard let data = try? Data(contentsOf: url) else {
                 return nil
             }
-            return try? JSONDecoder().decode(T.self, from: data)
+            do {
+                return try JSONDecoder().decode(T.self, from: data)
+            } catch {
+                // Preserve the unreadable file so the next save can't overwrite the evidence.
+                let aside = url.appendingPathExtension("corrupt")
+                try? FileManager.default.removeItem(at: aside)
+                try? FileManager.default.moveItem(at: url, to: aside)
+                return nil
+            }
         }
     }
 
@@ -47,7 +55,11 @@ public final class JSONStore: @unchecked Sendable {
             guard let data = try? JSONEncoder().encode(value) else {
                 return
             }
-            try? data.write(to: url, options: .atomic)
+            do {
+                try data.write(to: url, options: .atomic)
+            } catch {
+                assertionFailure("JSONStore write failed for \(key.rawValue): \(error)")
+            }
         }
     }
 
