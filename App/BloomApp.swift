@@ -12,6 +12,7 @@ struct BloomApp: App {
     @State private var calcStore: CalcStore
     @State private var projectionStore = ProjectionStore()
     @State private var budgetStore = BudgetStore()
+    @State private var songBook = SongBook()
 
     init() {
         let history = HistoryStore()
@@ -41,6 +42,7 @@ struct BloomApp: App {
                 .environment(calcStore)
                 .environment(projectionStore)
                 .environment(budgetStore)
+                .environment(songBook)
         }
     }
 }

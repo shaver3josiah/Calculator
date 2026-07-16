@@ -5,6 +5,7 @@ import SwiftUI
 /// track nudges the thumb to teach the gesture; VoiceOver gets a plain button.
 struct SlideToBloom: View {
     @Environment(ThemeStore.self) private var theme
+    @Environment(SoundStore.self) private var sound
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var enabled: Bool
@@ -15,6 +16,10 @@ struct SlideToBloom: View {
     @State private var bloomed = false        // brief success state at the far end
     @State private var successTrigger = 0     // haptic + reset timing
     @State private var resetGeneration = 0
+    // Haptics along the travel: a tick every detent, a firmer click when she
+    // crosses the release line, and the success buzz on bloom.
+    @State private var tick = 0
+    @State private var armed = false
 
     private let height: CGFloat = 60
     private let thumbSize: CGFloat = 50
@@ -69,14 +74,23 @@ struct SlideToBloom: View {
                             )
                         )
                         .shadow(color: theme.color("shadow"), radius: isDragging ? 10 : 5, y: 3)
-                    Image(systemName: bloomed ? "checkmark" : "camera.macro")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .rotationEffect(.degrees(Double(progress) * 180))
-                        .scaleEffect(bloomed ? 1.2 : 1)
+                    // The FLOWER turns as it travels (a bloom opening); the
+                    // checkmark never does — an upside-down check reads as a bug.
+                    // Separate views, so no rotation can leak onto the check.
+                    if bloomed {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                            .transition(.scale.combined(with: .opacity))
+                    } else {
+                        Image(systemName: "camera.macro")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .rotationEffect(.degrees(Double(progress) * 90))
+                    }
                 }
                 .frame(width: thumbSize, height: thumbSize)
-                .scaleEffect(isDragging ? 1.06 : 1)
+                .scaleEffect(isDragging ? 1.06 : (bloomed ? 1.08 : 1))
                 .offset(x: inset + dragX)
                 .gesture(
                     DragGesture(minimumDistance: 1)
@@ -84,6 +98,7 @@ struct SlideToBloom: View {
                             guard enabled, !bloomed else { return }
                             isDragging = true
                             dragX = min(maxX, max(0, value.translation.width))
+                            updateHaptics(progress: min(1, dragX / maxX))
                         }
                         .onEnded { _ in
                             isDragging = false
@@ -91,6 +106,7 @@ struct SlideToBloom: View {
                             if dragX > maxX * 0.85 {
                                 complete(maxX: maxX)
                             } else {
+                                armed = false
                                 withAnimation(BloomMotion.springSoft) { dragX = 0 }
                             }
                         }
@@ -105,16 +121,32 @@ struct SlideToBloom: View {
         .frame(height: height)
         .opacity(enabled ? 1 : 0.55)
         .animation(.easeOut(duration: 0.25), value: enabled)
-        .sensoryFeedback(.success, trigger: successTrigger)
+        // Feel it the whole way: soft ticks along the track, a firmer click as
+        // it arms at the release line, the success buzz when it blooms.
+        .sensoryFeedback(.selection, trigger: tick) { _, _ in sound.hapticsEnabled }
+        .sensoryFeedback(.impact(weight: .medium), trigger: armed) { _, now in
+            sound.hapticsEnabled && now
+        }
+        .sensoryFeedback(.success, trigger: successTrigger) { _, _ in sound.hapticsEnabled }
         // VoiceOver skips the gesture entirely: one honest button.
         .accessibilityRepresentation {
             Button("Load chords") { if enabled { onLoad() } }
         }
     }
 
+    /// One tick per detent crossed, and a click the moment the release line is
+    /// crossed (either way) — so the track has texture under her thumb.
+    private func updateHaptics(progress: Double) {
+        let detent = Int(progress * 8)
+        if detent != tick { tick = detent }
+        let nowArmed = progress > 0.85
+        if nowArmed != armed { armed = nowArmed }
+    }
+
     /// Ride the thumb home, bloom, fire the load, then glide back for next time.
     private func complete(maxX: CGFloat) {
         successTrigger += 1
+        armed = false
         withAnimation(BloomMotion.springSoft) {
             dragX = maxX
             bloomed = true

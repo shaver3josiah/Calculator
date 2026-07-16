@@ -42,7 +42,9 @@ enum MusicTourStep: Int, CaseIterable {
     }
 }
 
-/// Bottom-docked tour card: step dots, one thought at a time, big friendly buttons.
+/// Bottom-docked tour bar. Deliberately SLIM — the tour is a guest on her
+/// screen, never the host: one line of guidance, one small action, an X to end
+/// it. It only ever appears because she tapped the tour button.
 struct MusicTourCard: View {
     @Environment(ThemeStore.self) private var theme
 
@@ -52,70 +54,72 @@ struct MusicTourCard: View {
     var onAssist: (() -> Void)? = nil   // "Do it for me" on the slide step
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                stepDots
-                Spacer()
-                if step != .done {
-                    Button(action: onSkip) {
-                        Text("Skip")
-                            .font(bloomBody(13, weight: .medium))
-                            .foregroundStyle(theme.color("muted"))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                    }
-                    .buttonStyle(.plain)
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    stepDots
+                    Text(step.title)
+                        .font(bloomBody(13, weight: .semibold))
+                        .foregroundStyle(theme.color("deep"))
+                        .lineLimit(1)
                 }
+                Text(step.message)
+                    .font(bloomBody(12))
+                    .foregroundStyle(theme.color("muted"))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+
+            if let label = step.primaryLabel {
+                Button(action: onNext) {
+                    Text(label)
+                        .font(bloomBody(13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 34)
+                        .background(Capsule().fill(theme.color("primaryStrong")))
+                }
+                .buttonStyle(TactilePressStyle(cornerRadius: 999))
+            } else if let onAssist {
+                Button(action: onAssist) {
+                    Text("Do it for me")
+                        .font(bloomBody(13, weight: .semibold))
+                        .foregroundStyle(theme.color("primaryStrong"))
+                        .padding(.horizontal, 14)
+                        .frame(height: 34)
+                        .background(Capsule().fill(theme.color("surfaceSoft")))
+                }
+                .buttonStyle(TactilePressStyle(cornerRadius: 999))
             }
 
-            Text(step.title)
-                .font(bloomBody(17, weight: .semibold))
-                .foregroundStyle(theme.color("deep"))
-            Text(step.message)
-                .font(bloomBody(14))
-                .foregroundStyle(theme.color("text"))
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 10) {
-                if let label = step.primaryLabel {
-                    Button(action: onNext) {
-                        Text(label)
-                            .font(bloomBody(15, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Capsule().fill(theme.color("primaryStrong")))
-                    }
-                    .buttonStyle(TactilePressStyle(cornerRadius: 999))
-                } else if let onAssist {
-                    Button(action: onAssist) {
-                        Text("Do it for me")
-                            .font(bloomBody(14, weight: .semibold))
-                            .foregroundStyle(theme.color("primaryStrong"))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Capsule().fill(theme.color("surfaceSoft")))
-                    }
-                    .buttonStyle(TactilePressStyle(cornerRadius: 999))
-                }
+            Button(action: onSkip) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(theme.color("muted"))
+                    .frame(width: 30, height: 34)
+                    .contentShape(Rectangle())
             }
-            .padding(.top, 2)
+            .buttonStyle(.plain)
+            .accessibilityLabel("End the tour")
         }
-        .padding(18)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: theme.radius, style: .continuous)
+            Capsule(style: .continuous)
                 .fill(theme.color("surface"))
-                .shadow(color: theme.color("shadow"), radius: 18, y: 10)
+                .shadow(color: theme.color("shadow"), radius: 14, y: 6)
         )
+        .overlay(Capsule(style: .continuous).stroke(theme.color("line"), lineWidth: 1))
         .padding(.horizontal, 16)
     }
 
     private var stepDots: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 3) {
             ForEach(MusicTourStep.allCases, id: \.rawValue) { s in
                 Circle()
                     .fill(theme.color(s.rawValue <= step.rawValue ? "primaryStrong" : "line"))
-                    .frame(width: 6, height: 6)
+                    .frame(width: 4, height: 4)
             }
         }
         .accessibilityLabel("Step \(step.rawValue + 1) of \(MusicTourStep.allCases.count)")

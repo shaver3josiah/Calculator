@@ -16,6 +16,7 @@ struct MusicView: View {
     @State private var typingTask: Task<Void, Never>? = nil
 
     @State private var librarySheet: SongCategory? = nil
+    @State private var showSongwriter = false
 
     private let libraryColumns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
@@ -24,6 +25,8 @@ struct MusicView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     headerRow
+
+                    songwriterButton
 
                     librarySection
                         .id("sec.lib")
@@ -60,7 +63,7 @@ struct MusicView: View {
                     }
                 }
                 .padding(16)
-                .padding(.bottom, tourStep == nil ? 16 : 180)
+                .padding(.bottom, tourStep == nil ? 16 : 110)
             }
             .background(theme.color("bg"))
             .overlay(alignment: .bottom) {
@@ -84,12 +87,14 @@ struct MusicView: View {
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
             }
+            .fullScreenCover(isPresented: $showSongwriter) {
+                SongwriterView()
+            }
             .sensoryFeedback(.impact(weight: .light), trigger: padEpoch) { _, _ in
                 sound.hapticsEnabled
             }
             .onAppear {
                 store.warmUp()   // engine ready before the first pad/piano tap
-                maybeAutoStartTour()
             }
             .onDisappear { typingTask?.cancel() }
         }
@@ -102,25 +107,76 @@ struct MusicView: View {
     // MARK: - Header
 
     private var headerRow: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Text("Pick a song or write your own — every chord blooms as soft grand piano, all offline.")
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("muted"))
                 .frame(maxWidth: .infinity, alignment: .leading)
+            // The tour is a small, quiet offer in the corner — never a popup,
+            // never a banner. She takes it when she wants it.
             Button {
                 startTour()
             } label: {
-                Label("Tour", systemImage: "sparkles")
-                    .font(bloomBody(13, weight: .semibold))
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(theme.color("primaryStrong"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Capsule().fill(theme.color("surface2")))
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(theme.color("surface2")))
             }
             .buttonStyle(TactilePressStyle(cornerRadius: 999))
             .discoverable("music.tourBtn", cornerRadius: 999)
-            .accessibilityHint("Replays the Music Garden walkthrough")
+            .accessibilityLabel("Take the tour")
+            .accessibilityHint("Walks you through the Music Garden")
         }
+    }
+
+    // The doorway to her clean page: chords AND lyrics, structured like a song.
+    private var songwriterButton: some View {
+        Button {
+            sound.play("modeswitch")
+            showSongwriter = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle().fill(
+                            LinearGradient(
+                                colors: [theme.color("primary"), theme.color("primaryStrong")],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            )
+                        )
+                    )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Songwriting mode")
+                        .font(bloomBody(16, weight: .semibold))
+                        .foregroundStyle(theme.color("deep"))
+                    Text("A clean page for chords, lyrics & structure")
+                        .font(bloomBody(12))
+                        .foregroundStyle(theme.color("muted"))
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.forward")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(theme.color("primaryStrong"))
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: theme.radius, style: .continuous)
+                    .fill(theme.color("surface"))
+                    .shadow(color: theme.color("shadow"), radius: 10, y: 5)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: theme.radius, style: .continuous)
+                    .stroke(theme.color("primary").opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: theme.radius))
+        .discoverable("music.songwriter", cornerRadius: theme.radius)
+        .accessibilityHint("Opens a full-screen page to write chords and lyrics")
     }
 
     // MARK: - Song library
@@ -419,14 +475,6 @@ struct MusicView: View {
     }
 
     // MARK: - Tour state machine
-
-    private func maybeAutoStartTour() {
-        guard theme.isUndiscovered("music.tour"), tourStep == nil else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            guard tourStep == nil else { return }
-            withAnimation(BloomMotion.springSoft) { tourStep = .welcome }
-        }
-    }
 
     private func startTour() {
         typingTask?.cancel()

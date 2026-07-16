@@ -151,11 +151,17 @@ final class MusicStore {
     }
 
     func playAll() {
-        guard !chords.isEmpty else { return }
+        playSequence(chords)
+    }
+
+    /// Play any chord line in order at the current tempo — the loaded pads use
+    /// this via playAll, and the songwriter plays a section (or a whole song)
+    /// through the same path, so everything sounds like one instrument.
+    func playSequence(_ sequence: [ChordVoice]) {
+        guard !sequence.isEmpty else { return }
         stopAll()
         isPlaying = true
         let beat = 60.0 / tempo * 2.0
-        let sequence = chords
         playTask = Task { @MainActor in
             for chord in sequence {
                 guard !Task.isCancelled else { break }
