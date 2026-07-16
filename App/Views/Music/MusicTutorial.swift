@@ -19,16 +19,17 @@ enum MusicTourStep: Int, CaseIterable {
         }
     }
 
+    /// Kept short on purpose: these ride a slim one-line bar, not a panel.
     var message: String {
         switch self {
-        case .welcome: return "Chords become soft piano here. Want the 30-second tour?"
-        case .library: return "Psalms, hymns, country & old-timey classics — tap a card to browse, tap a song and it loads itself."
+        case .welcome: return "Chords become soft piano. Want the quick tour?"
+        case .library: return "Tap a card to browse — tap a song and it loads."
         case .write: return "Chords live in this box — watch me write some!"
-        case .slide: return "Swipe the flower all the way to the right to load your chords."
-        case .pads: return "Every pad is a chord. Tap them in any order — or let Play strum through."
-        case .controls: return "Tempo, strum, loudness, transpose — twist the dials until it sounds like you."
-        case .piano: return "This little piano sprinkles single notes into your song — try a twinkle."
-        case .done: return "Everything plays offline. Go make something beautiful."
+        case .slide: return "Swipe the flower right to load your chords."
+        case .pads: return "Every pad is a chord. Tap them in any order."
+        case .controls: return "Tempo, strum, transpose — until it sounds like you."
+        case .piano: return "This piano sprinkles single notes in. Try a twinkle."
+        case .done: return "It all plays offline. Go make something beautiful."
         }
     }
 
@@ -56,17 +57,19 @@ struct MusicTourCard: View {
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    stepDots
-                    Text(step.title)
-                        .font(bloomBody(13, weight: .semibold))
-                        .foregroundStyle(theme.color("deep"))
-                        .lineLimit(1)
-                }
+                // The step dots used to sit inline here and ate ~59pt of the
+                // title's line box, truncating it on small phones. The count
+                // now rides the title's accessibility label instead.
+                Text(step.title)
+                    .font(bloomBody(13, weight: .semibold))
+                    .foregroundStyle(theme.color("deep"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .accessibilityLabel("\(step.title). Step \(step.rawValue + 1) of \(MusicTourStep.allCases.count)")
                 Text(step.message)
                     .font(bloomBody(12))
                     .foregroundStyle(theme.color("muted"))
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 4)
@@ -106,23 +109,13 @@ struct MusicTourCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
-            Capsule(style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(theme.color("surface"))
                 .shadow(color: theme.color("shadow"), radius: 14, y: 6)
         )
-        .overlay(Capsule(style: .continuous).stroke(theme.color("line"), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .stroke(theme.color("line"), lineWidth: 1))
         .padding(.horizontal, 16)
-    }
-
-    private var stepDots: some View {
-        HStack(spacing: 3) {
-            ForEach(MusicTourStep.allCases, id: \.rawValue) { s in
-                Circle()
-                    .fill(theme.color(s.rawValue <= step.rawValue ? "primaryStrong" : "line"))
-                    .frame(width: 4, height: 4)
-            }
-        }
-        .accessibilityLabel("Step \(step.rawValue + 1) of \(MusicTourStep.allCases.count)")
     }
 }
 

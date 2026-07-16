@@ -224,8 +224,28 @@ private struct MotionPrefs: Codable {
 }
 
 extension Color {
+    /// Parses "#RRGGBB" and CSS "rgba(r,g,b,a)". The rgba form matters: the
+    /// `shadow` token has always been stored that way, so every card shadow in
+    /// the app silently resolved to .clear and drew nothing. The design system
+    /// specified those soft rose shadows from the start — this is what turns
+    /// them on.
     init?(hex: String) {
         var normalized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if normalized.lowercased().hasPrefix("rgba(") || normalized.lowercased().hasPrefix("rgb(") {
+            guard let open = normalized.firstIndex(of: "("),
+                  let close = normalized.lastIndex(of: ")") else { return nil }
+            let parts = normalized[normalized.index(after: open)..<close]
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+            guard parts.count >= 3,
+                  let r = Double(parts[0]), let g = Double(parts[1]), let b = Double(parts[2])
+            else { return nil }
+            let a = parts.count >= 4 ? (Double(parts[3]) ?? 1) : 1
+            self.init(.sRGB, red: r / 255.0, green: g / 255.0, blue: b / 255.0, opacity: a)
+            return
+        }
+
         if normalized.hasPrefix("#") {
             normalized.removeFirst()
         }

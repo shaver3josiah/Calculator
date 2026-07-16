@@ -19,6 +19,7 @@ struct SlideToBloom: View {
     // Haptics along the travel: a tick every detent, a firmer click when she
     // crosses the release line, and the success buzz on bloom.
     @State private var tick = 0
+    @State private var lastDetent = 0
     @State private var armed = false
 
     private let height: CGFloat = 60
@@ -107,6 +108,7 @@ struct SlideToBloom: View {
                                 complete(maxX: maxX)
                             } else {
                                 armed = false
+                                lastDetent = 0
                                 withAnimation(BloomMotion.springSoft) { dragX = 0 }
                             }
                         }
@@ -137,8 +139,14 @@ struct SlideToBloom: View {
     /// One tick per detent crossed, and a click the moment the release line is
     /// crossed (either way) — so the track has texture under her thumb.
     private func updateHaptics(progress: Double) {
+        // `tick` only ever counts UP — it's a trigger, not a position. (Storing
+        // the detent itself fired a phantom tick at touch-down on every drag
+        // after the first, when it fell from the last drag's detent back to 0.)
         let detent = Int(progress * 8)
-        if detent != tick { tick = detent }
+        if detent != lastDetent {
+            lastDetent = detent
+            tick += 1
+        }
         let nowArmed = progress > 0.85
         if nowArmed != armed { armed = nowArmed }
     }
@@ -147,6 +155,7 @@ struct SlideToBloom: View {
     private func complete(maxX: CGFloat) {
         successTrigger += 1
         armed = false
+        lastDetent = 0
         withAnimation(BloomMotion.springSoft) {
             dragX = maxX
             bloomed = true

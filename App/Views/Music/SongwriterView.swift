@@ -13,12 +13,14 @@ struct SongwriterView: View {
     @Environment(SoundStore.self) private var sound
     @Environment(SongBook.self) private var book
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var song = Song()
     @State private var loaded = false
     @State private var previewing = false
     @State private var saveTask: Task<Void, Never>? = nil
     @State private var showSongs = false
+    @State private var confirmDelete = false
     @FocusState private var focusedField: UUID?
 
     var body: some View {
@@ -45,12 +47,31 @@ struct SongwriterView: View {
         // Debounced autosave: her words are never a keystroke away from lost,
         // but the file isn't rewritten on every letter either.
         .onChange(of: song) { _, _ in scheduleSave() }
+        // Leaving the app mid-verse (home button, phone lock) doesn't call
+        // onDisappear — and iOS may kill a suspended app without warning. This
+        // is the last guaranteed moment to write her words down.
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active else { return }
+            saveTask?.cancel()
+            book.upsert(song)
+        }
         .onDisappear {
             saveTask?.cancel()
             music.stopAll()
             book.upsert(song)
         }
         .sheet(isPresented: $showSongs) { songListSheet }
+        .confirmationDialog("Delete “\(song.displayTitle)”?",
+                            isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete this song", role: .destructive) {
+                saveTask?.cancel()
+                book.delete(song.id)
+                song = book.mostRecentOrNew()
+            }
+            Button("Keep it", role: .cancel) {}
+        } message: {
+            Text("This can't be undone.")
+        }
     }
 
     // MARK: - Top bar
@@ -64,21 +85,29 @@ struct SongwriterView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("primaryStrong"))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background(Circle().fill(theme.color("surfaceSoft")))
             }
             .buttonStyle(TactilePressStyle(cornerRadius: 999))
             .accessibilityLabel("Close songwriting")
 
-            TextField(
-                "Name your song",
-                text: $song.title,
-                prompt: Text("Name your song").foregroundStyle(theme.color("muted"))
-            )
-            .font(bloomScript(26))
-            .foregroundStyle(theme.color("deep"))
-            .textInputAutocapitalization(.words)
-            .disabled(previewing)
+            // In Preview the lead sheet prints its own title — a second copy up
+            // here would stack the same words twice, 8pt apart.
+            if previewing {
+                Spacer(minLength: 0)
+            } else {
+                TextField(
+                    "Name your song",
+                    text: $song.title,
+                    prompt: Text("Name your song").foregroundStyle(theme.color("muted"))
+                )
+                .font(bloomScript(28))
+                .foregroundStyle(theme.color("deep"))
+                .textInputAutocapitalization(.words)
+                .padding(.horizontal, 10)
+                .frame(height: 44)
+                .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surfaceSoft")))
+            }
 
             Button {
                 withAnimation(BloomMotion.glide) { previewing.toggle() }
@@ -86,9 +115,9 @@ struct SongwriterView: View {
             } label: {
                 Label(previewing ? "Edit" : "Preview", systemImage: previewing ? "pencil" : "eye")
                     .font(bloomBody(13, weight: .semibold))
-                    .foregroundStyle(previewing ? Color.white : theme.color("primaryStrong"))
-                    .padding(.horizontal, 12)
-                    .frame(height: 34)
+                    .foregroundStyle(previewing ? Color.white : theme.color("deep"))
+                    .padding(.horizontal, 14)
+                    .frame(height: 44)
                     .background(
                         Capsule().fill(previewing ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
                     )
@@ -105,14 +134,13 @@ struct SongwriterView: View {
                 ShareLink(item: song.shareText) { Label("Share this song", systemImage: "square.and.arrow.up") }
                 Divider()
                 Button(role: .destructive) {
-                    book.delete(song.id)
-                    song = book.mostRecentOrNew()
+                    confirmDelete = true      // one mis-tap must never destroy a finished song
                 } label: { Label("Delete this song", systemImage: "trash") }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("primaryStrong"))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background(Circle().fill(theme.color("surfaceSoft")))
             }
             .accessibilityLabel("Song options")
@@ -127,8 +155,13 @@ struct SongwriterView: View {
         ScrollView {
             VStack(spacing: 14) {
                 if song.sections.isEmpty { emptyHint }
-                ForEach($song.sections) { $section in
-                    sectionCard($section)
+                // Iterate VALUES and hand each card an id-keyed binding.
+                // ForEach($song.sections) would hand out index-keyed bindings,
+                // and the live TextField bindings of the surviving rows would
+                // then read stale indices the instant a row is deleted — a
+                // crash. Keyed by id, a deleted row's binding just no-ops.
+                ForEach(song.sections) { s in
+                    sectionCard(binding(for: s.id))
                 }
                 addRow
                 Text("Chords play with the same soft piano as the rest of the app. Everything saves itself.")
@@ -159,9 +192,18 @@ struct SongwriterView: View {
         .padding(.vertical, 28)
     }
 
+    /// An id-keyed binding into the song: survives deletion of any row.
+    private func binding(for id: UUID) -> Binding<SongSection> {
+        Binding(
+            get: { song.sections.first { $0.id == id } ?? SongSection(id: id) },
+            set: { updated in
+                guard let i = song.sections.firstIndex(where: { $0.id == id }) else { return }
+                song.sections[i] = updated
+            }
+        )
+    }
+
     private func sectionCard(_ section: Binding<SongSection>) -> some View {
-        // Snapshot identity/value up front: the row's own menu can delete it,
-        // and reading section.wrappedValue after that mutation is a crash.
         let sid = section.wrappedValue.id
         let value = section.wrappedValue
         let kind = value.kind
@@ -190,8 +232,8 @@ struct SongwriterView: View {
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(theme.color("muted"))
                     }
-                    .padding(.horizontal, 10)
-                    .frame(height: 30)
+                    .padding(.horizontal, 12)
+                    .frame(height: 44)
                     .background(Capsule().fill(theme.color("surfaceSoft")))
                 }
                 .accessibilityLabel("Section type: \(label)")
@@ -203,9 +245,9 @@ struct SongwriterView: View {
                     music.playSequence(voices)
                 } label: {
                     Image(systemName: "play.fill")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(voices.isEmpty ? theme.color("muted") : theme.color("primaryStrong"))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .background(Circle().fill(theme.color("surfaceSoft")))
                 }
                 .buttonStyle(TactilePressStyle(cornerRadius: 999))
@@ -224,9 +266,9 @@ struct SongwriterView: View {
                     } label: { Label("Delete section", systemImage: "trash") }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(theme.color("muted"))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Section options")
@@ -268,7 +310,7 @@ struct SongwriterView: View {
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(3...14)
                 .lineSpacing(4)
-                .focused($focusedField, equals: section.wrappedValue.id)
+                .focused($focusedField, equals: sid)
                 .inputAccessories(section.lyrics, alignment: .top)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surfaceSoft")))
@@ -323,10 +365,10 @@ struct SongwriterView: View {
                 }
             } label: {
                 Text("More parts — intro, pre-chorus, outro")
-                    .font(bloomBody(12, weight: .medium))
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .font(bloomBody(13, weight: .semibold))
+                    .foregroundStyle(theme.color("deep"))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 32)
+                    .frame(height: 44)
             }
         }
     }
@@ -396,25 +438,28 @@ struct SongwriterView: View {
                 Text(song.label(for: section).uppercased())
                     .font(bloomBody(11, weight: .bold))
                     .tracking(1.1)
-                    .foregroundStyle(theme.color(section.kind == .chorus ? "primaryStrong" : "muted"))
+                    .foregroundStyle(theme.color(section.kind == .chorus ? "deep" : "muted"))
                 Spacer(minLength: 0)
-                Button {
-                    music.playSequence(ChordParser.parseText(section.chords))
-                } label: {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(theme.color("primaryStrong"))
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
+                // A real conditional, not .opacity(0): a transparent button
+                // still swallows taps.
+                if !section.chords.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Button {
+                        music.playSequence(ChordParser.parseText(section.chords))
+                    } label: {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(theme.color("primaryStrong"))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Play \(song.label(for: section))")
                 }
-                .buttonStyle(.plain)
-                .opacity(section.chords.trimmingCharacters(in: .whitespaces).isEmpty ? 0 : 1)
-                .accessibilityLabel("Play \(song.label(for: section))")
             }
             if !section.chords.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(section.chords)
                     .font(bloomNumber(15, weight: .semibold))
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .foregroundStyle(theme.color("deep"))
             }
             if !section.lyrics.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(section.lyrics)
@@ -426,9 +471,16 @@ struct SongwriterView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
+        // surfaceSoft for the chorus (surface2 is within 1% of the page bg —
+        // the card the preview exists to emphasise was invisible), and every
+        // card gets a hairline so the sheet reads as cards, not loose text.
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(theme.color(section.kind == .chorus ? "surface2" : "surface"))
+                .fill(theme.color(section.kind == .chorus ? "surfaceSoft" : "surface"))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(theme.color("line"), lineWidth: 1)
         )
     }
 
@@ -465,6 +517,12 @@ struct SongwriterView: View {
                 .onDelete { offsets in
                     let ids = offsets.map { book.songs[$0].id }
                     for id in ids { book.delete(id) }
+                    // If she just deleted the song she's editing, let go of it —
+                    // otherwise the pending autosave would resurrect it on close.
+                    if !book.songs.contains(where: { $0.id == song.id }) {
+                        saveTask?.cancel()
+                        song = book.mostRecentOrNew()
+                    }
                 }
                 if book.songs.isEmpty {
                     Text("Your songs will live here.")
@@ -489,7 +547,9 @@ struct SongwriterView: View {
         let new = SongSection(kind: kind)
         withAnimation(BloomMotion.springSoft) { song.sections.append(new) }
         sound.play("modeswitch")
-        focusedField = new.id
+        // The new card's field doesn't exist until the next runloop turn —
+        // focusing it now is silently dropped, and the keyboard never opens.
+        Task { @MainActor in focusedField = new.id }
     }
 
     private func duplicate(id: UUID) {

@@ -509,7 +509,6 @@ struct MusicView: View {
 
     private func endTour() {
         typingTask?.cancel()
-        theme.discover("music.tour")
         withAnimation(BloomMotion.springSoft) { tourStep = nil }
     }
 

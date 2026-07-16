@@ -164,10 +164,15 @@ final class MusicStore {
         let beat = 60.0 / tempo * 2.0
         playTask = Task { @MainActor in
             for chord in sequence {
-                guard !Task.isCancelled else { break }
+                // `return`, never `break`: a cancelled run must not fall through
+                // to the isPlaying = false below, or it would clobber the state
+                // of the run that just replaced it (tap two section-play buttons
+                // in a row and Stop would vanish while audio kept going).
+                guard !Task.isCancelled else { return }
                 playChord(chord)
                 try? await Task.sleep(nanoseconds: UInt64(beat * 1_000_000_000))
             }
+            guard !Task.isCancelled else { return }
             isPlaying = false
         }
     }

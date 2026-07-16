@@ -22,15 +22,17 @@ enum SongSectionKind: String, Codable, CaseIterable, Identifiable {
     }
 
     /// Theme token for the section's color dot — the whole song is readable at
-    /// a glance by shape and color, the way a lead sheet is.
+    /// a glance by shape and color, the way a lead sheet is. Every value clears
+    /// 3:1 on the soft/white fills these dots sit on (the pale gold
+    /// flowerCenter did not), and no two kinds share a color.
     var token: String {
         switch self {
         case .intro:     return "muted"
         case .verse:     return "primary"
-        case .prechorus: return "flowerCenter"
+        case .prechorus: return "good"
         case .chorus:    return "primaryStrong"
         case .bridge:    return "deep"
-        case .outro:     return "muted"
+        case .outro:     return "text"
         }
     }
 
@@ -60,6 +62,25 @@ struct SongSection: Identifiable, Codable, Equatable {
         chords.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && lyrics.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+
+    init(id: UUID = UUID(), kind: SongSectionKind = .verse, chords: String = "", lyrics: String = "") {
+        self.id = id
+        self.kind = kind
+        self.chords = chords
+        self.lyrics = lyrics
+    }
+
+    /// Lenient decode: a missing key falls back to its default instead of
+    /// failing the whole songbook. Synthesized Codable does NOT do this, so
+    /// adding one field later would otherwise make every saved song
+    /// unreadable. (Same guard SoundStore uses for its prefs blob.)
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
+        kind = (try? c.decode(SongSectionKind.self, forKey: .kind)) ?? .verse
+        chords = (try? c.decode(String.self, forKey: .chords)) ?? ""
+        lyrics = (try? c.decode(String.self, forKey: .lyrics)) ?? ""
+    }
 }
 
 struct Song: Identifiable, Codable, Equatable {
@@ -67,6 +88,24 @@ struct Song: Identifiable, Codable, Equatable {
     var title: String = ""
     var sections: [SongSection] = [SongSection(kind: .verse), SongSection(kind: .chorus)]
     var updatedAt: Date = Date()
+
+    init(id: UUID = UUID(), title: String = "",
+         sections: [SongSection] = [SongSection(kind: .verse), SongSection(kind: .chorus)],
+         updatedAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.sections = sections
+        self.updatedAt = updatedAt
+    }
+
+    /// Lenient decode — see SongSection.init(from:). Her words outlive schema changes.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
+        title = (try? c.decode(String.self, forKey: .title)) ?? ""
+        sections = (try? c.decode([SongSection].self, forKey: .sections)) ?? []
+        updatedAt = (try? c.decode(Date.self, forKey: .updatedAt)) ?? Date()
+    }
 
     var displayTitle: String {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -120,20 +159,18 @@ final class SongBook {
         songs = Self.load()
     }
 
-    /// Insert or update, newest first. Empty, untitled songs are never stored —
-    /// opening the songwriter and closing it again must not litter her book.
+    /// Insert or update, newest first. A brand-new blank song is not stored —
+    /// opening the songwriter and closing it again must not litter her book —
+    /// but a song ALREADY in the book is never removed here, however empty she
+    /// leaves it. (Clearing a title to retype it must not delete the song; only
+    /// an explicit Delete does that.)
     func upsert(_ song: Song) {
         var s = song
         s.updatedAt = Date()
-        let worthKeeping = !s.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasContent = !s.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || s.sections.contains { !$0.isEmpty }
-        guard worthKeeping else {
-            if let idx = songs.firstIndex(where: { $0.id == s.id }) {
-                songs.remove(at: idx)
-                persist()
-            }
-            return
-        }
+        let alreadySaved = songs.contains { $0.id == s.id }
+        guard hasContent || alreadySaved else { return }
         if let idx = songs.firstIndex(where: { $0.id == s.id }) {
             songs[idx] = s
         } else {
@@ -163,14 +200,33 @@ final class SongBook {
         return dir.appendingPathComponent(fileName).appendingPathExtension("json")
     }
 
+    /// Read the book. If the file exists but can't be read, the bytes are
+    /// QUARANTINED (renamed aside) rather than left in place to be overwritten
+    /// by the next autosave — a song she spent an evening on is never silently
+    /// replaced by an empty file, and the original is still on disk to recover.
     private static func load() -> [Song] {
-        guard let data = try? Data(contentsOf: fileURL()),
-              let decoded = try? JSONDecoder().decode([Song].self, from: data) else { return [] }
-        return decoded.sorted { $0.updatedAt > $1.updatedAt }
+        let url = fileURL()
+        guard let data = try? Data(contentsOf: url) else { return [] }   // no file yet: fine
+        if let decoded = try? JSONDecoder().decode([Song].self, from: data) {
+            return decoded.sorted { $0.updatedAt > $1.updatedAt }
+        }
+        let stamp = Int(Date().timeIntervalSince1970)
+        let quarantine = url.deletingPathExtension()
+            .appendingPathExtension("corrupt-\(stamp).json")
+        try? FileManager.default.moveItem(at: url, to: quarantine)
+        ToastCenter.shared.show(title: "Couldn't read your songbook",
+                                message: "A copy was kept safe. Nothing was overwritten.")
+        return []
     }
 
     private func persist() {
         guard let data = try? JSONEncoder().encode(songs) else { return }
-        try? data.write(to: Self.fileURL(), options: .atomic)
+        do {
+            try data.write(to: Self.fileURL(), options: .atomic)
+        } catch {
+            // She should never keep typing into a page that stopped saving.
+            ToastCenter.shared.show(title: "Couldn't save just now",
+                                    message: "Your song is still on screen — try sharing it out.")
+        }
     }
 }
