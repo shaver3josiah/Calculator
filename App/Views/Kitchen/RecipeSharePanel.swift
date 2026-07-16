@@ -19,6 +19,7 @@ struct RecipeSharePanel: View {
                 .foregroundStyle(theme.color("text"))
                 .keyboardType(.URL)
                 .autocorrectionDisabled()
+                .inputAccessories($rawUrl)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -26,6 +27,7 @@ struct RecipeSharePanel: View {
                 TextField("Name this QR (e.g. Blueberry_Muffins)", text: $alias, prompt: Text("Name this QR (e.g. Blueberry_Muffins)").foregroundStyle(theme.color("muted")))
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("text"))
+                    .inputAccessories($alias, compact: true)
                 Button("Make QR") {
                     generateQR()
                 }

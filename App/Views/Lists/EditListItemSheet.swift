@@ -68,6 +68,7 @@ struct EditListItemSheet: View {
                 .keyboardType(keyboard)
                 .font(bloomBody(16))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories(text)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(theme.color("surfaceSoft"))

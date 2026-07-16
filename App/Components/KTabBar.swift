@@ -33,7 +33,8 @@ struct KTabBar: View {
                         .fill(isActive ? themeStore.color("primaryStrong") : Color.clear)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TactilePressStyle(cornerRadius: 999))
+        .discoverable("ktab.\(item)", cornerRadius: 999)
         .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isActive)
     }
 }

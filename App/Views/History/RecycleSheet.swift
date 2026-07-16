@@ -70,6 +70,7 @@ struct RecycleSheet: View {
             TextField("0", text: binding(for: idx), prompt: Text("0").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomNumber(18))
+                .inputAccessories(binding(for: idx), compact: true)
                 .padding(10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)

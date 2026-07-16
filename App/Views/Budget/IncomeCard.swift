@@ -78,6 +78,7 @@ struct IncomeCard: View {
             TextField("Income label", text: labelBinding(index), prompt: Text("Income label").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories(labelBinding(index), compact: true)
             HStack(spacing: 10) {
                 fieldGroup(label: "Gross / month", text: grossBinding(index))
             }
@@ -102,6 +103,7 @@ struct IncomeCard: View {
             TextField("0", text: text, prompt: Text("0").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
+                .inputAccessories(text, compact: true)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .background(theme.color("surface"))

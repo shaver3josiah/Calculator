@@ -51,6 +51,7 @@ struct VisualizePanel: View {
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(4...8)
                 .focused($textFocused)
+                .inputAccessories($rawText, alignment: .top)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -67,6 +68,7 @@ struct VisualizePanel: View {
                     .foregroundStyle(.white)
                     .contentShape(Rectangle())
             }
+            .discoverable("kitchen.visualize", cornerRadius: 999)
             .buttonStyle(.plain)
 
             finishPicker

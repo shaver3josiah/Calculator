@@ -43,6 +43,7 @@ struct RecipeWritePanel: View {
             TextField("Recipe name", text: $name, prompt: Text("Recipe name").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(15))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories($name)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -78,9 +79,10 @@ struct RecipeWritePanel: View {
             TextField("Notes (storage, swaps, a little love note...)", text: $notes, prompt: Text("Notes (storage, swaps, a little love note...)").foregroundStyle(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
+                .lineLimit(3...6)
+                .inputAccessories($notes, alignment: .top)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
-                .lineLimit(3...6)
 
             previewCard
 

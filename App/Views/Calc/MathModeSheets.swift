@@ -85,6 +85,7 @@ private struct SolverField: View {
                 .font(bloomNumber(17))
                 .foregroundStyle(theme.color("text"))
                 .multilineTextAlignment(.center)
+                .inputAccessories($text, compact: true)
                 .padding(.vertical, 10)
                 .frame(maxWidth: .infinity)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surfaceSoft")))

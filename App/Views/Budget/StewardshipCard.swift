@@ -163,6 +163,7 @@ struct StewardshipCard: View {
                     .font(bloomNumber(14, weight: .semibold))
                     .multilineTextAlignment(.trailing)
                     .frame(width: 64)
+                    .inputAccessories(innovationBinding, compact: true)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .background(theme.color("surfaceSoft"))

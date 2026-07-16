@@ -24,6 +24,7 @@ final class ThemeStore {
     var petalsEnabled: Bool = true { didSet { persistMotion() } }
     var shimmerEnabled: Bool = true { didSet { persistMotion() } }
     private var seenTabs: Set<String> = []
+    private var discoveredControls: Set<String> = []
     var curtainEpoch: Int = 0   // transient; bumped to fire the petal curtain
 
     /// Effective gates — a sub-effect is on only when the master switch is too.
@@ -36,6 +37,18 @@ final class ThemeStore {
         seenTabs.insert(tabRaw)
         persistMotion()
         return true
+    }
+
+    /// First-touch discovery: controls glint until they've been tapped once, ever.
+    /// (Drives the `.discoverable` modifier in Motion.swift.)
+    func isUndiscovered(_ id: String) -> Bool {
+        !discoveredControls.contains(id)
+    }
+
+    func discover(_ id: String) {
+        guard !discoveredControls.contains(id) else { return }
+        discoveredControls.insert(id)
+        persistMotion()
     }
 
     /// Fire the top-down petal curtain (no-op when petals are disabled).
@@ -66,6 +79,7 @@ final class ThemeStore {
 
         let motion = JSONStore.shared.get(.motion, as: MotionPrefs.self)
         seenTabs = Set(motion?.seenTabs ?? [])   // before the prefs — their didSet persists seenTabs
+        discoveredControls = Set(motion?.discovered ?? [])
         motionEnabled = motion?.motion ?? true
         petalsEnabled = motion?.petals ?? true
         shimmerEnabled = motion?.shimmer ?? true
@@ -74,7 +88,8 @@ final class ThemeStore {
     private func persistMotion() {
         JSONStore.shared.set(.motion, MotionPrefs(
             motion: motionEnabled, petals: petalsEnabled,
-            shimmer: shimmerEnabled, seenTabs: Array(seenTabs)
+            shimmer: shimmerEnabled, seenTabs: Array(seenTabs),
+            discovered: Array(discoveredControls)
         ))
     }
 
@@ -204,6 +219,8 @@ private struct MotionPrefs: Codable {
     var petals: Bool
     var shimmer: Bool
     var seenTabs: [String]
+    // Optional so old saved blobs (which lack this field) decode to nil — never crashes.
+    var discovered: [String]?
 }
 
 extension Color {

@@ -253,6 +253,7 @@ struct PrincipalVsRothSection: View {
                 .keyboardType(.decimalPad)
                 .font(bloomBody(15))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories(text, compact: true)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(theme.color("surfaceSoft"))

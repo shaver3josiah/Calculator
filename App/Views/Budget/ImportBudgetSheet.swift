@@ -18,8 +18,9 @@ struct ImportBudgetSheet: View {
                     TextEditor(text: $text)
                         .font(bloomBody(13))
                         .frame(minHeight: 160)
-                        .padding(8)
                         .scrollContentBackground(.hidden)
+                        .inputAccessories($text, alignment: .top)
+                        .padding(8)
                         .background(RoundedRectangle(cornerRadius: 12).fill(theme.color("surface")))
                         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.color("line")))
                     if failed {

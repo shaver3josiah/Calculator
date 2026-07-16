@@ -11,12 +11,20 @@ final class MusicStore {
     var transpose: Int = 0
     var isPlaying: Bool = false
     var savedSongName: String = ""
+    // Title of the last-loaded library preset, shown above the pads. Cleared by
+    // loadChords() so hand-edited text never wears a stale song name.
+    var loadedSongTitle: String?
     // Chords that have actually sounded this run, newest first, capped at 24. Feeds
     // the calc display's chord-memory wheel. ponytail: session-only, not persisted —
     // it's a "what did I just play" viewer, meaningless across launches.
     var playedChordNames: [String] = []
     var playOnKeys: Bool = false {
-        didSet { persistKeyChords() }
+        didSet {
+            persistKeyChords()
+            // Calculator keys can fire chords the moment this is on — boot the
+            // engine now so the first key never pays the engine-start delay.
+            if playOnKeys { warmUp() }
+        }
     }
     var cycleOnTabSwitch: Bool = false {
         didSet { persistKeyChords() }
@@ -68,13 +76,55 @@ final class MusicStore {
         }
         // didSet doesn't fire for in-init assignment, so push the (possibly default) volume once.
         synth.setVolume(Float(chordVolume))
+        // Same in-init didSet gap for playOnKeys: warm the engine at launch when
+        // key-chords are already on, so the very first calculator key is instant.
+        if playOnKeys { warmUp() }
+    }
+
+    /// Boot the audio engine ahead of the first note. Idempotent and cheap once
+    /// running — MusicView calls this on appear so pads/piano/play never wait
+    /// for AVAudioEngine startup on the first tap.
+    func warmUp() {
+        synth.start()
     }
 
     func loadChords() {
         chords = ChordParser.parseText(chordText)
         transpose = 0
         cycleIndex = 0
+        loadedSongTitle = nil
         persistKeyChords()
+    }
+
+    /// Load a library preset: chords in, pads ready, and the song's title kept
+    /// for the "now loaded" line and the history save name.
+    func loadSong(_ song: PresetSong) {
+        chordText = song.chords
+        loadChords()
+        loadedSongTitle = song.title
+        savedSongName = song.title
+    }
+
+    /// Sound one single note (from the note piano). Same synth voice as chords,
+    /// so a lone note blooms with the same soft grand-piano tone.
+    func playNote(midi: Int, symbol: String) {
+        recordPlayed(ChordVoice(midiNotes: [midi], symbol: symbol))
+        synth.playChord(midiNotes: [midi + transpose], strum: false, duration: 60.0 / tempo * 1.6)
+    }
+
+    /// Append one token (chord or note) to the song text with clean spacing.
+    func appendToken(_ token: String) {
+        if chordText.isEmpty || chordText.hasSuffix(" ") || chordText.hasSuffix("\n") {
+            chordText += token
+        } else {
+            chordText += " " + token
+        }
+    }
+
+    /// Remove the last token (and its trailing whitespace) from the song text.
+    func removeLastToken() {
+        while let last = chordText.last, last == " " || last == "\n" { chordText.removeLast() }
+        while let last = chordText.last, last != " " && last != "\n" { chordText.removeLast() }
     }
 
     func playChord(_ voice: ChordVoice) {

@@ -15,6 +15,7 @@ struct ProjectionFormField: View {
                 .keyboardType(.decimalPad)
                 .font(bloomBody(15))
                 .foregroundStyle(themeStore.color("text"))
+                .inputAccessories($text, compact: true)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(themeStore.color("surfaceSoft"))
@@ -73,7 +74,8 @@ struct ProjectionCalcButton: View {
                 .background(themeStore.color("primaryStrong"))
                 .clipShape(RoundedRectangle(cornerRadius: themeStore.radius * 0.6))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TactilePressStyle(cornerRadius: themeStore.radius * 0.6))
+        .discoverable("calcbtn.\(label)", cornerRadius: themeStore.radius * 0.6)
     }
 }
 

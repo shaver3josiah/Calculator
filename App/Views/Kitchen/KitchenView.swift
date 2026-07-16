@@ -51,8 +51,11 @@ struct KitchenView: View {
     private var kitchenTabs: some View {
         HStack(spacing: 8) {
             tabButton("Convert", tab: .convert)
+                .discoverable("kitchen.tab.convert", cornerRadius: theme.radius)
             tabButton("Recipe", tab: .recipe)
+                .discoverable("kitchen.tab.recipe", cornerRadius: theme.radius)
             tabButton("Visualize", tab: .visualize)
+                .discoverable("kitchen.tab.visualize", cornerRadius: theme.radius)
         }
         .padding(4)
         .background(

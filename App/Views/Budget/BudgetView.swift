@@ -33,6 +33,7 @@ struct BudgetView: View {
                             .clipShape(Circle())
                     }
                     .accessibilityLabel("Share this month")
+                    .discoverable("budget.share", cornerRadius: 999)
                     Button {
                         showImport = true
                     } label: {
@@ -45,6 +46,7 @@ struct BudgetView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Import a shared budget")
+                    .discoverable("budget.import", cornerRadius: 999)
                 }
                 if store.view == "month" {
                     MonthWrap()

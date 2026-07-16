@@ -75,7 +75,9 @@ struct ListsView: View {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 22))
                     .foregroundStyle(theme.color("primaryStrong"))
+                    .frame(width: 44, height: 44)
             }
+            .discoverable("lists.new", cornerRadius: 999)
         }
     }
 
@@ -117,6 +119,7 @@ struct ListsView: View {
                 }
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("primaryStrong"))
+                .discoverable("lists.logTotal", cornerRadius: 12)
             }
         }
         .padding(16)
@@ -177,6 +180,7 @@ struct ListsView: View {
         HStack(spacing: 8) {
             TextField("Item", text: $newItemName, prompt: Text("Item").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(14))
+                .inputAccessories($newItemName, compact: true)
             TextField("Qty", text: $newItemQty, prompt: Text("Qty").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
@@ -191,6 +195,7 @@ struct ListsView: View {
                 Image(systemName: "plus.circle.fill")
                     .foregroundStyle(theme.color("primaryStrong"))
             }
+            .discoverable("lists.addItem", cornerRadius: 999)
         }
         .padding(10)
         .background(

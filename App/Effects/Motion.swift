@@ -112,6 +112,101 @@ struct EncircleOutline<Trigger: Equatable>: View {
     }
 }
 
+/// Discovery glint: the ambient glint→rest cycle, but with a per-control phase
+/// offset so a screen full of undiscovered controls twinkles one at a time
+/// instead of flashing in unison. Same feathered band as everything else —
+/// single sweep then a long rest, never a breathing pulse. Reduce-motion safe.
+struct DiscoveryShimmer: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var cornerRadius: CGFloat = 12
+    var phase: Double = 0   // 0…1 stagger; also detunes the period so glints drift apart
+
+    var body: some View {
+        if reduceMotion {
+            Color.clear
+        } else {
+            GeometryReader { geo in
+                glossBand(peak: 0.3, full: geo.size.width)
+                    .keyframeAnimator(initialValue: CGFloat(-1.1), repeating: true) { view, x in
+                        view.offset(x: x * geo.size.width)
+                    } keyframes: { _ in
+                        KeyframeTrack {
+                            LinearKeyframe(CGFloat(-1.1), duration: 0.3 + phase * 2.9)
+                            CubicKeyframe(CGFloat(1.1), duration: 1.0)
+                            LinearKeyframe(CGFloat(1.1), duration: 2.4)
+                            MoveKeyframe(CGFloat(-1.1))
+                        }
+                    }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .allowsHitTesting(false)
+        }
+    }
+}
+
+/// First-touch shimmer: overlays a `DiscoveryShimmer` on a control until it has
+/// been tapped once (ever — persisted via ThemeStore.discover). Attach to any
+/// Button/tappable; the simultaneous tap marks it discovered without stealing
+/// the button's own action. Gated behind `theme.shimmerOn`, and the glinting
+/// only *begins* after the control has been on screen for ~10s — the screen
+/// stays calm while she's actively using it, then untried things twinkle.
+private struct DiscoverableModifier: ViewModifier {
+    @Environment(ThemeStore.self) private var theme
+    let id: String
+    var cornerRadius: CGFloat
+
+    @State private var armed = false
+    private static let armDelay: Double = 10
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if theme.shimmerOn && armed && theme.isUndiscovered(id) {
+                    DiscoveryShimmer(cornerRadius: cornerRadius, phase: Self.phase(for: id))
+                        .transition(.opacity)
+                }
+            }
+            .simultaneousGesture(TapGesture().onEnded {
+                withAnimation(.easeOut(duration: 0.4)) { theme.discover(id) }
+            })
+            .task {
+                guard theme.isUndiscovered(id), !armed else { return }
+                try? await Task.sleep(for: .seconds(Self.armDelay))
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeIn(duration: 0.6)) { armed = true }
+            }
+    }
+
+    /// Deterministic 0…1 stagger from the id (stable across launches, unlike hashValue).
+    private static func phase(for id: String) -> Double {
+        let sum = id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        return Double(sum % 100) / 100.0
+    }
+}
+
+extension View {
+    func discoverable(_ id: String, cornerRadius: CGFloat = 12) -> some View {
+        modifier(DiscoverableModifier(id: id, cornerRadius: cornerRadius))
+    }
+}
+
+/// Shared visible-press feedback: the control sinks (scale + a soft ink wash)
+/// on touch-down and springs back on release — tactility you can *see*, matching
+/// the keypad's press language. Use on tappables that aren't KeypadButton.
+struct TactilePressStyle: ButtonStyle {
+    var cornerRadius: CGFloat = 14
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color.black.opacity(configuration.isPressed ? 0.07 : 0))
+            )
+            .scaleEffect(configuration.isPressed ? 0.955 : 1)
+            .animation(.spring(response: 0.28, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
 /// Ambient "jewel glint" for the single hero CTA (the `=` key). Deliberately a
 /// low-contrast directional gloss that eases once across — slow in, quick through
 /// the middle, soft out — then parks off-screen and rests ~3.9s before the next

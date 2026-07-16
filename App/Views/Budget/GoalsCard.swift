@@ -57,6 +57,7 @@ struct GoalsCard: View {
                 .font(bloomBody(13))
                 .frame(width: 70)
                 .multilineTextAlignment(.trailing)
+                .inputAccessories(goalBinding(entry.index), compact: true)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(theme.color("surfaceSoft"))

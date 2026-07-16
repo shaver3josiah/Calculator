@@ -351,6 +351,83 @@ struct PetalRainView: View {
     }
 }
 
+/// Ambient glitter dust: a handful of tiny gold/pink motes that twinkle and
+/// drift in the top band (behind the header) and along the bottom edge — the
+/// tasteful spots where no content lives. One Canvas at 30fps, mounted once in
+/// RootView; deliberately far cheaper than the 120fps burst timelines above
+/// (see PetalBurstView's note on main-thread churn). Gate behind
+/// `theme.petalsOn`; reduce-motion renders nothing.
+struct GlitterDustView: View {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let count = 14
+    @State private var pool: [ParticleSpec] = []
+
+    var body: some View {
+        if reduceMotion {
+            Color.clear
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+                Canvas { ctx, size in
+                    let now = context.date.timeIntervalSinceReferenceDate
+                    for spec in pool {
+                        let cycle = spec.lifetime
+                        var t = ((now - spec.seedTime).truncatingRemainder(dividingBy: cycle)) / cycle
+                        if t < 0 { t += 1 }
+                        // Twinkle in and out; drift up a touch and sway sideways.
+                        let alpha = pow(sin(t * .pi), 2) * 0.5
+                        guard alpha > 0.02 else { continue }
+                        let px = spec.x * size.width + sin(t * .pi * 2 + spec.rotation) * 6
+                        let py = spec.y * size.height - t * 14
+                        let token = spec.colorIndex % 3 == 0 ? "primary" : "flowerCenter"
+                        drawMote(&ctx, spec: spec, x: px, y: py, alpha: alpha,
+                                 color: theme.color(token), star: spec.colorIndex % 2 == 0)
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+            .onAppear(perform: seed)
+        }
+    }
+
+    private func drawMote(_ ctx: inout GraphicsContext, spec: ParticleSpec, x: Double, y: Double, alpha: Double, color: Color, star: Bool) {
+        var layer = ctx
+        layer.opacity = alpha
+        layer.translateBy(x: x, y: y)
+        let r = spec.size / 2
+        if star {
+            // Thin four-point twinkle: two crossed slivers.
+            layer.fill(Path(ellipseIn: CGRect(x: -r, y: -r * 0.22, width: r * 2, height: r * 0.44)), with: .color(color))
+            layer.fill(Path(ellipseIn: CGRect(x: -r * 0.22, y: -r, width: r * 0.44, height: r * 2)), with: .color(color))
+        } else {
+            layer.fill(Path(ellipseIn: CGRect(x: -r * 0.6, y: -r * 0.6, width: r * 1.2, height: r * 1.2)), with: .color(color))
+        }
+    }
+
+    private func seed() {
+        guard pool.isEmpty else { return }
+        let now = Date.timeIntervalSinceReferenceDate
+        pool = (0..<Self.count).map { index in
+            var rng = SeededGenerator(seed: index &* 5381 &+ 97)
+            let topBand = index % 10 < 7   // most sparkle up by the header
+            return ParticleSpec(
+                seedTime: now - Double.random(in: 0...8, using: &rng),
+                x: Double.random(in: 0.03...0.97, using: &rng),
+                y: topBand ? Double.random(in: 0.015...0.14, using: &rng)
+                           : Double.random(in: 0.87...0.965, using: &rng),
+                vx: 0,
+                vy: 0,
+                rotation: Double.random(in: 0...(2 * .pi), using: &rng),
+                rotationSpeed: 0,
+                size: Double.random(in: 4...8, using: &rng),
+                colorIndex: index,
+                lifetime: Double.random(in: 4.5...8.5, using: &rng)
+            )
+        }
+    }
+}
+
 struct SeededGenerator: RandomNumberGenerator {
     private var state: UInt64
 

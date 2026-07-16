@@ -161,6 +161,7 @@ struct CategoriesSection: View {
             TextField("Category", text: catNameBinding(index), prompt: Text("Category").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(15, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories(catNameBinding(index), compact: true)
 
             HStack(spacing: 4) {
                 reorderButton(systemName: "chevron.up") { store.reorderCategory(index, direction: -1) }
@@ -213,6 +214,7 @@ struct CategoriesSection: View {
             TextField("Item", text: rowNameBinding(categoryIndex, rowIndex), prompt: Text("Item").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
+                .inputAccessories(rowNameBinding(categoryIndex, rowIndex), compact: true)
 
             TextField("0", text: rowAmountBinding(categoryIndex, rowIndex), prompt: Text("0").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)

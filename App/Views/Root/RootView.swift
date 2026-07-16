@@ -66,6 +66,9 @@ struct RootView: View {
     private var landscapeBody: some View {
         ZStack {
             themeStore.color("bg").ignoresSafeArea()
+            if themeStore.petalsOn {
+                GlitterDustView().ignoresSafeArea()
+            }
             HStack(spacing: 0) {
                 landscapeContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -108,6 +111,11 @@ struct RootView: View {
     private var portraitBody: some View {
         ZStack {
             themeStore.color("bg").ignoresSafeArea()
+            // Ambient glitter dust behind everything — top band + bottom edge only,
+            // so it reads as sparkle around the content, never on it.
+            if themeStore.petalsOn {
+                GlitterDustView().ignoresSafeArea()
+            }
             // iPad readable-column cap: header + content + tab bar stay within 700pt,
             // centered. The bg fill and the overlays are siblings OUTSIDE this cap, so
             // they stay full-bleed edge-to-edge on wide screens. Tab bar is kept inside
@@ -206,6 +214,7 @@ struct RootView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+        .discoverable("root.\(system)", cornerRadius: 999)
     }
 
     @ViewBuilder

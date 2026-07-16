@@ -106,6 +106,10 @@ struct HistoryOverlay: View {
                 set: { history.searchText = $0 }
             ), prompt: Text("Search your history").foregroundStyle(theme.color("muted")))
             .font(bloomBody(15))
+            .inputAccessories(Binding(
+                get: { history.searchText },
+                set: { history.searchText = $0 }
+            ), compact: true)
         }
         .padding(12)
         .background(
