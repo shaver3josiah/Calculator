@@ -354,6 +354,8 @@ struct SongLibrarySheet: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
                     .background(Capsule().fill(theme.color("surfaceSoft")))
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(TactilePressStyle(cornerRadius: 999))
             .accessibilityHint("Loads a random song from \(category.name)")
@@ -374,8 +376,14 @@ struct SongLibrarySheet: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(theme.color("muted"))
+                        // 44x44 of reach, then -11 to hand the layout back the 22pt
+                        // the glyph always occupied: the extra area spills into the
+                        // capsule's own padding, so the field's height never moves.
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .padding(-11)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TactilePressStyle(cornerRadius: 999))
                 .accessibilityLabel("Clear search")
             }
         }

@@ -10,11 +10,11 @@ struct VisualizePanel: View {
     @Environment(SoundStore.self) private var sound
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var hSize
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var rawText = ""
-    @State private var scale: Double = 1.0
-    @State private var customScale = ""
-    @State private var useCustom = false
+    // What she pasted and the scale she chose are hers — those live in the draft.
+    // Everything below is derived from them and rebuilt on appear, so no computed
+    // answer is ever written to disk.
     @State private var parsed: [ParsedIngredient] = []
     @State private var failed: [String] = []
     @State private var placements: [Placement] = []
@@ -45,13 +45,14 @@ struct VisualizePanel: View {
     ]
 
     var body: some View {
+        @Bindable var d = drafts
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Paste recipe text", text: $rawText, prompt: Text("Paste recipe text").foregroundStyle(theme.color("muted")), axis: .vertical)
+            TextField("Paste recipe text", text: $d.visualize.rawText, prompt: Text("Paste recipe text").foregroundStyle(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(4...8)
                 .focused($textFocused)
-                .inputAccessories($rawText, alignment: .top)
+                .inputAccessories($d.visualize.rawText, alignment: .top)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -104,42 +105,51 @@ struct VisualizePanel: View {
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: theme.radius).fill(theme.color("surface")))
-        .onChange(of: scale) { _, _ in placements = buildPlacements() }
+        .onChange(of: drafts.visualize.scale) { _, _ in placements = buildPlacements() }
+        // Her counter comes back the way she left it — rebuilt from the text she
+        // pasted, never from a stored picture of the answer.
+        .onAppear {
+            if drafts.visualize.didParse {
+                parseText(announce: false)
+            }
+        }
     }
 
     // MARK: - Scale picker
 
     private var scalePicker: some View {
-        HStack(spacing: 10) {
+        @Bindable var d = drafts
+        return HStack(spacing: 10) {
             ForEach([0.5, 1.0, 2.0], id: \.self) { value in
+                let active = !drafts.visualize.useCustom && drafts.visualize.scale == value
                 Button {
-                    useCustom = false
-                    scale = value
+                    drafts.visualize.useCustom = false
+                    drafts.visualize.scale = value
                 } label: {
                     Text(scaleLabel(value))
                         .font(bloomBody(13, weight: .semibold))
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .frame(minWidth: 44, minHeight: 44)
                         .background(
                             RoundedRectangle(cornerRadius: 999)
-                                .fill(!useCustom && scale == value ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
+                                .fill(active ? theme.color("primaryStrong") : theme.color("surfaceSoft"))
                         )
-                        .foregroundStyle(!useCustom && scale == value ? .white : theme.color("text"))
+                        .foregroundStyle(active ? .white : theme.color("text"))
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TactilePressStyle(cornerRadius: 999))
             }
-            TextField("custom", text: $customScale, prompt: Text("custom").foregroundStyle(theme.color("muted")))
+            TextField("custom", text: $d.visualize.customScale, prompt: Text("custom").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(13))
                 .foregroundStyle(theme.color("text"))
-                .frame(width: 56)
-                .padding(6)
+                .frame(width: 56, height: 44)
+                .padding(.horizontal, 6)
                 .background(RoundedRectangle(cornerRadius: 8).fill(theme.color("surfaceSoft")))
-                .onChange(of: customScale) { _, newValue in
+                .onChange(of: drafts.visualize.customScale) { _, newValue in
                     if let v = Double(newValue), v > 0 {
-                        useCustom = true
-                        scale = v
+                        drafts.visualize.useCustom = true
+                        drafts.visualize.scale = v
                     }
                 }
         }
@@ -415,7 +425,7 @@ struct VisualizePanel: View {
         var out: [Placement] = []
         var idx = 0
         for ing in parsed {
-            let scaled = RecipeParse.scale(ing, by: scale)
+            let scaled = RecipeParse.scale(ing, by: drafts.visualize.scale)
             let food = FoodLibrary.match(ing.name)
             // Registry first: matched Food name, then the raw parsed name (so
             // "flour" still hits when FoodLibrary missed). Falls through to nil.
@@ -557,9 +567,11 @@ struct VisualizePanel: View {
 
     // MARK: - Actions
 
-    private func parseText() {
+    /// `announce: false` is the silent re-run on appear — same math, but the sound
+    /// and the curtain belong to the tap she actually made, not to coming back.
+    private func parseText(announce: Bool = true) {
         textFocused = false
-        let lines = rawText.split(whereSeparator: \.isNewline)
+        let lines = drafts.visualize.rawText.split(whereSeparator: \.isNewline)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         var good: [ParsedIngredient] = []
@@ -574,14 +586,16 @@ struct VisualizePanel: View {
         parsed = good
         failed = bad
         placements = buildPlacements()
+        drafts.visualize.didParse = !good.isEmpty || !bad.isEmpty
         resetZoom()
+        guard announce else { return }
         sound.play("tap1")
         theme.triggerCurtain()
     }
 
     private func addAllToList() {
         for ing in parsed {
-            let scaled = RecipeParse.scale(ing, by: scale)
+            let scaled = RecipeParse.scale(ing, by: drafts.visualize.scale)
             let rawQty = scaled.qty ?? 1
             let roundedQty = (rawQty * 100).rounded() / 100
             let displayName = foldedIngredientName(scaled)

@@ -87,12 +87,21 @@ struct PoemOverlay: View {
                     if showMore {
                         moreBlock(more)
                     } else {
-                        Button("more") {
+                        // The whole card closes on tap, so "more" has to win its own
+                        // 44pt outright — the -14 hands the VStack back the spacing
+                        // it already reserved, keeping the card exactly as tall.
+                        Button {
                             withAnimation { showMore = true }
                             sound.play("easteregg")
+                        } label: {
+                            Text("more")
+                                .font(bloomBody(13, weight: .semibold))
+                                .foregroundStyle(theme.color("primaryStrong"))
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
+                                .padding(.vertical, -14)
                         }
-                        .font(bloomBody(13, weight: .semibold))
-                        .foregroundStyle(theme.color("primaryStrong"))
+                        .buttonStyle(.plain)
                     }
                 }
 

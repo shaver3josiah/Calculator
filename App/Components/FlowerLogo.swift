@@ -109,6 +109,10 @@ struct TappableFlower: View {
             }
         }
         .frame(width: size, height: size)
+        // The flower draws at `size` (38 in the header) but answers to 44: it carries
+        // the twirl, verse mode, and the 3s white-noise hold, and a 3-second press
+        // is the last thing that should need a precise finger.
+        .frame(minWidth: 44, minHeight: 44)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { twirl(); onDoubleTap() }
         .onTapGesture(count: 1) { singleTap() }

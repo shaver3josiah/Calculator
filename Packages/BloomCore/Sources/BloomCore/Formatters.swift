@@ -2,13 +2,16 @@ import Foundation
 
 public enum Formatters {
     public static func round8(_ n: Double) -> Double {
-        if n.isNaN || n.isInfinite {
-            return n
-        }
-        return jsRound(n * 1e8) / 1e8
+        return roundTo(n, 8)
     }
 
     public static func fmt(_ n: Double) -> String {
+        return fmt(n, decimals: 8)
+    }
+
+    /// Same shape as `fmt` — grouped, trailing zeros stripped, exponential past the
+    /// same thresholds — but rounded to `decimals` (clamped 0…8) places.
+    public static func fmt(_ n: Double, decimals: Int) -> String {
         if n.isNaN || n.isInfinite {
             return "Error"
         }
@@ -19,12 +22,28 @@ public enum Formatters {
         if absN >= 1e15 || (absN < 1e-6 && absN > 0) {
             return toExponential4(n)
         }
-        let r = round8(n)
-        return fmtGrouped(r)
+        let d = clampDecimals(decimals)
+        return fmtGrouped(roundTo(n, d), decimals: d)
     }
 
     public static func plain(_ n: Double) -> String {
-        return numberToString(round8(n))
+        return plain(n, decimals: 8)
+    }
+
+    public static func plain(_ n: Double, decimals: Int) -> String {
+        return numberToString(roundTo(n, clampDecimals(decimals)))
+    }
+
+    static func clampDecimals(_ d: Int) -> Int {
+        return min(8, max(0, d))
+    }
+
+    static func roundTo(_ n: Double, _ decimals: Int) -> Double {
+        if n.isNaN || n.isInfinite {
+            return n
+        }
+        let factor = pow(10.0, Double(decimals))
+        return jsRound(n * factor) / factor
     }
 
     public static func money(_ n: Double) -> String {
@@ -97,10 +116,10 @@ public enum Formatters {
         return (neg ? "-" : "") + mantissa + "e" + expSign + String(abs(expValue))
     }
 
-    static func fmtGrouped(_ r: Double) -> String {
+    static func fmtGrouped(_ r: Double, decimals: Int) -> String {
         let neg = r < 0
         let v = abs(r)
-        let s = String(format: "%.8f", v)
+        let s = String(format: "%.\(decimals)f", v)
         let parts = s.split(separator: ".", maxSplits: 1)
         let intPart = String(parts[0])
         var fracPart = parts.count > 1 ? String(parts[1]) : ""

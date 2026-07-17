@@ -59,16 +59,23 @@ struct SoundStudioView: View {
                         .padding(.vertical, 2)
                     }
 
-                    Button("Credits") {
+                    // The bar is the button. Padding and background hung on the
+                    // *outside* only ever drew a wide target — the tap region stayed
+                    // the width of the word — so they live in the label now.
+                    Button {
                         showCredits = true
+                    } label: {
+                        Text("Credits")
+                            .font(bloomBody(14, weight: .medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: theme.radius)
+                                    .fill(theme.color("surface2"))
+                            )
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
-                    .font(bloomBody(14, weight: .medium))
-                    .frame(maxWidth: .infinity)
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: theme.radius)
-                            .fill(theme.color("surface2"))
-                    )
                 }
                 .padding(20)
             }
@@ -189,6 +196,13 @@ struct SoundStudioView: View {
                                 lineWidth: 1
                             )
                         )
+                        // Reach 44 around a ringed disc that still draws — and lays
+                        // out — at 30, so the row height and the frame the
+                        // GeometryReader below reports are both unchanged: the
+                        // burst still erupts from the disc's own center.
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .padding(-7)
                 }
                 .buttonStyle(.plain)
                 // Report this button's on-screen center so the burst starts here.
@@ -247,6 +261,9 @@ struct SoundStudioView: View {
                 .overlay(
                     Capsule().stroke(theme.color("line"), lineWidth: active ? 0 : 1)
                 )
+                // After the capsule: the pill keeps its 36, the reach becomes 44.
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

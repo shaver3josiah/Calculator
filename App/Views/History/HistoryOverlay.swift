@@ -44,11 +44,27 @@ struct HistoryOverlay: View {
                         Button("Done") { dismiss() }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Select") { isSelecting = true }
-                            .disabled(history.groupedEntries().isEmpty)
+                        Button {
+                            isSelecting = true
+                        } label: {
+                            Text("Select")
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .disabled(history.groupedEntries().isEmpty)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Clear") { showClearConfirm = true }
+                        // "Clear" wipes the lot and sits a word away from the
+                        // harmless "Select". The leading gap is what a tired thumb
+                        // lands in instead of the destructive one.
+                        Button {
+                            showClearConfirm = true
+                        } label: {
+                            Text("Clear")
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                                .padding(.leading, 12)
+                        }
                     }
                 }
             }

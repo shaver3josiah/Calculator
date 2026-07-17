@@ -15,30 +15,39 @@ struct InputAccessoryBar: View {
     var compact = false
 
     var body: some View {
-        if !text.isEmpty {
-            HStack(spacing: 0) {
+        // The bar always reserves its height, empty or not. That's what lets the
+        // buttons be full-height tap targets: the row can't jump taller the
+        // moment she types her first character (the old 20pt height was chosen
+        // to avoid exactly that jump, at the cost of a 28×20 target).
+        HStack(spacing: 4) {
+            if !text.isEmpty {
                 if !compact {
                     accessory("doc.on.doc", label: "Copy text") {
                         UIPasteboard.general.string = text
                         ToastCenter.shared.show(title: "Copied", message: "On the clipboard, ready to paste.")
                     }
+                    .transition(.opacity)
                 }
                 accessory("xmark.circle.fill", label: "Clear text") {
                     withAnimation(.easeOut(duration: 0.15)) { text = "" }
                 }
+                .transition(.opacity)
             }
-            .transition(.opacity)
         }
+        .frame(minHeight: Self.targetHeight)
     }
+
+    private static let targetHeight: CGFloat = 44
 
     private func accessory(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(theme.color("muted"))
-                // Height ≈ one text line so a field never grows when the
-                // buttons appear; width keeps the tap target honest.
-                .frame(width: 28, height: 20)
+                // Full-height target, and 4pt of daylight from its neighbour —
+                // Copy used to sit flush against Clear, so a thumb aiming to
+                // copy could wipe the field instead.
+                .frame(width: 40, height: Self.targetHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -9,11 +9,35 @@ struct ToolsView: View {
                 PercentageCard()
                 LoanPaymentCard()
                 SavingsGoalCard()
+                ClearToolsButton()
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
+    }
+}
+
+/// One quiet reset for the whole tab. Per-card clears would be four more things
+/// to tap past; the ⌫ inside each field already covers a single wrong digit.
+private struct ClearToolsButton: View {
+    @Environment(ThemeStore.self) private var themeStore
+    @Environment(DraftStore.self) private var drafts
+
+    var body: some View {
+        Button {
+            drafts.clearTools()
+            ToastCenter.shared.show(title: "Cleared", message: "This page is fresh again.")
+        } label: {
+            Text("Clear this page")
+                .font(bloomBody(13))
+                .foregroundStyle(themeStore.color("muted"))
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 12))
+        .discoverable("tools.clear", cornerRadius: 12)
+        .padding(.top, 4)
     }
 }
 
@@ -32,28 +56,26 @@ private struct TipSplitCard: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
+    @Environment(DraftStore.self) private var drafts
 
     @State private var pressEpoch = 0
-    @State private var billText = "80"
-    @State private var tipPctText = "20"
-    @State private var peopleText = "4"
-    @State private var showResult = false
     @State private var tipResult: Double = 0
     @State private var totalResult: Double = 0
     @State private var perPersonResult: Double = 0
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 ToolHeader(title: "Tip and split")
-                ProjectionFieldRow(leftLabel: "Bill amount", leftText: $billText, rightLabel: "Tip %", rightText: $tipPctText)
-                ProjectionFormField(label: "Split between", text: $peopleText)
+                ProjectionFieldRow(leftLabel: "Bill amount", leftText: $d.tipSplit.bill, rightLabel: "Tip %", rightText: $d.tipSplit.tipPct)
+                ProjectionFormField(label: "Split between", text: $d.tipSplit.people)
                 ProjectionCalcButton(label: "Work it out") {
                     calculate()
                     pressEpoch += 1
                 }
                 .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
-                if showResult {
+                if drafts.tipSplit.didCalculate {
                     HStack(spacing: 16) {
                         ProjectionResultStat(label: "Tip", value: Formatters.money(tipResult))
                         ProjectionResultStat(label: "Total", value: Formatters.money(totalResult))
@@ -63,23 +85,30 @@ private struct TipSplitCard: View {
                 ProjectionDisclaimer(text: "Illustrative only.")
             }
         }
+        .onAppear { if drafts.tipSplit.didCalculate { recompute() } }
     }
 
-    private func calculate() {
-        let bill = Double(billText) ?? 0
-        let tipPct = Double(tipPctText) ?? 0
-        let people = Int(peopleText) ?? 1
+    /// The maths only. `calculate()` adds the things that must happen once per
+    /// tap — a history row, a sound — and must never fire on a silent replay.
+    private func recompute() {
+        let bill = Double(drafts.tipSplit.bill) ?? 0
+        let tipPct = Double(drafts.tipSplit.tipPct) ?? 0
+        let people = Int(drafts.tipSplit.people) ?? 1
         let result = FinanceMath.tip(bill: bill, tipPct: tipPct, people: max(people, 1))
         tipResult = result.tip
         totalResult = result.total
         perPersonResult = result.perPerson
-        showResult = true
+    }
+
+    private func calculate() {
+        recompute()
+        drafts.tipSplit.didCalculate = true
 
         historyStore.add(
             type: "tool",
             title: "Tip and split",
             value: Formatters.money(perPersonResult),
-            extra: ["bill": billText, "tipPct": tipPctText, "people": peopleText]
+            extra: ["bill": drafts.tipSplit.bill, "tipPct": drafts.tipSplit.tipPct, "people": drafts.tipSplit.people]
         )
         soundStore.play("success")
     }
@@ -90,11 +119,9 @@ private struct PercentageCard: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @Environment(DraftStore.self) private var drafts
+
     @State private var pressEpoch = 0
-    @State private var mode = "of"
-    @State private var aText = "15"
-    @State private var bText = "80"
-    @State private var showResult = false
     @State private var resultValue: Double = 0
 
     private let modes = [
@@ -105,32 +132,34 @@ private struct PercentageCard: View {
     ]
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 ToolHeader(title: "Percentage")
                 modePicker
-                ProjectionFieldRow(leftLabel: currentLabels.0, leftText: $aText, rightLabel: currentLabels.1, rightText: $bText)
+                ProjectionFieldRow(leftLabel: currentLabels.0, leftText: $d.percentage.a, rightLabel: currentLabels.1, rightText: $d.percentage.b)
                 ProjectionCalcButton(label: "Calculate") {
                     calculate()
                     pressEpoch += 1
                 }
                 .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
-                if showResult {
+                if drafts.percentage.didCalculate {
                     ProjectionResultStat(label: resultLabel, value: formattedResult, isGrowth: true)
                 }
                 ProjectionDisclaimer(text: "Illustrative only.")
             }
         }
+        .onAppear { if drafts.percentage.didCalculate { recompute() } }
     }
 
     private var modePicker: some View {
         Menu {
             ForEach(modes, id: \.0) { entry in
-                Button(entry.1) { mode = entry.0 }
+                Button(entry.1) { drafts.percentage.mode = entry.0 }
             }
         } label: {
             HStack {
-                Text(modes.first { $0.0 == mode }?.1 ?? "")
+                Text(modes.first { $0.0 == drafts.percentage.mode }?.1 ?? "")
                     .font(bloomBody(14))
                     .foregroundStyle(themeStore.color("text"))
                 Spacer()
@@ -138,29 +167,30 @@ private struct PercentageCard: View {
                     .foregroundStyle(themeStore.color("muted"))
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
             .background(themeStore.color("surfaceSoft"))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 
     private var currentLabels: (String, String) {
-        let entry = modes.first { $0.0 == mode }
+        let entry = modes.first { $0.0 == drafts.percentage.mode }
         return (entry?.2 ?? "X", entry?.3 ?? "Y")
     }
 
     private var resultLabel: String {
-        mode == "change" ? "Change" : "Result"
+        drafts.percentage.mode == "change" ? "Change" : "Result"
     }
 
     private var formattedResult: String {
-        mode == "change" ? "\(Formatters.plain(resultValue))%" : Formatters.money(resultValue)
+        drafts.percentage.mode == "change" ? "\(Formatters.plain(resultValue))%" : Formatters.money(resultValue)
     }
 
-    private func calculate() {
-        let a = Double(aText) ?? 0
-        let b = Double(bText) ?? 0
-        switch mode {
+    private func recompute() {
+        let a = Double(drafts.percentage.a) ?? 0
+        let b = Double(drafts.percentage.b) ?? 0
+        switch drafts.percentage.mode {
         case "of":
             resultValue = FinanceMath.percentOf(a, of: b)
         case "change":
@@ -170,13 +200,17 @@ private struct PercentageCard: View {
         default:
             resultValue = b + FinanceMath.percentOf(a, of: b)
         }
-        showResult = true
+    }
+
+    private func calculate() {
+        recompute()
+        drafts.percentage.didCalculate = true
 
         historyStore.add(
             type: "tool",
             title: "Percentage",
             value: formattedResult,
-            extra: ["mode": mode, "a": aText, "b": bText]
+            extra: ["mode": drafts.percentage.mode, "a": drafts.percentage.a, "b": drafts.percentage.b]
         )
         soundStore.play("success")
     }
@@ -187,26 +221,25 @@ private struct LoanPaymentCard: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @Environment(DraftStore.self) private var drafts
+
     @State private var pressEpoch = 0
-    @State private var amountText = "20000"
-    @State private var rateText = "6"
-    @State private var yearsText = "5"
-    @State private var showResult = false
     @State private var monthlyResult: Double = 0
     @State private var totalInterestResult: Double = 0
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 ToolHeader(title: "Loan payment")
-                ProjectionFieldRow(leftLabel: "Amount", leftText: $amountText, rightLabel: "Rate % / yr", rightText: $rateText)
-                ProjectionFormField(label: "Years", text: $yearsText)
+                ProjectionFieldRow(leftLabel: "Amount", leftText: $d.loan.amount, rightLabel: "Rate % / yr", rightText: $d.loan.rate)
+                ProjectionFormField(label: "Years", text: $d.loan.years)
                 ProjectionCalcButton(label: "Find the payment") {
                     calculate()
                     pressEpoch += 1
                 }
                 .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
-                if showResult {
+                if drafts.loan.didCalculate {
                     HStack(spacing: 20) {
                         ProjectionResultStat(label: "Monthly", value: Formatters.money(monthlyResult), isGrowth: true)
                         ProjectionResultStat(label: "Total interest", value: Formatters.money(totalInterestResult))
@@ -215,21 +248,26 @@ private struct LoanPaymentCard: View {
                 ProjectionDisclaimer(text: "Illustrative only. Not a loan offer, and not financial advice.")
             }
         }
+        .onAppear { if drafts.loan.didCalculate { recompute() } }
+    }
+
+    private func recompute() {
+        let amount = Double(drafts.loan.amount) ?? 0
+        let rate = Double(drafts.loan.rate) ?? 0
+        let years = Double(drafts.loan.years) ?? 0
+        monthlyResult = FinanceMath.loanPayment(principal: amount, annualRatePct: rate, years: years)
+        totalInterestResult = max(monthlyResult * years * 12 - amount, 0)
     }
 
     private func calculate() {
-        let amount = Double(amountText) ?? 0
-        let rate = Double(rateText) ?? 0
-        let years = Double(yearsText) ?? 0
-        monthlyResult = FinanceMath.loanPayment(principal: amount, annualRatePct: rate, years: years)
-        totalInterestResult = max(monthlyResult * years * 12 - amount, 0)
-        showResult = true
+        recompute()
+        drafts.loan.didCalculate = true
 
         historyStore.add(
             type: "tool",
             title: "Loan payment",
             value: Formatters.money(monthlyResult),
-            extra: ["amount": amountText, "ratePct": rateText, "years": yearsText]
+            extra: ["amount": drafts.loan.amount, "ratePct": drafts.loan.rate, "years": drafts.loan.years]
         )
         soundStore.play("success")
     }
@@ -240,26 +278,24 @@ private struct SavingsGoalCard: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
 
+    @Environment(DraftStore.self) private var drafts
+
     @State private var pressEpoch = 0
-    @State private var targetText = "15000"
-    @State private var yearsText = "5"
-    @State private var rateText = "4"
-    @State private var startText = "0"
-    @State private var showResult = false
     @State private var monthlyResult: Double = 0
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 ToolHeader(title: "Savings goal")
-                ProjectionFieldRow(leftLabel: "Target", leftText: $targetText, rightLabel: "Years", rightText: $yearsText)
-                ProjectionFieldRow(leftLabel: "Rate % / yr", leftText: $rateText, rightLabel: "Starting", rightText: $startText)
+                ProjectionFieldRow(leftLabel: "Target", leftText: $d.savings.target, rightLabel: "Years", rightText: $d.savings.years)
+                ProjectionFieldRow(leftLabel: "Rate % / yr", leftText: $d.savings.rate, rightLabel: "Starting", rightText: $d.savings.start)
                 ProjectionCalcButton(label: "How much per month") {
                     calculate()
                     pressEpoch += 1
                 }
                 .encircleOnPress(pressEpoch, cornerRadius: themeStore.radius * 0.6)
-                if showResult {
+                if drafts.savings.didCalculate {
                     HStack(spacing: 20) {
                         ProjectionResultStat(label: "Save monthly", value: Formatters.money(monthlyResult), isGrowth: true)
                         ProjectionResultStat(label: "Note", value: monthlyResult > 0 ? "on track" : "goal met")
@@ -268,21 +304,26 @@ private struct SavingsGoalCard: View {
                 ProjectionDisclaimer(text: "Illustrative only. Not financial advice.")
             }
         }
+        .onAppear { if drafts.savings.didCalculate { recompute() } }
+    }
+
+    private func recompute() {
+        let target = Double(drafts.savings.target) ?? 0
+        let years = Double(drafts.savings.years) ?? 0
+        let rate = Double(drafts.savings.rate) ?? 0
+        let start = Double(drafts.savings.start) ?? 0
+        monthlyResult = FinanceMath.savingsGoalPayment(target: target, principal: start, annualRatePct: rate, years: years)
     }
 
     private func calculate() {
-        let target = Double(targetText) ?? 0
-        let years = Double(yearsText) ?? 0
-        let rate = Double(rateText) ?? 0
-        let start = Double(startText) ?? 0
-        monthlyResult = FinanceMath.savingsGoalPayment(target: target, principal: start, annualRatePct: rate, years: years)
-        showResult = true
+        recompute()
+        drafts.savings.didCalculate = true
 
         historyStore.add(
             type: "tool",
             title: "Savings goal",
             value: Formatters.money(monthlyResult),
-            extra: ["target": targetText, "years": yearsText, "ratePct": rateText, "start": startText]
+            extra: ["target": drafts.savings.target, "years": drafts.savings.years, "ratePct": drafts.savings.rate, "start": drafts.savings.start]
         )
         soundStore.play("success")
     }

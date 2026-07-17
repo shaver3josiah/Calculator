@@ -122,6 +122,11 @@ struct MusicView: View {
                     .foregroundStyle(theme.color("primaryStrong"))
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(theme.color("surface2")))
+                    // Reach 44, lay out 36 — the header row and the press dim both
+                    // stay exactly where they were.
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+                    .padding(-4)
             }
             .buttonStyle(TactilePressStyle(cornerRadius: 999))
             .discoverable("music.tourBtn", cornerRadius: 999)
@@ -277,6 +282,10 @@ struct MusicView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(Capsule().fill(theme.color("surfaceSoft")))
+                            // After the capsule, so the pill keeps its size and only
+                            // the reachable area grows around it.
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(TactilePressStyle(cornerRadius: 999))
                     .discoverable("music.chip.\(key)", cornerRadius: 999)
@@ -341,6 +350,8 @@ struct MusicView: View {
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
                             .background(Capsule().fill(theme.color("primaryStrong")))
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(TactilePressStyle(cornerRadius: 999))
                     .discoverable("music.play", cornerRadius: 999)
@@ -399,6 +410,10 @@ struct MusicView: View {
                 .foregroundStyle(theme.color("primaryStrong"))
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(theme.color("surfaceSoft")))
+                // Reach 44, lay out 36 — see NotePiano's octave stepper.
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+                .padding(-4)
         }
         .buttonStyle(TactilePressStyle(cornerRadius: 999))
         .discoverable("music.transpose.\(icon)", cornerRadius: 999)

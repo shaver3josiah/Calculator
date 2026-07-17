@@ -3,23 +3,26 @@ import BloomCore
 
 struct RecipePanel: View {
     @Environment(ThemeStore.self) private var theme
-    @State private var mode: RecipeMode = .write
-
-    enum RecipeMode { case write, share }
+    @Environment(DraftStore.self) private var drafts
 
     var body: some View {
+        @Bindable var d = drafts
         VStack(spacing: 14) {
-            Picker("Mode", selection: $mode) {
-                Text("Write a recipe").tag(RecipeMode.write)
-                Text("Share a link").tag(RecipeMode.share)
+            Picker("Mode", selection: $d.picks.recipeMode) {
+                Text("Write").tag("write")
+                Text("From a link").tag("link")
+                Text("Share").tag("share")
             }
             .pickerStyle(.segmented)
             .tint(theme.color("primaryStrong"))
 
-            if mode == .write {
-                RecipeWritePanel()
-            } else {
+            switch drafts.picks.recipeMode {
+            case "link":
+                RecipeLinkPanel()
+            case "share":
                 RecipeSharePanel()
+            default:
+                RecipeWritePanel()
             }
         }
     }
@@ -30,26 +33,24 @@ struct RecipeWritePanel: View {
     @Environment(KitchenStore.self) private var kitchen
     @Environment(ListsStore.self) private var lists
     @Environment(SoundStore.self) private var sound
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var name = ""
-    @State private var serves = ""
-    @State private var time = ""
-    @State private var ingredients: [String] = [""]
-    @State private var steps: [String] = [""]
-    @State private var notes = ""
+    /// Read-side shorthand. Every field she types lives in the draft, so tapping
+    /// another tab (which tears this view down) no longer costs her the recipe.
+    private var w: RecipeWriteDraft { drafts.recipeWrite }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Recipe name", text: $name, prompt: Text("Recipe name").foregroundStyle(theme.color("muted")))
+            TextField("Recipe name", text: bind(\.name), prompt: Text("Recipe name").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(15))
                 .foregroundStyle(theme.color("text"))
-                .inputAccessories($name)
+                .inputAccessories(bind(\.name))
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
             HStack {
-                TextField("Serves 4", text: $serves, prompt: Text("Serves 4").foregroundStyle(theme.color("muted")))
-                TextField("45 min", text: $time, prompt: Text("45 min").foregroundStyle(theme.color("muted")))
+                TextField("Serves 4", text: bind(\.serves), prompt: Text("Serves 4").foregroundStyle(theme.color("muted")))
+                TextField("45 min", text: bind(\.time), prompt: Text("45 min").foregroundStyle(theme.color("muted")))
             }
             .font(bloomBody(14))
             .foregroundStyle(theme.color("text"))
@@ -57,30 +58,26 @@ struct RecipeWritePanel: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
             sectionHeader("Ingredients")
-            ForEach(ingredients.indices, id: \.self) { idx in
-                editableRow(text: bindingFor(\.self, in: $ingredients, idx: idx), placeholder: "1 cup flour") {
-                    removeRow(from: &ingredients, at: idx)
+            ForEach(w.ingredients.indices, id: \.self) { idx in
+                editableRow(text: bindRow(\.ingredients, idx: idx), placeholder: "1 cup flour", deleteLabel: "Remove ingredient") {
+                    removeRow(\.ingredients, at: idx)
                 }
             }
-            Button("+ ingredient") { ingredients.append("") }
-                .font(bloomBody(13, weight: .medium))
-                .foregroundStyle(theme.color("primaryStrong"))
+            addRow("+ ingredient") { drafts.recipeWrite.ingredients.append("") }
 
             sectionHeader("Steps")
-            ForEach(steps.indices, id: \.self) { idx in
-                editableRow(text: bindingFor(\.self, in: $steps, idx: idx), placeholder: "what to do") {
-                    removeRow(from: &steps, at: idx)
+            ForEach(w.steps.indices, id: \.self) { idx in
+                editableRow(text: bindRow(\.steps, idx: idx), placeholder: "what to do", deleteLabel: "Remove step") {
+                    removeRow(\.steps, at: idx)
                 }
             }
-            Button("+ step") { steps.append("") }
-                .font(bloomBody(13, weight: .medium))
-                .foregroundStyle(theme.color("primaryStrong"))
+            addRow("+ step") { drafts.recipeWrite.steps.append("") }
 
-            TextField("Notes (storage, swaps, a little love note...)", text: $notes, prompt: Text("Notes (storage, swaps, a little love note...)").foregroundStyle(theme.color("muted")), axis: .vertical)
+            TextField("Notes (storage, swaps, a little love note...)", text: bind(\.notes), prompt: Text("Notes (storage, swaps, a little love note...)").foregroundStyle(theme.color("muted")), axis: .vertical)
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
                 .lineLimit(3...6)
-                .inputAccessories($notes, alignment: .top)
+                .inputAccessories(bind(\.notes), alignment: .top)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
@@ -118,24 +115,24 @@ struct RecipeWritePanel: View {
 
     private var previewText: String {
         var lines: [String] = []
-        if !name.isEmpty { lines.append(name) }
-        let meta = [serves, time].filter { !$0.isEmpty }.joined(separator: " • ")
+        if !w.name.isEmpty { lines.append(w.name) }
+        let meta = [w.serves, w.time].filter { !$0.isEmpty }.joined(separator: " • ")
         if !meta.isEmpty { lines.append(meta) }
-        let ing = ingredients.filter { !$0.isEmpty }
+        let ing = w.ingredients.filter { !$0.isEmpty }
         if !ing.isEmpty {
             lines.append("")
             lines.append("Ingredients:")
             lines.append(contentsOf: ing.map { "- \($0)" })
         }
-        let st = steps.filter { !$0.isEmpty }
+        let st = w.steps.filter { !$0.isEmpty }
         if !st.isEmpty {
             lines.append("")
             lines.append("Steps:")
             for (i, s) in st.enumerated() { lines.append("\(i + 1). \(s)") }
         }
-        if !notes.isEmpty {
+        if !w.notes.isEmpty {
             lines.append("")
-            lines.append(notes)
+            lines.append(w.notes)
         }
         return lines.joined(separator: "\n")
     }
@@ -165,38 +162,71 @@ struct RecipeWritePanel: View {
             .foregroundStyle(theme.color("deep"))
     }
 
-    private func editableRow(text: Binding<String>, placeholder: String, onDelete: @escaping () -> Void) -> some View {
-        HStack {
+    private func editableRow(text: Binding<String>, placeholder: String, deleteLabel: String, onDelete: @escaping () -> Void) -> some View {
+        HStack(spacing: 8) {
             TextField(placeholder, text: text, prompt: Text(placeholder).foregroundStyle(theme.color("muted")))
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
+            // Was 22×22 and 8pt from the field it destroys: a thumb reaching for
+            // the text could throw the line away. Full 44pt target, its own gap,
+            // and a press she can see before she lets go.
             Button(action: onDelete) {
-                Image(systemName: "xmark.circle")
+                Image(systemName: "minus.circle")
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(theme.color("muted"))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(TactilePressStyle(cornerRadius: 22))
+            .accessibilityLabel(deleteLabel)
         }
-        .padding(8)
+        .padding(.leading, 8)
         .background(RoundedRectangle(cornerRadius: 8).fill(theme.color("surface")))
     }
 
-    private func bindingFor(_ keyPath: WritableKeyPath<String, String>, in array: Binding<[String]>, idx: Int) -> Binding<String> {
+    private func addRow(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(bloomBody(13, weight: .medium))
+                .foregroundStyle(theme.color("accentInk"))
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 10))
+    }
+
+    private func bind(_ keyPath: WritableKeyPath<RecipeWriteDraft, String>) -> Binding<String> {
         Binding(
-            get: { idx < array.wrappedValue.count ? array.wrappedValue[idx] : "" },
+            get: { drafts.recipeWrite[keyPath: keyPath] },
+            set: { drafts.recipeWrite[keyPath: keyPath] = $0 }
+        )
+    }
+
+    private func bindRow(_ keyPath: WritableKeyPath<RecipeWriteDraft, [String]>, idx: Int) -> Binding<String> {
+        Binding(
+            get: {
+                let list = drafts.recipeWrite[keyPath: keyPath]
+                return idx < list.count ? list[idx] : ""
+            },
             set: { newValue in
-                guard idx < array.wrappedValue.count else { return }
-                array.wrappedValue[idx] = newValue
+                guard idx < drafts.recipeWrite[keyPath: keyPath].count else { return }
+                drafts.recipeWrite[keyPath: keyPath][idx] = newValue
             }
         )
     }
 
-    private func removeRow(from array: inout [String], at idx: Int) {
-        guard array.indices.contains(idx) else { return }
-        array.remove(at: idx)
-        if array.isEmpty { array.append("") }
+    private func removeRow(_ keyPath: WritableKeyPath<RecipeWriteDraft, [String]>, at idx: Int) {
+        guard drafts.recipeWrite[keyPath: keyPath].indices.contains(idx) else { return }
+        drafts.recipeWrite[keyPath: keyPath].remove(at: idx)
+        // One empty row always stays, so the section never collapses to nothing
+        // she can tap.
+        if drafts.recipeWrite[keyPath: keyPath].isEmpty {
+            drafts.recipeWrite[keyPath: keyPath].append("")
+        }
     }
 
     private func addToList() {
-        let names = ingredients.filter { !$0.isEmpty }
+        let names = w.ingredients.filter { !$0.isEmpty }
         for ing in names {
             if let parsed = RecipeParse.parseLine(ing) {
                 lists.addIngredient(name: parsed.name)
@@ -209,12 +239,12 @@ struct RecipeWritePanel: View {
 
     private func saveRecipe() {
         let recipe = SavedRecipe(
-            name: name.isEmpty ? "Untitled" : name,
-            serves: serves,
-            time: time,
-            ingredients: ingredients.filter { !$0.isEmpty },
-            steps: steps.filter { !$0.isEmpty },
-            notes: notes
+            name: w.name.isEmpty ? "Untitled" : w.name,
+            serves: w.serves,
+            time: w.time,
+            ingredients: w.ingredients.filter { !$0.isEmpty },
+            steps: w.steps.filter { !$0.isEmpty },
+            notes: w.notes
         )
         kitchen.saveRecipe(recipe)
         sound.play("success")

@@ -13,6 +13,7 @@ struct ThemeEditorView: View {
                     darkModeRow
                     presetSection
                     keysSection
+                    screenSection
                     displaySection
                     motionSection
                     editableTokensSection
@@ -102,6 +103,55 @@ struct ThemeEditorView: View {
         }
         .buttonStyle(TactilePressStyle(cornerRadius: 16))
         .accessibilityLabel("\(label) keys")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // Rotation lock. Worth calling out what landscape actually buys her —
+    // it isn't just a wider page, it's a different calculator.
+    private var screenSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Screen")
+                .font(bloomBody(13, weight: .semibold))
+                .foregroundStyle(themeStore.color("muted"))
+                .textCase(.uppercase)
+            HStack(spacing: 12) {
+                ForEach(OrientationPref.allCases, id: \.self) { pref in
+                    orientationChoice(pref)
+                }
+            }
+            Text("Landscape turns the calculator scientific.")
+                .font(bloomBody(12))
+                .foregroundStyle(themeStore.color("muted"))
+        }
+        .discoverable("theme.orientation", cornerRadius: 16)
+    }
+
+    private func orientationChoice(_ pref: OrientationPref) -> some View {
+        let selected = themeStore.orientation == pref
+        return Button {
+            withAnimation(BloomMotion.springSoft) { themeStore.orientation = pref }
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: pref.symbol)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(themeStore.color(selected ? "accentInk" : "text"))
+                    .frame(width: 52, height: 44)
+                Text(pref.label)
+                    .font(bloomBody(12, weight: selected ? .semibold : .medium))
+                    .foregroundStyle(themeStore.color(selected ? "deep" : "muted"))
+            }
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .padding(.vertical, 12)
+            .background(themeStore.color("surface"))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(selected ? themeStore.color("primaryStrong") : themeStore.color("line"),
+                                  lineWidth: selected ? 2 : 1)
+            )
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 16))
+        .accessibilityLabel("\(pref.label) screen")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 

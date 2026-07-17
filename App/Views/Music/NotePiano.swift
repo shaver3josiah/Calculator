@@ -49,6 +49,10 @@ struct NotePiano: View {
             octaveButton("delete.left", disabled: store.chordText.isEmpty) {
                 store.removeLastToken()
             }
+            // Delete wipes a note; the steppers only nudge the octave. They differ
+            // by one glyph, so the gap is the only thing standing between a fumbled
+            // "+" and a lost note: 10pt HStack spacing + 10pt here = 20pt of miss.
+            .padding(.leading, 10)
             .accessibilityLabel("Remove last note")
         }
     }
@@ -60,6 +64,14 @@ struct NotePiano: View {
                 .foregroundStyle(theme.color(disabled ? "muted" : "primaryStrong"))
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(theme.color("surfaceSoft")))
+                // 44x44 of reach around a disc that still draws — and still lays
+                // out — at 36: three of these plus the "C4–B4" readout and the
+                // section label have no width to spare on an SE. The -4 gives the
+                // 8pt back to the row, and keeps TactilePressStyle's dim on the
+                // disc instead of haloing 4pt past it.
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+                .padding(-4)
         }
         .buttonStyle(TactilePressStyle(cornerRadius: 999))
         .disabled(disabled)
@@ -78,6 +90,9 @@ struct NotePiano: View {
                             .frame(height: 104)
                     }
                 }
+                // The black keys land ~23pt wide on an SE and stay there: a piano's
+                // black keys are narrow by nature, and she aims at them the way she
+                // aims at a real one. Widening them to 44 would stop it being a piano.
                 ForEach(Self.blackKeys, id: \.0) { key in
                     let boundary = CGFloat(key.after + 1) * whiteW
                         + CGFloat(key.after) * Self.spacing + Self.spacing / 2

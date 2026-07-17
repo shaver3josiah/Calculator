@@ -3,6 +3,7 @@ import BloomCore
 
 @main
 struct BloomApp: App {
+    @UIApplicationDelegateAdaptor(BloomAppDelegate.self) private var appDelegate
     @State private var themeStore = ThemeStore()
     @State private var historyStore: HistoryStore
     @State private var soundStore: SoundStore
@@ -12,6 +13,8 @@ struct BloomApp: App {
     @State private var calcStore: CalcStore
     @State private var projectionStore = ProjectionStore()
     @State private var budgetStore = BudgetStore()
+    @State private var draftStore = DraftStore()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var songBook = SongBook()
 
     init() {
@@ -50,6 +53,17 @@ struct BloomApp: App {
                 .environment(projectionStore)
                 .environment(budgetStore)
                 .environment(songBook)
+                .environment(draftStore)
+                // Leaving the app is the last guaranteed moment to write her
+                // in-progress numbers down; the debounce may still be pending.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase != .active { draftStore.flush() }
+                }
+                // ThemeStore's init assignment never fires its didSet, so the
+                // saved lock has to be re-applied here or a relaunch forgets it.
+                .task {
+                    OrientationLock.apply(themeStore.orientation)
+                }
         }
     }
 }

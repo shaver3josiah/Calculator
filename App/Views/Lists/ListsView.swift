@@ -6,23 +6,26 @@ struct ListsView: View {
     @Environment(ListsStore.self) private var store
     @Environment(HistoryStore.self) private var history
     @Environment(SoundStore.self) private var sound
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var newItemName = ""
-    @State private var newItemQty = "1"
-    @State private var newItemPrice = ""
     @State private var showNewListPrompt = false
-    @State private var newListTitle = ""
     @State private var editingRow: ShopListRow?
     @State private var editingListId: UUID?
 
     var body: some View {
-        ScrollView {
+        @Bindable var d = drafts
+        return ScrollView {
             VStack(spacing: 16) {
-                listPicker
-                if let list = store.activeList {
-                    listCard(list)
+                KTabBar(items: ["Lists", "Notes"], selection: modeBinding)
+                if drafts.lists.mode == "notes" {
+                    notesPage
                 } else {
-                    emptyState
+                    listPicker
+                    if let list = store.activeList {
+                        listCard(list)
+                    } else {
+                        emptyState
+                    }
                 }
             }
             .padding(16)
@@ -41,13 +44,22 @@ struct ListsView: View {
             }
         }
         .alert("Name this list", isPresented: $showNewListPrompt) {
-            TextField("Groceries, a trip, the month", text: $newListTitle, prompt: Text("Groceries, a trip, the month").foregroundStyle(theme.color("muted")))
+            TextField("Groceries, a trip, the month", text: $d.lists.newListTitle, prompt: Text("Groceries, a trip, the month").foregroundStyle(theme.color("muted")))
             Button("Create") {
-                _ = store.createList(title: newListTitle)
-                newListTitle = ""
+                _ = store.createList(title: drafts.lists.newListTitle)
+                drafts.lists.newListTitle = ""
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// The draft speaks "list"/"notes"; the tab bar shows her the words she'd
+    /// use. Kept apart so a label change can never rewrite what's on disk.
+    private var modeBinding: Binding<String> {
+        Binding(
+            get: { drafts.lists.mode == "notes" ? "Notes" : "Lists" },
+            set: { drafts.lists.mode = ($0 == "Notes") ? "notes" : "list" }
+        )
     }
 
     private var listPicker: some View {
@@ -67,6 +79,8 @@ struct ListsView: View {
                         .font(.system(size: 13))
                         .foregroundStyle(theme.color("muted"))
                 }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             Spacer()
             Button {
@@ -92,6 +106,116 @@ struct ListsView: View {
         }
         .padding(.top, 60)
     }
+
+    // MARK: - Notes
+
+    private var noteBodyIsBlank: Bool {
+        drafts.notes.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var notesPage: some View {
+        @Bindable var d = drafts
+        return VStack(alignment: .leading, spacing: 12) {
+            TextField("Name this note", text: $d.notes.title, prompt: Text("Name this note").foregroundStyle(theme.color("muted")))
+                .font(bloomNumber(19, weight: .semibold))
+                .foregroundStyle(theme.color("deep"))
+                .frame(minHeight: 44)
+
+            TextField("", text: $d.notes.body, axis: .vertical)
+                .lineLimit(12...40)
+                .font(bloomBody(17))
+                .foregroundStyle(theme.color("text"))
+                .lineSpacing(5)
+                .inputAccessories($d.notes.body, alignment: .top)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(theme.color("surfaceSoft"))
+                )
+
+            Text("Start lines with - or • and I'll make them a list.")
+                .font(bloomBody(12))
+                .foregroundStyle(theme.color("muted"))
+
+            HStack(spacing: 10) {
+                Button {
+                    saveNote()
+                } label: {
+                    Text("Save to history")
+                        .font(bloomBody(15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(theme.color("primary"))
+                        )
+                }
+                .buttonStyle(TactilePressStyle(cornerRadius: 14))
+                .discoverable("notes.save", cornerRadius: 14)
+
+                Button {
+                    makeListFromNote()
+                } label: {
+                    Text("Make it a list")
+                        .font(bloomBody(15, weight: .semibold))
+                        .foregroundStyle(theme.color("accentInk"))
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(theme.color("surfaceSoft"))
+                        )
+                }
+                .buttonStyle(TactilePressStyle(cornerRadius: 14))
+                .discoverable("notes.toList", cornerRadius: 14)
+            }
+            // A blank page has nothing to save and nothing to listify — she
+            // should never end up with an empty list or a history entry of air.
+            .disabled(noteBodyIsBlank)
+            .opacity(noteBodyIsBlank ? 0.5 : 1)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: theme.radius)
+                .fill(theme.color("surface"))
+        )
+    }
+
+    private var noteDisplayTitle: String {
+        let trimmed = drafts.notes.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Note" : trimmed
+    }
+
+    private func saveNote() {
+        guard !noteBodyIsBlank else { return }
+        let body = drafts.notes.body
+        let lines = ListsStore.listItems(from: body).count
+        history.add(
+            type: "note",
+            title: noteDisplayTitle,
+            value: "\(lines) line\(lines == 1 ? "" : "s")",
+            extra: ["text": body]
+        )
+        sound.play("success")
+        ToastCenter.shared.show(title: "Saved", message: "\(noteDisplayTitle) is in your history.")
+    }
+
+    private func makeListFromNote() {
+        let items = ListsStore.listItems(from: drafts.notes.body)
+        // A page of nothing but bullet marks parses to zero items, so the blank
+        // check above isn't enough on its own.
+        guard !items.isEmpty else { return }
+        let trimmed = drafts.notes.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let id = store.createList(title: trimmed.isEmpty ? "Notes list" : trimmed)
+        for item in items {
+            store.addRow(to: id, name: item, qty: 1, unitPrice: 0)
+        }
+        drafts.lists.mode = "list"
+        sound.play("success")
+        ToastCenter.shared.show(title: "Made a list", message: "\(items.count) item\(items.count == 1 ? "" : "s") added.")
+    }
+
+    // MARK: - Lists
 
     private func listCard(_ list: ShopList) -> some View {
         VStack(spacing: 12) {
@@ -177,15 +301,16 @@ struct ListsView: View {
     }
 
     private func addRow(listId: UUID) -> some View {
-        HStack(spacing: 8) {
-            TextField("Item", text: $newItemName, prompt: Text("Item").foregroundStyle(theme.color("muted")))
+        @Bindable var d = drafts
+        return HStack(spacing: 8) {
+            TextField("Item", text: $d.lists.newItemName, prompt: Text("Item").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(14))
-                .inputAccessories($newItemName, compact: true)
-            TextField("Qty", text: $newItemQty, prompt: Text("Qty").foregroundStyle(theme.color("muted")))
+                .inputAccessories($d.lists.newItemName, compact: true)
+            TextField("Qty", text: $d.lists.newItemQty, prompt: Text("Qty").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .frame(width: 44)
-            TextField("Price", text: $newItemPrice, prompt: Text("Price").foregroundStyle(theme.color("muted")))
+            TextField("Price", text: $d.lists.newItemPrice, prompt: Text("Price").foregroundStyle(theme.color("muted")))
                 .keyboardType(.decimalPad)
                 .font(bloomBody(14))
                 .frame(width: 60)
@@ -194,7 +319,10 @@ struct ListsView: View {
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .foregroundStyle(theme.color("accentInk"))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(TactilePressStyle(cornerRadius: 999))
             .discoverable("lists.addItem", cornerRadius: 999)
         }
         .padding(10)
@@ -205,13 +333,13 @@ struct ListsView: View {
     }
 
     private func addItem(listId: UUID) {
-        guard !newItemName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        let qty = Double(newItemQty) ?? 1
-        let price = Double(newItemPrice) ?? 0
-        store.addRow(to: listId, name: newItemName, qty: qty, unitPrice: price)
-        newItemName = ""
-        newItemQty = "1"
-        newItemPrice = ""
+        guard !drafts.lists.newItemName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let qty = Double(drafts.lists.newItemQty) ?? 1
+        let price = Double(drafts.lists.newItemPrice) ?? 0
+        store.addRow(to: listId, name: drafts.lists.newItemName, qty: qty, unitPrice: price)
+        drafts.lists.newItemName = ""
+        drafts.lists.newItemQty = "1"
+        drafts.lists.newItemPrice = ""
         sound.play("tap1")
     }
 

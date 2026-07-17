@@ -6,28 +6,30 @@ import CoreImage.CIFilterBuiltins
 struct RecipeSharePanel: View {
     @Environment(ThemeStore.self) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var rawUrl = ""
-    @State private var alias = ""
+    // The QR itself is derived from the link and cheap to remake, so it stays
+    // @State; the link and the name she gave it are hers, and live in the draft.
     @State private var qrImage: Image?
     @State private var qrEpoch = 0
 
     var body: some View {
+        @Bindable var d = drafts
         VStack(alignment: .leading, spacing: 14) {
-            TextField("Paste the recipe link", text: $rawUrl, prompt: Text("Paste the recipe link").foregroundStyle(theme.color("muted")))
+            TextField("Paste the recipe link", text: $d.recipeShare.rawUrl, prompt: Text("Paste the recipe link").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(14))
                 .foregroundStyle(theme.color("text"))
                 .keyboardType(.URL)
                 .autocorrectionDisabled()
-                .inputAccessories($rawUrl)
+                .inputAccessories($d.recipeShare.rawUrl)
                 .padding(10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surface")))
 
             HStack {
-                TextField("Name this QR (e.g. Blueberry_Muffins)", text: $alias, prompt: Text("Name this QR (e.g. Blueberry_Muffins)").foregroundStyle(theme.color("muted")))
+                TextField("Name this QR (e.g. Blueberry_Muffins)", text: $d.recipeShare.alias, prompt: Text("Name this QR (e.g. Blueberry_Muffins)").foregroundStyle(theme.color("muted")))
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("text"))
-                    .inputAccessories($alias, compact: true)
+                    .inputAccessories($d.recipeShare.alias, compact: true)
                 Button("Make QR") {
                     generateQR()
                 }
@@ -60,7 +62,7 @@ struct RecipeSharePanel: View {
 
                     ShareLink(
                         item: qrImage,
-                        preview: SharePreview(alias.isEmpty ? "Recipe QR" : alias, image: qrImage)
+                        preview: SharePreview(drafts.recipeShare.alias.isEmpty ? "Recipe QR" : drafts.recipeShare.alias, image: qrImage)
                     )
                     .font(bloomBody(13, weight: .medium))
                 }
@@ -107,7 +109,7 @@ struct RecipeSharePanel: View {
     private static let ciContext = CIContext(options: [.cacheIntermediates: false])
 
     private func generateQR() {
-        let cleaned = RecipeParse.cleanUrl(rawUrl)
+        let cleaned = RecipeParse.cleanUrl(drafts.recipeShare.rawUrl)
         guard !cleaned.isEmpty else { return }
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(cleaned.utf8)

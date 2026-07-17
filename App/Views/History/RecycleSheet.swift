@@ -71,6 +71,8 @@ struct RecycleSheet: View {
                 .keyboardType(.decimalPad)
                 .font(bloomNumber(18))
                 .inputAccessories(binding(for: idx), compact: true)
+                // 24 + 10 top + 10 bottom = the 44 the field was 2pt short of.
+                .frame(minHeight: 24)
                 .padding(10)
                 .background(
                     RoundedRectangle(cornerRadius: 12)

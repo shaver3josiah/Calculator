@@ -14,6 +14,16 @@ final class ThemeStore {
     var keyStyle: String = "soft" {
         didSet { JSONStore.shared.set(.keyStyle, keyStyle) }
     }
+    /// Screen rotation: automatic, or pinned to portrait/landscape. The didSet
+    /// covers every change she makes; launch is covered by BloomApp (init
+    /// assignment below doesn't fire didSet).
+    var orientation: OrientationPref = .auto {
+        didSet {
+            JSONStore.shared.set(.orientation, orientation.rawValue)
+            let pref = orientation
+            Task { @MainActor in OrientationLock.apply(pref) }
+        }
+    }
     /// Her last LIGHT preset, so the dark-mode switch is a true round trip:
     /// moon on → midnight, moon off → exactly the palette she left.
     private var lastLightPreset: String = "cherry" {
@@ -108,6 +118,8 @@ final class ThemeStore {
         showCalcLog = JSONStore.shared.get(.calcLog, as: Bool.self) ?? true
         showChordWheel = JSONStore.shared.get(.chordWheel, as: Bool.self) ?? true
         keyStyle = JSONStore.shared.get(.keyStyle, as: String.self) ?? "soft"
+        orientation = JSONStore.shared.get(.orientation, as: String.self)
+            .flatMap(OrientationPref.init(rawValue:)) ?? .auto
         lastLightPreset = JSONStore.shared.get(.lightPreset, as: String.self)
             ?? (savedPresetName != "midnight" && savedPresetName != "custom" ? savedPresetName : "cherry")
 

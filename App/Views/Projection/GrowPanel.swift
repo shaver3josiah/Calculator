@@ -8,39 +8,39 @@ struct GrowPanel: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var principalText = "10000"
-    @State private var monthlyText = "500"
-    @State private var years: Double = 20
-    @State private var selectedFundID: UUID?
-    @State private var showResult = false
     @State private var yearlyBalances: [YearBalance] = []
     @State private var futureValueResult: Double = 0
     @State private var contributionsResult: Double = 0
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
                 ProjectionFieldRow(
                     leftLabel: "Starting amount",
-                    leftText: $principalText,
+                    leftText: $d.grow.principal,
                     rightLabel: "Monthly added",
-                    rightText: $monthlyText
+                    rightText: $d.grow.monthly
                 )
                 yearsSlider
                 fundPicker
                 ProjectionCalcButton(label: "Project the bloom", action: calculate)
-                if showResult {
+                if drafts.grow.didCalculate {
                     resultSection
                 }
                 ProjectionDisclaimer(text: "Illustrative projection using a fixed annual rate, compounded monthly. Not financial advice, and no live trading.")
             }
         }
+        // Order matters: a fresh budget handoff must land BEFORE the replay, or
+        // her incoming number gets overwritten by a recompute of the old ones.
         .onAppear {
             consumePendingGrow()
-            if selectedFundID == nil {
-                selectedFundID = projectionStore.funds.first?.id
+            if drafts.grow.fundID == nil {
+                drafts.grow.fundID = projectionStore.funds.first?.id
             }
+            if drafts.grow.didCalculate { recompute() }
         }
         // A second handoff while the panel is already mounted (the outgoing
         // Budget view stays tappable during the slide transition, so a quick
@@ -54,20 +54,25 @@ struct GrowPanel: View {
     /// Budget handoff: a MONTHLY leftover fills the monthly field (principal is
     /// left alone) and pre-selects the fund nearest the S&P's ~10% long-run rate.
     /// %.0f instead of Int() — a silly 20-digit income must format, never trap.
+    ///
+    /// The result card is dropped: a new incoming number must never sit above an
+    /// answer computed from the old one.
     private func consumePendingGrow() {
         guard let pending = projectionStore.pendingGrow else { return }
-        monthlyText = String(format: "%.0f", max(0, pending.monthly.rounded()))
-        selectedFundID = projectionStore.funds.min(by: { abs($0.ratePct - 10) < abs($1.ratePct - 10) })?.id
+        drafts.grow.monthly = String(format: "%.0f", max(0, pending.monthly.rounded()))
+        drafts.grow.fundID = projectionStore.funds.min(by: { abs($0.ratePct - 10) < abs($1.ratePct - 10) })?.id
+        drafts.grow.didCalculate = false
         projectionStore.pendingGrow = nil
         ToastCenter.shared.show(title: "From your budget", message: "Your monthly leftover, growing at the market's long-run pace.")
     }
 
     private var yearsSlider: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Years to grow: \(Int(years))")
+        @Bindable var d = drafts
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Years to grow: \(Int(drafts.grow.years))")
                 .font(bloomBody(12, weight: .medium))
                 .foregroundStyle(themeStore.color("muted"))
-            Slider(value: $years, in: 1...40, step: 1)
+            Slider(value: $d.grow.years, in: 1...40, step: 1)
                 .tint(themeStore.color("primaryStrong"))
         }
     }
@@ -88,9 +93,9 @@ struct GrowPanel: View {
     }
 
     private func fundChip(_ fund: Fund) -> some View {
-        let isSelected = fund.id == selectedFundID
+        let isSelected = fund.id == drafts.grow.fundID
         return Button {
-            selectedFundID = fund.id
+            drafts.grow.fundID = fund.id
         } label: {
             VStack(spacing: 2) {
                 Text(fund.name)
@@ -100,11 +105,12 @@ struct GrowPanel: View {
             }
             .foregroundStyle(isSelected ? .white : themeStore.color("text"))
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .frame(minWidth: 44, minHeight: 44)
             .background(isSelected ? themeStore.color("primaryStrong") : themeStore.color("surfaceSoft"))
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TactilePressStyle(cornerRadius: 12))
     }
 
     private var resultSection: some View {
@@ -153,10 +159,13 @@ struct GrowPanel: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: yearlyBalances.count)
     }
 
-    private func calculate() {
-        let principal = Double(principalText) ?? 0
-        let monthly = Double(monthlyText) ?? 0
-        let rate = projectionStore.funds.first { $0.id == selectedFundID }?.ratePct ?? 6
+    /// The maths only. `calculate()` adds the things that must happen once per
+    /// tap — a history row, a sound — and must never fire on a silent replay.
+    private func recompute() {
+        let principal = Double(drafts.grow.principal) ?? 0
+        let monthly = Double(drafts.grow.monthly) ?? 0
+        let years = drafts.grow.years
+        let rate = currentRate
 
         futureValueResult = FinanceMath.futureValue(principal: principal, monthly: monthly, annualRatePct: rate, years: years)
         contributionsResult = FinanceMath.contributions(principal: principal, monthly: monthly, years: years)
@@ -168,17 +177,25 @@ struct GrowPanel: View {
             points.append(YearBalance(year: year, balance: balance))
         }
         yearlyBalances = points
-        showResult = true
+    }
+
+    private var currentRate: Double {
+        projectionStore.funds.first { $0.id == drafts.grow.fundID }?.ratePct ?? 6
+    }
+
+    private func calculate() {
+        recompute()
+        drafts.grow.didCalculate = true
 
         historyStore.add(
             type: "proj",
             title: "Grow",
             value: Formatters.money(futureValueResult),
             extra: [
-                "principal": principalText,
-                "monthly": monthlyText,
-                "years": String(Int(years)),
-                "ratePct": Formatters.plain(rate)
+                "principal": drafts.grow.principal,
+                "monthly": drafts.grow.monthly,
+                "years": String(Int(drafts.grow.years)),
+                "ratePct": Formatters.plain(currentRate)
             ]
         )
         soundStore.play("success")

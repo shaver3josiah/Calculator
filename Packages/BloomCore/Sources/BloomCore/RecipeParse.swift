@@ -175,6 +175,385 @@ public enum RecipeParse {
         return result
     }
 
+    /// A recipe lifted off a web page, in her words, ready to be edited.
+    public struct WebRecipe: Equatable, Sendable {
+        public var name: String
+        public var serves: String
+        public var time: String
+        public var ingredients: [String]
+        public var steps: [String]
+
+        public init(name: String, serves: String, time: String, ingredients: [String], steps: [String]) {
+            self.name = name
+            self.serves = serves
+            self.time = time
+            self.ingredients = ingredients
+            self.steps = steps
+        }
+    }
+
+    /// Read a recipe out of a page's schema.org JSON-LD — the block essentially
+    /// every recipe site publishes for Google, and the only part of those pages
+    /// that isn't ad markup. Nil when there's no Recipe node or it lists no
+    /// ingredients: a name with nothing under it isn't a recipe she can cook.
+    public static func webRecipe(html: String) -> WebRecipe? {
+        for script in extractJsonLdScripts(html) {
+            guard let data = script.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data),
+                  let node = findRecipeNode(obj),
+                  let recipe = makeWebRecipe(node) else {
+                continue
+            }
+            return recipe
+        }
+        return nil
+    }
+
+    private static func makeWebRecipe(_ dict: [String: Any]) -> WebRecipe? {
+        let ingredients = textList(dict["recipeIngredient"])
+        guard !ingredients.isEmpty else {
+            return nil
+        }
+        return WebRecipe(
+            name: scalarText(dict["name"]),
+            serves: scalarText(dict["recipeYield"]),
+            time: humanDuration(dict["totalTime"]) ?? humanDuration(dict["cookTime"]) ?? "",
+            ingredients: ingredients,
+            steps: instructionSteps(dict["recipeInstructions"])
+        )
+    }
+
+    /// The Recipe node hides in a different place on every site: bare at the top,
+    /// inside an @graph, inside a plain array, or behind mainEntity. Walk them all.
+    private static func findRecipeNode(_ node: Any) -> [String: Any]? {
+        if let arr = node as? [Any] {
+            for n in arr {
+                if let found = findRecipeNode(n) {
+                    return found
+                }
+            }
+            return nil
+        }
+        guard let dict = node as? [String: Any] else {
+            return nil
+        }
+        if isRecipeType(dict["@type"]) {
+            return dict
+        }
+        for key in ["@graph", "mainEntity", "mainEntityOfPage"] {
+            if let child = dict[key], let found = findRecipeNode(child) {
+                return found
+            }
+        }
+        return nil
+    }
+
+    /// "@type" is a String on most sites and an array like ["Recipe","NewsArticle"]
+    /// on the ones that also want the page to rank as an article.
+    private static func isRecipeType(_ value: Any?) -> Bool {
+        if let s = value as? String {
+            return s.caseInsensitiveCompare("Recipe") == .orderedSame
+        }
+        if let arr = value as? [Any] {
+            for v in arr where isRecipeType(v) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private static func textList(_ value: Any?) -> [String] {
+        guard let arr = value as? [Any] else {
+            return []
+        }
+        var out: [String] = []
+        for item in arr {
+            let t = scalarText(item)
+            if !t.isEmpty {
+                out.append(t)
+            }
+        }
+        return out
+    }
+
+    /// recipeYield alone arrives as "4 servings", as 4, and as ["4", "4 servings"].
+    /// First non-empty wins — she wants one line, not the site's SEO variants.
+    private static func scalarText(_ value: Any?) -> String {
+        if let s = value as? String {
+            return cleanText(s)
+        }
+        if let n = value as? NSNumber {
+            let d = n.doubleValue
+            if d == d.rounded() && abs(d) < 1e9 {
+                return String(Int(d))
+            }
+            return Formatters.fmt(d)
+        }
+        if let arr = value as? [Any] {
+            for item in arr {
+                let t = scalarText(item)
+                if !t.isEmpty {
+                    return t
+                }
+            }
+        }
+        return ""
+    }
+
+    /// ISO-8601 duration -> the way she'd say it: "PT45M" -> "45 min",
+    /// "PT1H30M" -> "1 hr 30 min". Everything before the "T" (days) and the
+    /// seconds place are dropped — no recipe needs them, and a clean partial
+    /// read beats showing her "PT1H30M".
+    static func humanDuration(_ value: Any?) -> String? {
+        guard let raw = value as? String else {
+            return nil
+        }
+        let upper = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard upper.hasPrefix("P"), let tIndex = upper.firstIndex(of: "T") else {
+            return nil
+        }
+        var total = 0
+        var digits = ""
+        for ch in upper[upper.index(after: tIndex)...] {
+            if ch.isASCII && ch.isNumber {
+                digits.append(ch)
+                continue
+            }
+            let n = Int(digits) ?? 0
+            digits = ""
+            if ch == "H" {
+                total += n * 60
+            } else if ch == "M" {
+                total += n
+            }
+        }
+        guard total > 0 else {
+            return nil
+        }
+        // Normalised, so a site publishing "PT90M" still reads "1 hr 30 min".
+        let hours = total / 60
+        let mins = total % 60
+        if hours > 0 && mins > 0 {
+            return "\(hours) hr \(mins) min"
+        }
+        if hours > 0 {
+            return "\(hours) hr"
+        }
+        return "\(mins) min"
+    }
+
+    /// recipeInstructions is the most polymorphic field on the web: [String],
+    /// HowToStep objects, HowToSections wrapping HowToSteps, or one prose blob.
+    private static func instructionSteps(_ value: Any?) -> [String] {
+        if let prose = value as? String {
+            return splitProse(prose)
+        }
+        var out: [String] = []
+        collectSteps(value, into: &out)
+        return out
+    }
+
+    private static func collectSteps(_ node: Any?, into out: inout [String]) {
+        if let s = node as? String {
+            let t = cleanText(s)
+            if !t.isEmpty {
+                out.append(t)
+            }
+            return
+        }
+        if let arr = node as? [Any] {
+            for n in arr {
+                collectSteps(n, into: &out)
+            }
+            return
+        }
+        guard let dict = node as? [String: Any] else {
+            return
+        }
+        // A HowToSection is a heading with the real steps nested under it; flatten
+        // it, because "For the sauce" is not something she does.
+        if let nested = dict["itemListElement"] {
+            collectSteps(nested, into: &out)
+            return
+        }
+        if let text = dict["text"] as? String {
+            let t = cleanText(text)
+            if !t.isEmpty {
+                out.append(t)
+            }
+            return
+        }
+        if let name = dict["name"] as? String {
+            let t = cleanText(name)
+            if !t.isEmpty {
+                out.append(t)
+            }
+        }
+    }
+
+    /// One blob of instructions. The author's own line breaks are her step breaks;
+    /// with none, fall back to sentence ends so she doesn't get a wall of text.
+    private static func splitProse(_ s: String) -> [String] {
+        let cleaned = cleanText(s)
+        if cleaned.isEmpty {
+            return []
+        }
+        let byLine = cleaned.split(whereSeparator: { $0.isNewline })
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        if byLine.count > 1 {
+            return byLine
+        }
+        let chars = Array(cleaned)
+        var out: [String] = []
+        var current = ""
+        for (i, ch) in chars.enumerated() {
+            current.append(ch)
+            guard ch == "." || ch == "!" || ch == "?" else {
+                continue
+            }
+            // Only a period with space (or nothing) after it ends a sentence —
+            // this is what keeps "heat to 1.5 cups" in one piece.
+            let ends = i + 1 >= chars.count || chars[i + 1] == " " || chars[i + 1].isNewline
+            guard ends else {
+                continue
+            }
+            let t = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty {
+                out.append(t)
+            }
+            current = ""
+        }
+        let tail = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !tail.isEmpty {
+            out.append(tail)
+        }
+        return out.isEmpty ? [cleaned] : out
+    }
+
+    /// Web text as she should read it: tags out, entities in. Recipe sites put
+    /// `<br>`, `&amp;` and `&#39;` straight inside their JSON-LD strings.
+    static func cleanText(_ s: String) -> String {
+        decodeEntities(stripTags(s)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func stripTags(_ s: String) -> String {
+        guard s.contains("<") else {
+            return s
+        }
+        var out = ""
+        var tag = ""
+        var inTag = false
+        for ch in s {
+            if ch == "<" {
+                inTag = true
+                tag = ""
+                continue
+            }
+            if ch == ">" {
+                if inTag {
+                    inTag = false
+                    if isBreakTag(tag) {
+                        out.append("\n")
+                    }
+                }
+                continue
+            }
+            if inTag {
+                tag.append(ch)
+            } else {
+                out.append(ch)
+            }
+        }
+        return out
+    }
+
+    /// `<b>` around a word should leave no trace, but `<br>` and `</p>` ARE the
+    /// step break — sites write a whole method as one string held together by them.
+    private static func isBreakTag(_ tag: String) -> Bool {
+        let name = tag.lowercased()
+            .drop(while: { $0 == "/" })
+            .prefix(while: { $0.isLetter || $0.isNumber })
+        return name == "br" || name == "p" || name == "li" || name == "div"
+    }
+
+    private static let namedEntities: [String: String] = [
+        "amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'",
+        "nbsp": "\u{00a0}", "hellip": "\u{2026}",
+        "mdash": "\u{2014}", "ndash": "\u{2013}",
+        "lsquo": "\u{2018}", "rsquo": "\u{2019}",
+        "ldquo": "\u{201c}", "rdquo": "\u{201d}",
+        "deg": "\u{00b0}",
+        "frac12": "\u{00bd}", "frac14": "\u{00bc}", "frac34": "\u{00be}",
+        "frac13": "\u{2153}", "frac23": "\u{2154}"
+    ]
+
+    /// Named and numeric (`&#39;` / `&#x27;`) entities. Anything unrecognised is
+    /// left exactly as written — a stray "&" is honest; a hole in her sentence isn't.
+    static func decodeEntities(_ s: String) -> String {
+        guard s.contains("&") else {
+            return s
+        }
+        var out = ""
+        var i = s.startIndex
+        while i < s.endIndex {
+            let ch = s[i]
+            guard ch == "&" else {
+                out.append(ch)
+                i = s.index(after: i)
+                continue
+            }
+            let body = entityBody(s, from: i)
+            guard let body, let mapped = entityValue(body) else {
+                out.append(ch)
+                i = s.index(after: i)
+                continue
+            }
+            out.append(mapped)
+            i = s.index(i, offsetBy: body.count + 2)
+        }
+        return out
+    }
+
+    /// The text between "&" and its ";", when one turns up close enough behind it
+    /// to be an entity rather than a loose ampersand in a sentence.
+    private static func entityBody(_ s: String, from amp: String.Index) -> String? {
+        var j = s.index(after: amp)
+        var body = ""
+        while j < s.endIndex, body.count <= 10 {
+            let c = s[j]
+            if c == ";" {
+                return body.isEmpty ? nil : body
+            }
+            if c == "&" || c == " " {
+                return nil
+            }
+            body.append(c)
+            j = s.index(after: j)
+        }
+        return nil
+    }
+
+    private static func entityValue(_ body: String) -> String? {
+        if let named = namedEntities[body.lowercased()] {
+            return named
+        }
+        guard body.hasPrefix("#") else {
+            return nil
+        }
+        let rest = body.dropFirst()
+        let value: UInt32?
+        if rest.lowercased().hasPrefix("x") {
+            value = UInt32(rest.dropFirst(), radix: 16)
+        } else {
+            value = UInt32(rest, radix: 10)
+        }
+        guard let v = value, let scalar = Unicode.Scalar(v) else {
+            return nil
+        }
+        return String(Character(scalar))
+    }
+
     public static func jsonLDIngredients(html: String) -> [String] {
         var out: [String] = []
         let scripts = extractJsonLdScripts(html)

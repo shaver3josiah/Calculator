@@ -136,6 +136,9 @@ struct ScientificCalcView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
+        .contentShape(Rectangle())   // the band is mostly empty air; make all of it swipeable
+        .decimalSwipe()
+        .discoverable("calc.decimalSwipe", cornerRadius: theme.radius)
     }
 
     private func keypad(rowH: CGFloat, gap: CGFloat) -> some View {

@@ -8,26 +8,25 @@ struct ComparePanel: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(DraftStore.self) private var drafts
 
-    @State private var monthlyText = "500"
-    @State private var yearsText = "20"
-    @State private var startText = "10000"
-    @State private var showResult = false
     @State private var series: [FundSeries] = []
 
     var body: some View {
+        @Bindable var d = drafts
         Card {
             VStack(alignment: .leading, spacing: 16) {
-                ProjectionFieldRow(leftLabel: "Monthly added", leftText: $monthlyText, rightLabel: "Years", rightText: $yearsText)
-                ProjectionFormField(label: "Starting balance", text: $startText)
+                ProjectionFieldRow(leftLabel: "Monthly added", leftText: $d.compare.monthly, rightLabel: "Years", rightText: $d.compare.years)
+                ProjectionFormField(label: "Starting balance", text: $d.compare.start)
                 ProjectionCalcButton(label: "Compare the fund profiles", action: calculate)
-                if showResult {
+                if drafts.compare.didCalculate {
                     compareChart
                     fundLegend
                 }
                 ProjectionDisclaimer(text: "Illustrative only. Same contributions across your saved fund profiles. Not financial advice.")
             }
         }
+        .onAppear { if drafts.compare.didCalculate { recompute() } }
     }
 
     private var compareChart: some View {
@@ -71,10 +70,12 @@ struct ComparePanel: View {
         }
     }
 
-    private func calculate() {
-        let monthly = Double(monthlyText) ?? 0
-        let years = Double(yearsText) ?? 0
-        let start = Double(startText) ?? 0
+    /// The maths only. `calculate()` adds the things that must happen once per
+    /// tap — a history row, a sound — and must never fire on a silent replay.
+    private func recompute() {
+        let monthly = Double(drafts.compare.monthly) ?? 0
+        let years = Double(drafts.compare.years) ?? 0
+        let start = Double(drafts.compare.start) ?? 0
         let totalYears = years.isFinite ? Int(min(max(years, 1), 100)) : 1  // ponytail: clamp free-text years; NaN guard because Double("nan") parses
 
         series = projectionStore.funds.map { fund in
@@ -86,9 +87,13 @@ struct ComparePanel: View {
             let final = points.last?.balance ?? 0
             return FundSeries(id: fund.id, name: fund.name, points: points, finalBalance: final)
         }
-        showResult = true
+    }
 
-        var extra = ["monthly": monthlyText, "years": yearsText, "start": startText]
+    private func calculate() {
+        recompute()
+        drafts.compare.didCalculate = true
+
+        var extra = ["monthly": drafts.compare.monthly, "years": drafts.compare.years, "start": drafts.compare.start]
         for fundSeries in series {
             extra[fundSeries.name] = Formatters.money(fundSeries.finalBalance)
         }
