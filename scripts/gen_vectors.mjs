@@ -689,10 +689,11 @@ function budgetDefMonth() {
         { n: "Date nights", a: 80, sel: false },
         { n: "Streaming and subscriptions", a: 35, sel: false },
         { n: "Clothing", a: 60, sel: false }] },
-      { n: "Giving", open: false, goal: null, items: [
-        { n: "Church or charity", a: 150, sel: false },
-        { n: "Gifts", a: 40, sel: false }] },
+      // No seeded "Giving" category — the stewardship card is the giving
+      // surface, and the bottom line subtracts it (a category here would
+      // double-count the same dollars). Mirrors BudgetDefaults.month().
       { n: "Everything Else", open: false, goal: null, items: [
+        { n: "Gifts", a: 40, sel: false },
         { n: "Buffer for surprises", a: 75, sel: false }] }
     ]
   };
