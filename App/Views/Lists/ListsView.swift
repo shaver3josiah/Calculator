@@ -217,7 +217,15 @@ struct ListsView: View {
         }
         drafts.lists.mode = "list"
         sound.play("success")
-        ToastCenter.shared.show(title: "Made a list", message: "\(items.count) item\(items.count == 1 ? "" : "s") added.")
+        // listItems caps at 200; if the note held more non-empty lines than that,
+        // say so rather than let the count imply everything made it.
+        let rawLines = drafts.notes.body
+            .split(whereSeparator: \.isNewline)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            .count
+        let tail = (items.count == 200 && rawLines > 200) ? " (the first 200)" : ""
+        ToastCenter.shared.show(title: "Made a list",
+                                message: "\(items.count) item\(items.count == 1 ? "" : "s") added\(tail).")
     }
 
     // MARK: - Lists
