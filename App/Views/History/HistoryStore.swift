@@ -70,7 +70,10 @@ final class HistoryStore {
         guard !searchText.isEmpty else { return entries }
         let q = searchText.lowercased()
         return entries.filter {
+            // A note's body lives in extra["text"] — searching without it means
+            // "milk" can't find the note that says milk, and the note IS its text.
             $0.title.lowercased().contains(q) || $0.value.lowercased().contains(q)
+                || ($0.extra["text"]?.lowercased().contains(q) ?? false)
         }
     }
 

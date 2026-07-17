@@ -123,12 +123,16 @@ final class CalcStore {
             refreshDisplay()
             emit("clear")
         case "±":
+            // A sign flip on a settled result keeps it settled — nothing is being
+            // typed — so "0.333" stays "0.333", not the raw 8-place buffer.
             engine.toggleSign()
-            refreshDisplay()
+            refreshDisplay(settled: settled)
             emit("sign")
         case "%":
+            // percent() computes a fresh value (overwrite=true), so the outcome is
+            // a settled result, shown at her chosen precision.
             engine.percent()
-            refreshDisplay()
+            refreshDisplay(settled: true)
             emit("percent")
         case "⌫":
             engine.backspace()
@@ -164,10 +168,16 @@ final class CalcStore {
     /// changed buffer is the one honest signal that what's on screen is a result, not
     /// digits she typed.
     private func applyOp(_ op: CalcOp, token: String, sound: String) {
+        // setOp only rewrites the buffer when an operator CHAINS a result (a·b
+        // then "+"). Queuing an operator right after "=" leaves the buffer
+        // untouched — but that value was ALREADY settled, and setOp always leaves
+        // overwrite=true, so nothing is being typed. Carry the settled flag
+        // across so a queued operator can't drop "0.333" back to "0.33333333".
         let before = engine.displayText
+        let wasSettled = settled
         engine.setOp(op)
         sequence.append(token)
-        refreshDisplay(settled: engine.displayText != before)
+        refreshDisplay(settled: wasSettled || engine.displayText != before)
         emit(sound)
     }
 

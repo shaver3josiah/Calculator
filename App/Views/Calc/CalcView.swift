@@ -438,7 +438,11 @@ struct DecimalSwipeModifier: ViewModifier {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 24)
                     .onChanged { value in
-                        let steps = Int((value.translation.width - spent) / Self.travelPerStep)
+                        // VERTICAL, not horizontal: a long result scrolls
+                        // horizontally inside this same card, and a sideways
+                        // decimal swipe fought it. Up = more places, down =
+                        // fewer, so the axes never collide.
+                        let steps = Int((-value.translation.height - spent) / Self.travelPerStep)
                         guard steps != 0 else { return }
                         spent += CGFloat(steps) * Self.travelPerStep
                         let before = calc.decimals

@@ -9,6 +9,7 @@ struct HistoryOverlay: View {
     @Environment(HistoryStore.self) private var history
     @Environment(SoundStore.self) private var sound
     @Environment(ListsStore.self) private var lists
+    @Environment(DraftStore.self) private var drafts
 
     @State private var showClearConfirm = false
     @State private var celebrateTrigger = 0
@@ -213,6 +214,13 @@ struct HistoryOverlay: View {
     }
 
     private func insertEntry(_ entry: HistoryEntry) {
+        // A note (or a list) reopens where it lives, rather than trying to
+        // replay into the calculator — tapping the row is the obvious gesture,
+        // so it does what the swipe's Reopen does.
+        if entry.type == "note" || entry.type == "list" {
+            reopenEntry(entry)
+            return
+        }
         guard entry.type == "calc" else { return }
         if let tokens = entry.extra["tokens"], !tokens.isEmpty {
             calc.replayTokens(tokens)
@@ -236,6 +244,12 @@ struct HistoryOverlay: View {
         switch entry.type {
         case "list":
             lists.reopen(from: entry)
+            dismiss()
+        case "note":
+            // Bring the saved words back into the Notes page, ready to edit again.
+            drafts.notes.title = entry.title
+            drafts.notes.body = entry.extra["text"] ?? ""
+            drafts.lists.mode = "notes"
             dismiss()
         default:
             break
@@ -281,7 +295,7 @@ private struct HistoryRow: View {
                 if entry.type == "calc" {
                     Button("Recycle", action: onRecycle)
                         .tint(.orange)
-                } else if entry.type == "list" {
+                } else if entry.type == "list" || entry.type == "note" {
                     Button("Reopen", action: onReopen)
                         .tint(.blue)
                 }
@@ -324,6 +338,7 @@ private struct HistoryRow: View {
         switch entry.type {
         case "proj": return "Projection"
         case "list": return "List"
+        case "note": return "Note"
         default: return "Calculation"
         }
     }

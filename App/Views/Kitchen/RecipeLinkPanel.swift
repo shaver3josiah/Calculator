@@ -9,10 +9,13 @@ import BloomCore
 // nothing reaches her recipe book until she taps save.
 
 enum RecipeLinkError: Error {
-    case badLink, offline, blocked, noRecipe, tooBig
+    case badLink, offline, blocked, slow, noRecipe, tooBig
 }
 
-@MainActor
+// Not @MainActor: the fetch awaits the network and then parses up to 3 MB of
+// HTML (regex + JSON + entity decoding). On the main actor that froze the
+// spinner she's watching; off it, the UI stays live and only the final
+// draft-write hops back to main (in readRecipe's Task { @MainActor }).
 final class RecipeLinkFetcher {
     /// Many recipe sites 403 a bare Swift user-agent. This is what her phone's
     /// browser would say if she opened the same page herself.
@@ -23,6 +26,22 @@ final class RecipeLinkFetcher {
     /// Recipe pages are heavy but not this heavy — past 3 MB it isn't a page we
     /// can read, and it isn't worth her memory to find out.
     private static let maxBytes = 3 * 1024 * 1024
+
+    /// A private, ephemeral session: no cookie jar, no disk cache, gone when the
+    /// process ends. For an app that has never made a request, that's the honest
+    /// posture — a recipe blog gets no durable foothold on her phone. The
+    /// resource timeout is a TOTAL wall-clock cap (the per-request timeout only
+    /// bounds the gap between packets, so a slow-drip server could otherwise hold
+    /// the spinner open forever).
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        config.httpCookieAcceptPolicy = .never
+        config.httpShouldSetCookies = false
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: config)
+    }()
 
     static func fetch(_ raw: String) async throws -> RecipeParse.WebRecipe {
         var cleaned = RecipeParse.cleanUrl(raw)
@@ -44,18 +63,31 @@ final class RecipeLinkFetcher {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await URLSession.shared.data(for: request)
+            (data, response) = try await session.data(for: request)
         } catch let error as URLError {
+            // Blame the right thing, so her fix matches her problem.
             switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost:
+            case .notConnectedToInternet, .networkConnectionLost,
+                 .dataNotAllowed, .internationalRoamingOff:
                 throw RecipeLinkError.offline
+            case .timedOut:
+                throw RecipeLinkError.slow
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed, .unsupportedURL:
+                throw RecipeLinkError.badLink
             default:
-                throw RecipeLinkError.blocked
+                throw RecipeLinkError.blocked   // incl. TLS failures: the site really did refuse us
             }
         }
 
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             throw RecipeLinkError.blocked
+        }
+        // Two checks, because the body is already in memory by the time we get
+        // here: the declared length catches a well-behaved giant, the real count
+        // catches a liar. Ceiling accepted — a page that lies about its size AND
+        // is enormous costs us one download before we drop it.
+        if response.expectedContentLength > Int64(maxBytes) {
+            throw RecipeLinkError.tooBig
         }
         guard data.count <= maxBytes else {
             throw RecipeLinkError.tooBig
@@ -83,6 +115,7 @@ struct RecipeLinkPanel: View {
     // and neither should the error from one. Everything she can edit is a draft.
     @State private var loading = false
     @State private var failure: RecipeLinkError?
+    @State private var confirmReplace = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -99,6 +132,12 @@ struct RecipeLinkPanel: View {
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: theme.radius).fill(theme.color("surface")))
+        .alert("Replace what you've written?", isPresented: $confirmReplace) {
+            Button("Replace", role: .destructive) { readRecipe() }
+            Button("Keep it", role: .cancel) { confirmReplace = false }
+        } message: {
+            Text("Reading the link again will overwrite the recipe on screen.")
+        }
     }
 
     // MARK: - Paste row
@@ -186,6 +225,8 @@ struct RecipeLinkPanel: View {
         switch error {
         case .offline:
             return "You're offline — this one needs the internet."
+        case .slow:
+            return "That page is taking too long — try again in a moment."
         case .blocked, .tooBig:
             return "That site wouldn't let us read it. You can still paste the recipe text in Write."
         case .noRecipe:
@@ -410,6 +451,14 @@ struct RecipeLinkPanel: View {
     private func readRecipe() {
         let raw = drafts.recipeLink.url
         guard !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        // A second read would overwrite a recipe she's already edited — the fetch
+        // button sits right above the sheet it would replace. Ask first; a first
+        // read (nothing fetched yet) stays one tap.
+        guard !drafts.recipeLink.didFetch || confirmReplace else {
+            confirmReplace = true
+            return
+        }
+        confirmReplace = false
         failure = nil
         loading = true
         Task { @MainActor in

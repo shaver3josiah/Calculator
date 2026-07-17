@@ -51,6 +51,20 @@ struct RootView: View {
         .onChange(of: projectionStore.jumpToGrowEpoch) { _, _ in
             switchTab(.proj)
         }
+        // Hoisted out of the two orientation branches: when `landscape` flips,
+        // that whole subtree is rebuilt, and a sheet presented from inside it
+        // gets torn down mid-flip (SwiftUI writes false back to the binding).
+        // Living on the Group, they survive a rotation — which the orientation
+        // lock now makes an everyday event.
+        .fullScreenCover(isPresented: historyPresentedBinding) {
+            HistoryOverlay()
+        }
+        .sheet(isPresented: $showThemeEditor) {
+            ThemeEditorView()
+        }
+        .sheet(isPresented: studioPresentedBinding) {
+            SoundStudioView()
+        }
     }
 
     /// Debounced portrait⇄landscape switch: only the last change within a 300ms
@@ -80,20 +94,20 @@ struct RootView: View {
             HStack(spacing: 0) {
                 landscapeContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                VerticalTabRail(selection: $selectedTab, onSelect: switchTab)
+                // The rail carries the header buttons too — portrait's top bar
+                // doesn't exist here, and the theme editor is the only door to
+                // the orientation lock. Without them a landscape lock is a trap.
+                VerticalTabRail(
+                    selection: $selectedTab,
+                    onSelect: switchTab,
+                    onSound: { soundStore.isStudioPresented = true },
+                    onHistory: { historyStore.isPresented = true },
+                    onTheme: { showThemeEditor = true }
+                )
             }
             overlays
         }
         .dynamicTypeSize(...DynamicTypeSize.large)
-        .fullScreenCover(isPresented: historyPresentedBinding) {
-            HistoryOverlay()
-        }
-        .sheet(isPresented: $showThemeEditor) {
-            ThemeEditorView()
-        }
-        .sheet(isPresented: studioPresentedBinding) {
-            SoundStudioView()
-        }
     }
 
     @ViewBuilder
@@ -148,15 +162,6 @@ struct RootView: View {
         // device; sheets/covers inherit this through the presentation environment.
         .dynamicTypeSize(...DynamicTypeSize.large)
         .onAppear { _ = themeStore.firstVisit(selectedTab.rawValue) }   // launch tab: seen, no curtain
-        .fullScreenCover(isPresented: historyPresentedBinding) {
-            HistoryOverlay()
-        }
-        .sheet(isPresented: $showThemeEditor) {
-            ThemeEditorView()
-        }
-        .sheet(isPresented: studioPresentedBinding) {
-            SoundStudioView()
-        }
     }
 
     private var header: some View {

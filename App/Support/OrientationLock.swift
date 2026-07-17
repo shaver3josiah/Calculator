@@ -49,11 +49,16 @@ enum OrientationLock {
     @MainActor static func apply(_ pref: OrientationPref) {
         BloomAppDelegate.mask = pref.mask
         for scene in UIApplication.shared.connectedScenes {
-            guard let windowScene = scene as? UIWindowScene else { continue }
-            // Failures are legitimate — her phone's own rotation lock can refuse.
-            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: pref.mask))
+            guard let windowScene = scene as? UIWindowScene,
+                  windowScene.activationState != .background else { continue }
+            // Invalidate FIRST: UIKit validates a geometry request against the
+            // orientations the view-controller chain currently advertises, so a
+            // request sent before the invalidation is judged on stale values and
+            // can be refused or instantly reverted.
             windowScene.keyWindow?.rootViewController?
                 .setNeedsUpdateOfSupportedInterfaceOrientations()
+            // Failures are legitimate — her phone's own rotation lock can refuse.
+            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: pref.mask))
         }
     }
 }

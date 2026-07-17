@@ -123,7 +123,9 @@ struct ListsView: View {
 
             TextField("", text: $d.notes.body, axis: .vertical)
                 .lineLimit(12...40)
-                .font(bloomBody(17))
+                // Genuinely large — the app-wide Dynamic Type cap freezes custom
+                // fonts at the standard size, so "large" has to be the literal here.
+                .font(bloomBody(21))
                 .foregroundStyle(theme.color("text"))
                 .lineSpacing(5)
                 .inputAccessories($d.notes.body, alignment: .top)
@@ -147,8 +149,11 @@ struct ListsView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(
+                            // primaryStrong, not primary — white text needs the
+                            // deeper fill to clear AA (and white-on-primary is the
+                            // one spot in the app that breaks that rule).
                             RoundedRectangle(cornerRadius: 14)
-                                .fill(theme.color("primary"))
+                                .fill(theme.color("primaryStrong"))
                         )
                 }
                 .buttonStyle(TactilePressStyle(cornerRadius: 14))
