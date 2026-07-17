@@ -297,7 +297,7 @@ private struct FractionSolver: View {
                 } label: {
                     Text(candidate.rawValue)
                         .font(bloomNumber(16, weight: .semibold))
-                        .foregroundStyle(op == candidate ? .white : theme.color("primaryStrong"))
+                        .foregroundStyle(op == candidate ? .white : theme.color("accentInk"))
                         .frame(width: 34, height: 30)
                         .background(
                             RoundedRectangle(cornerRadius: 8)

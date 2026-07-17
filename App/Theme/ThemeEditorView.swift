@@ -181,6 +181,9 @@ struct ThemeEditorView: View {
                 Circle()
                     .fill(ThemeEditorView.previewColor(for: name))
                     .frame(width: 44, height: 44)
+                    // Permanent hairline so the midnight swatch never vanishes
+                    // into a dark page; the active ring draws on top of it.
+                    .overlay(Circle().stroke(themeStore.color("line"), lineWidth: 1))
                     .overlay(
                         Circle().stroke(isActive ? themeStore.color("primaryStrong") : .clear, lineWidth: 3)
                     )

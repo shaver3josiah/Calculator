@@ -19,9 +19,15 @@ enum IngredientArt {
         if let make = allExact[name] { return make() }
 
         for (keyword, make) in allKeywords {
-            // "egg" must not swallow "eggplant" (a vegetable with no art).
+            // "egg" must not swallow "eggplant" (a vegetable with no art), and
+            // "bread" must not turn shortbread/gingerbread into a crusty loaf.
             if keyword == "egg" {
                 if name.contains("egg") && !name.contains("eggplant") { return make() }
+            } else if keyword == "bread" {
+                if name.contains("bread") && !name.contains("shortbread")
+                    && !name.contains("gingerbread") && !name.contains("breadfruit") {
+                    return make()
+                }
             } else if name.contains(keyword) {
                 return make()
             }
@@ -44,11 +50,16 @@ enum IngredientArt {
 
     /// Keywords from every pack, sorted longest-first ONCE at startup — the
     /// specificity rule the old hand-maintained ordering enforced by eye.
+    /// Equal-length ties break by source order (built-ins first): Swift's sort
+    /// is not documented stable, so the tiebreak is explicit — "bread flour"
+    /// must always be flour, never a loaf.
     private static let allKeywords: [(String, () -> AnyView)] = {
-        (keywords
+        let combined = keywords
             + Pack4Registry.keywords + Pack5Registry.keywords
-            + Pack6Registry.keywords + Pack7Registry.keywords)
-            .sorted { $0.0.count > $1.0.count }
+            + Pack6Registry.keywords + Pack7Registry.keywords
+        return combined.enumerated()
+            .sorted { ($0.element.0.count, -$0.offset) > ($1.element.0.count, -$1.offset) }
+            .map(\.element)
     }()
 
     // MARK: - Exact, curated names (checked first)

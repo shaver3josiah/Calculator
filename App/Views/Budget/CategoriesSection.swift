@@ -27,9 +27,15 @@ private struct CompactToggle: View {
             .tint(theme.color("primaryStrong"))
             .scaleEffect(Self.scale)
             .frame(width: 51 * Self.scale, height: 31 * Self.scale)
-            // 44pt minimum tap area without growing the visual switch.
             .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
+            // The 44pt frame alone is dead zone — a scaled UISwitch only hears
+            // taps on its shrunken self. The clear overlay owns hit-testing for
+            // the whole cell and toggles exactly once per tap.
+            .overlay {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { isOn.wrappedValue.toggle() }
+            }
     }
 }
 
@@ -168,14 +174,21 @@ struct CategoriesSection: View {
                 .foregroundStyle(theme.color("text"))
                 .inputAccessories(catNameBinding(index), compact: true)
 
-            HStack(spacing: 4) {
-                reorderButton(systemName: "chevron.up") { store.reorderCategory(index, direction: -1) }
-                reorderButton(systemName: "chevron.down") { store.reorderCategory(index, direction: 1) }
-            }
+            reorderMenu(up: { store.reorderCategory(index, direction: -1) },
+                        down: { store.reorderCategory(index, direction: 1) })
 
+            // The total doubles as a generous open/close target — the whole-row
+            // tap used to swallow near-misses on the (already narrow) name
+            // field and collapse the card mid-edit.
             Text(Formatters.money(BudgetMath.catTotal(category)))
                 .font(bloomNumber(14, weight: .semibold))
                 .foregroundStyle(theme.color("deep"))
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    pulseHeader(index)
+                    store.toggleCategoryOpen(index)
+                }
 
             if category.items.isEmpty {
                 Button {
@@ -194,11 +207,6 @@ struct CategoriesSection: View {
             if theme.shimmerOn, headerPulseIndex == index {
                 EncircleOutline(trigger: headerPulseEpoch, cornerRadius: 12, lineWidth: 1.5)
             }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            pulseHeader(index)
-            store.toggleCategoryOpen(index)
         }
     }
 
@@ -227,8 +235,8 @@ struct CategoriesSection: View {
                 .frame(width: 64)
                 .multilineTextAlignment(.trailing)
 
-            reorderButton(systemName: "chevron.up") { store.reorderRow(category: categoryIndex, row: rowIndex, direction: -1) }
-            reorderButton(systemName: "chevron.down") { store.reorderRow(category: categoryIndex, row: rowIndex, direction: 1) }
+            reorderMenu(up: { store.reorderRow(category: categoryIndex, row: rowIndex, direction: -1) },
+                        down: { store.reorderRow(category: categoryIndex, row: rowIndex, direction: 1) })
 
             Button {
                 store.deleteRow(category: categoryIndex, row: rowIndex)
@@ -244,15 +252,21 @@ struct CategoriesSection: View {
         }
     }
 
-    private func reorderButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
+    /// One 44pt reorder button instead of two chevrons — on small phones the
+    /// chevron pair (92pt with spacing) starved the name field down to ~30pt,
+    /// exactly while she was typing a name. A Menu keeps both directions.
+    private func reorderMenu(up: @escaping () -> Void, down: @escaping () -> Void) -> some View {
+        Menu {
+            Button { up() } label: { Label("Move up", systemImage: "arrow.up") }
+            Button { down() } label: { Label("Move down", systemImage: "arrow.down") }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(theme.color("muted"))
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(TactilePressStyle(cornerRadius: 10))
+        .accessibilityLabel("Reorder")
     }
 
     private func catSelectAllBinding(_ index: Int) -> Binding<Bool> {

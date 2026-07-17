@@ -37,18 +37,29 @@ struct GrowPanel: View {
             }
         }
         .onAppear {
-            // Budget handoff: a MONTHLY leftover fills the monthly field (principal is
-            // left alone) and pre-selects the fund nearest the S&P's ~10% long-run rate.
-            if let pending = projectionStore.pendingGrow {
-                monthlyText = String(Int(pending.monthly.rounded()))
-                selectedFundID = projectionStore.funds.min(by: { abs($0.ratePct - 10) < abs($1.ratePct - 10) })?.id
-                projectionStore.pendingGrow = nil
-                ToastCenter.shared.show(title: "From your budget", message: "Your monthly leftover, growing at the market's long-run pace.")
-            }
+            consumePendingGrow()
             if selectedFundID == nil {
                 selectedFundID = projectionStore.funds.first?.id
             }
         }
+        // A second handoff while the panel is already mounted (the outgoing
+        // Budget view stays tappable during the slide transition, so a quick
+        // double-tap bumps the epoch again) must consume immediately — a stale
+        // pendingGrow would otherwise ambush a later plain visit.
+        .onChange(of: projectionStore.jumpToGrowEpoch) { _, _ in
+            consumePendingGrow()
+        }
+    }
+
+    /// Budget handoff: a MONTHLY leftover fills the monthly field (principal is
+    /// left alone) and pre-selects the fund nearest the S&P's ~10% long-run rate.
+    /// %.0f instead of Int() — a silly 20-digit income must format, never trap.
+    private func consumePendingGrow() {
+        guard let pending = projectionStore.pendingGrow else { return }
+        monthlyText = String(format: "%.0f", max(0, pending.monthly.rounded()))
+        selectedFundID = projectionStore.funds.min(by: { abs($0.ratePct - 10) < abs($1.ratePct - 10) })?.id
+        projectionStore.pendingGrow = nil
+        ToastCenter.shared.show(title: "From your budget", message: "Your monthly leftover, growing at the market's long-run pace.")
     }
 
     private var yearsSlider: some View {

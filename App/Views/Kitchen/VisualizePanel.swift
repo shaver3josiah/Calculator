@@ -84,7 +84,7 @@ struct VisualizePanel: View {
                         Text(addedFlash ? "Added!" : "Add to shopping list")
                     }
                     .font(bloomBody(13, weight: .semibold))
-                    .foregroundStyle(addedFlash ? .white : theme.color("primaryStrong"))
+                    .foregroundStyle(addedFlash ? .white : theme.color("accentInk"))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
                     .background(

@@ -54,13 +54,21 @@ final class BudgetStore {
     var monthLabel: String { BudgetMath.monthLabel(db.cur) }
     var takeHome: Double { BudgetMath.takeHome(of: month) }
     var planned: Double { BudgetMath.planned(of: month) }
-    var leftOver: Double { takeHome - planned }
-    // The give-first dollars (tithe + feast + poor, all % of gross). Innovation is a
-    // flat pledge, not a % of gross, so it stays out of the bottom-line subtraction.
-    var stewardshipTotal: Double { titheAmount + feastAmount + poorAmount }
-    // What's actually free to invest after giving AND planned spending. `leftOver`
-    // stays as-is — year view and older surfaces still read take-home − planned.
+    // ALL the give-first dollars — tithe, feast, poor AND the innovation pledge.
+    // One number: the bottom-line "Giving" row must equal the stewardship card's
+    // "Given first" total, or the tab shows two different giving figures.
+    var stewardshipTotal: Double { givenFirstTotal }
+    // What's actually free to invest after giving AND planned spending.
     var trueLeftOver: Double { takeHome - stewardshipTotal - planned }
+    // True when any active income is entered as take-home — the stewardship
+    // percentages are then figured on that entered amount, and copy that says
+    // "of gross" would be lying.
+    var anyNetMode: Bool {
+        let m = month
+        if m.inc.indices.contains(0), m.inc[0].net == true { return true }
+        if m.inc2On, m.inc.indices.contains(1), m.inc[1].net == true { return true }
+        return false
+    }
     // BudgetMath.monthDays returns 0 on a corrupt key; clamp so chart domains and
     // per-day division never see 0.
     var monthDays: Int { max(1, BudgetMath.monthDays(db.cur)) }
@@ -256,7 +264,8 @@ final class BudgetStore {
     }
 
     func exportText() -> String {
-        BudgetShare.export(db: db)
+        // Pass giving so the export's bottom line equals the on-screen card.
+        BudgetShare.export(db: db, giving: stewardshipTotal)
     }
 
     /// Writes the current budget as an .xlsx to a temp file, returns its URL (nil on failure).
@@ -264,7 +273,7 @@ final class BudgetStore {
         let safe = String(db.cur.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "-" })
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Hannahs-Budget-\(safe).xlsx")
         do {
-            try BudgetXLSX.workbook(db: db).write(to: url, options: .atomic)
+            try BudgetXLSX.workbook(db: db, giving: stewardshipTotal).write(to: url, options: .atomic)
             return url
         } catch {
             return nil

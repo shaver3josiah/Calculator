@@ -32,7 +32,7 @@ struct RecipeSharePanel: View {
                     generateQR()
                 }
                 .font(bloomBody(13, weight: .semibold))
-                .foregroundStyle(theme.color("primaryStrong"))
+                .foregroundStyle(theme.color("accentInk"))
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surfaceSoft")))

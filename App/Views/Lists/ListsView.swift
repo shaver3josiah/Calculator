@@ -74,7 +74,7 @@ struct ListsView: View {
             } label: {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 22))
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .foregroundStyle(theme.color("accentInk"))
                     .frame(width: 44, height: 44)
             }
             .discoverable("lists.new", cornerRadius: 999)
@@ -118,7 +118,7 @@ struct ListsView: View {
                     sound.play("success")
                 }
                 .font(bloomBody(13, weight: .semibold))
-                .foregroundStyle(theme.color("primaryStrong"))
+                .foregroundStyle(theme.color("accentInk"))
                 .discoverable("lists.logTotal", cornerRadius: 12)
             }
         }
@@ -193,7 +193,7 @@ struct ListsView: View {
                 addItem(listId: listId)
             } label: {
                 Image(systemName: "plus.circle.fill")
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .foregroundStyle(theme.color("accentInk"))
             }
             .discoverable("lists.addItem", cornerRadius: 999)
         }

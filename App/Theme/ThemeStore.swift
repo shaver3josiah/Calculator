@@ -128,6 +128,13 @@ final class ThemeStore {
     }
 
     func color(_ token: String) -> Color {
+        // accentInk is the accent-as-TEXT role: same as primaryStrong on light
+        // palettes, a brighter rose on midnight (deep pink text fails AA on dark
+        // surfaces). Older saved custom palettes predate the token — fall back
+        // to primaryStrong so their links/labels never render invisible.
+        if token == "accentInk", spec.tokens["accentInk"] == nil {
+            return color("primaryStrong")
+        }
         guard let hex = spec.tokens[token] else { return .clear }
         return Color(hex: hex) ?? .clear
     }
@@ -140,9 +147,9 @@ final class ThemeStore {
         }
         radius = ThemeStore.parseRadius(spec.tokens["radius"])
         JSONStore.shared.set(.theme, spec.name)
-        // Remember the light preset she came from, so the moon toggle can
-        // bring her home to it.
-        if name != "midnight" && name != "custom" {
+        // Remember any LIGHT home (including a custom light palette she built),
+        // so the moon toggle round-trips to exactly what she left.
+        if name != "midnight" && !isDark {
             lastLightPreset = name
         }
     }
@@ -161,11 +168,17 @@ final class ThemeStore {
     }
 
     func setCustomToken(_ token: String, hex: String) {
+        // Editing a color while ON a preset must adopt what's on screen as the
+        // starting point — otherwise the first nudge blasts the whole app to a
+        // stale saved custom set (edit one petal on midnight, wake up in cherry).
+        if spec.name != "custom" {
+            customTokens = spec.tokens
+        }
         customTokens[token] = hex
         JSONStore.shared.set(.custom, customTokens)
-        if spec.name == "custom" {
-            spec = ThemeSpec(name: "custom", tokens: customTokens)
-        }
+        spec = ThemeSpec(name: "custom", tokens: customTokens)
+        radius = ThemeStore.parseRadius(spec.tokens["radius"])
+        JSONStore.shared.set(.theme, "custom")
     }
 
     static let editableTokenOrder: [String] = [
@@ -261,10 +274,11 @@ final class ThemeStore {
                 "surface2": "#2E1C28",
                 "primary": "#F58FB8",
                 "primaryStrong": "#C93E77",
+                "accentInk": "#F58FB8",
                 "deep": "#F7C9DD",
                 "text": "#F7EAF0",
                 "muted": "#C9A3B5",
-                "line": "#3F2836",
+                "line": "#503548",
                 "flowerCenter": "#FFC966",
                 "good": "#4FBE86",
                 "shadow": "rgba(0,0,0,.55)",

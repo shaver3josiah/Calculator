@@ -287,7 +287,7 @@ struct CalcView: View {
                 }
                 Image(systemName: "chevron.forward")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(themeStore.color("primaryStrong"))
+                    .foregroundStyle(themeStore.color("accentInk"))
             }
         }
         .buttonStyle(.plain)
@@ -357,7 +357,7 @@ struct CalcView: View {
         Button(action: action) {
             Text(label)
                 .font(bloomBody(11, weight: .semibold))
-                .foregroundStyle(themeStore.color("primaryStrong"))
+                .foregroundStyle(themeStore.color("accentInk"))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(RoundedRectangle(cornerRadius: 999).fill(themeStore.color("surfaceSoft")))
@@ -371,7 +371,7 @@ struct CalcView: View {
         } label: {
             Text(label)
                 .font(bloomBody(11, weight: .semibold))
-                .foregroundStyle(themeStore.color("primaryStrong"))
+                .foregroundStyle(themeStore.color("accentInk"))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
         }

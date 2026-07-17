@@ -183,7 +183,7 @@ struct ScientificCalcView: View {
         return Button(action: action) {
             Text(label)
                 .font(bloomBody(15, weight: .semibold))
-                .foregroundStyle(theme.color("primaryStrong"))
+                .foregroundStyle(theme.color("accentInk"))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 // Exact width in circle mode — maxWidth alone would let a short
@@ -196,7 +196,9 @@ struct ScientificCalcView: View {
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        // Same visible sink as the standard keys beside it — one keyboard,
+        // one press language.
+        .buttonStyle(TactilePressStyle(cornerRadius: isCircle ? height / 2 : theme.radius * 0.6))
     }
 }
 

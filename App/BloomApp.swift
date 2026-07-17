@@ -27,6 +27,11 @@ struct BloomApp: App {
         _soundStore = State(initialValue: sounds)
         _musicStore = State(initialValue: music)
         _calcStore = State(initialValue: CalcStore(history: history, sounds: sounds))
+        #if DEBUG
+        // Exercise the ingredient-art table invariants on every debug launch —
+        // the registry's _selfCheck was previously defined but never called.
+        IngredientArt._selfCheck()
+        #endif
     }
 
     var body: some Scene {

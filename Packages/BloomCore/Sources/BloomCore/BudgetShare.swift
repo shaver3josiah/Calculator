@@ -1,20 +1,31 @@
 import Foundation
 
 public enum BudgetShare {
-    public static func export(db: BudgetDB) -> String {
+    /// `giving` = the give-first dollars from the stewardship card, so the
+    /// exported bottom line matches the on-screen "Left to grow" instead of
+    /// quietly omitting giving. Defaults to 0 for callers without one.
+    public static func export(db: BudgetDB, giving: Double = 0) -> String {
         let m = db.months[db.cur] ?? BudgetDefaults.month()
         let label = BudgetMath.monthLabel(db.cur)
         let th = BudgetMath.takeHome(of: m)
         let pl = BudgetMath.planned(of: m)
         var out = "Budget · \(label)\n"
-        out += "Take-home \(Formatters.money(th)) · planned \(Formatters.money(pl)) · left \(Formatters.money(th - pl))\n\nINCOME\n"
+        if giving > 0 {
+            out += "Take-home \(Formatters.money(th)) · giving \(Formatters.money(giving)) · planned \(Formatters.money(pl)) · left to grow \(Formatters.money(th - giving - pl))\n\nINCOME\n"
+        } else {
+            out += "Take-home \(Formatters.money(th)) · planned \(Formatters.money(pl)) · left \(Formatters.money(th - pl))\n\nINCOME\n"
+        }
         for (ix, i) in m.inc.enumerated() {
             if ix == 1 && !m.inc2On {
                 continue
             }
             let label2 = i.label.isEmpty ? "Income \(ix + 1)" : i.label
-            let othPart = i.oth != 0 ? ", other \(numText(i.oth))%" : ""
-            out += "• \(label2): $\(numText(i.gross)) gross (tax \(numText(i.tax))%, retire \(numText(i.ret))%\(othPart)) → \(Formatters.money(BudgetMath.netOf(i)))\n"
+            if i.net == true {
+                out += "• \(label2): $\(numText(i.gross)) take-home (taxes already out)\n"
+            } else {
+                let othPart = i.oth != 0 ? ", other \(numText(i.oth))%" : ""
+                out += "• \(label2): $\(numText(i.gross)) gross (tax \(numText(i.tax))%, retire \(numText(i.ret))%\(othPart)) → \(Formatters.money(BudgetMath.netOf(i)))\n"
+            }
         }
         for c in m.cats {
             let ct = BudgetMath.catTotal(c)

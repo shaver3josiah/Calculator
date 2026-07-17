@@ -131,7 +131,7 @@ enum XLSXZip {
 
 public enum BudgetXLSX {
     /// Single-sheet workbook for the current month (db.cur), inline strings only.
-    public static func workbook(db: BudgetDB) -> Data {
+    public static func workbook(db: BudgetDB, giving: Double = 0) -> Data {
         let m = db.months[db.cur] ?? BudgetDefaults.month()
         let label = BudgetMath.monthLabel(db.cur)
 
@@ -143,7 +143,13 @@ public enum BudgetXLSX {
         for (ix, i) in m.inc.enumerated() {
             if ix == 1 && !m.inc2On { continue }
             let name = i.label.isEmpty ? "Income \(ix + 1)" : i.label
-            rows.append([.text(name), .num(i.gross), .num(i.tax), .num(i.ret), .num(i.oth), .num(BudgetMath.netOf(i))])
+            if i.net == true {
+                // Take-home mode: the entered amount IS the net; the stored
+                // percentages are dormant, so printing them would misinform.
+                rows.append([.text(name), .text("take-home"), .text(""), .text(""), .text(""), .num(BudgetMath.netOf(i))])
+            } else {
+                rows.append([.text(name), .num(i.gross), .num(i.tax), .num(i.ret), .num(i.oth), .num(BudgetMath.netOf(i))])
+            }
         }
         rows.append([])                             // spacer
 
@@ -161,8 +167,13 @@ public enum BudgetXLSX {
         let th = BudgetMath.takeHome(of: m)
         let pl = BudgetMath.planned(of: m)
         rows.append([.text("Take-home"), .num(th)])
+        if giving > 0 {
+            rows.append([.text("Giving"), .num(giving)])
+        }
         rows.append([.text("Planned"), .num(pl)])
-        rows.append([.text("Remainder"), .num(th - pl)])
+        // Matches the app's "Left to grow" when giving is passed; the old
+        // Remainder label stays for the no-giving form.
+        rows.append([.text(giving > 0 ? "Left to grow" : "Remainder"), .num(th - giving - pl)])
 
         let entries: [(name: String, data: Data)] = [
             ("[Content_Types].xml", Data(contentTypesXML.utf8)),

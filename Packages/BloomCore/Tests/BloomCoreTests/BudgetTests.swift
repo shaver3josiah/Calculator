@@ -188,6 +188,31 @@ final class BudgetTests: XCTestCase {
         XCTAssertEqual(BudgetMath.netOf(decoded), 4200 * 0.75, accuracy: 1e-9)
     }
 
+    /// The flag and the dormant percentages must both survive an encode/decode
+    /// round trip — the share/import path leans on this.
+    func testNetFlagRoundTripsThroughCodable() throws {
+        let income = BudgetIncome(label: "Hers", gross: 3000, tax: 18, ret: 5, oth: 2, net: true)
+        let data = try JSONEncoder().encode(income)
+        let back = try JSONDecoder().decode(BudgetIncome.self, from: data)
+        XCTAssertEqual(back.net, true)
+        XCTAssertEqual(back.tax, 18)
+        XCTAssertEqual(BudgetMath.netOf(back), 3000, accuracy: 1e-9)
+    }
+
+    /// Mixed modes across the two incomes: net income contributes as-entered,
+    /// gross income keeps the percentage math, inc2On still gates the second.
+    func testTakeHomeWithMixedModes() {
+        var month = BudgetDefaults.month()
+        month.inc = [
+            BudgetIncome(label: "Hers", gross: 3000, tax: 18, ret: 5, oth: 2, net: true),
+            BudgetIncome(label: "His", gross: 4000, tax: 20, ret: 5, oth: 0)
+        ]
+        month.inc2On = true
+        XCTAssertEqual(BudgetMath.takeHome(of: month), 3000 + 4000 * 0.75, accuracy: 1e-9)
+        month.inc2On = false
+        XCTAssertEqual(BudgetMath.takeHome(of: month), 3000, accuracy: 1e-9)
+    }
+
     func testTakeHome() {
         for v in BudgetTests.vectors.budgetTakeHome {
             assertRelativelyClose(BudgetMath.takeHome(of: v.month), v.expect, label: "takeHome")

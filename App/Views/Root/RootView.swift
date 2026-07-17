@@ -44,9 +44,10 @@ struct RootView: View {
         .onChange(of: vSize) { _, newValue in
             scheduleFlip(to: newValue == .compact)
         }
-        // Budget's "Project it in the garden" handoff: the epoch bump lands here,
-        // the tab switch remounts ProjectionView (.id(selectedTab)), and GrowPanel's
-        // onAppear consumes projectionStore.pendingGrow.
+        // Budget's "Project it in the garden" handoff: the epoch bump lands here
+        // and the tab switch gives ProjectionView fresh identity (the switch
+        // branch changes; portrait additionally uses .id(selectedTab)), so
+        // GrowPanel's onAppear consumes projectionStore.pendingGrow.
         .onChange(of: projectionStore.jumpToGrowEpoch) { _, _ in
             switchTab(.proj)
         }

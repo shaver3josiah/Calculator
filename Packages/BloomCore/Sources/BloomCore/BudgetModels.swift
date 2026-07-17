@@ -184,11 +184,13 @@ public enum BudgetDefaults {
                     BudgetRow(n: "Streaming and subscriptions", a: 35, sel: false),
                     BudgetRow(n: "Clothing", a: 60, sel: false)
                 ]),
-                BudgetCategory(n: "Giving", open: false, goal: nil, items: [
-                    BudgetRow(n: "Church or charity", a: 150, sel: false),
-                    BudgetRow(n: "Gifts", a: 40, sel: false)
-                ]),
+                // Giving deliberately has NO default category: the stewardship
+                // card (tithe/feast/poor, % of gross) is the giving surface, and
+                // the bottom line subtracts it — a seeded "Giving" category here
+                // would double-count the same dollars on every fresh install.
+                // (Gifts for people stay a Lifestyle-style choice she can add.)
                 BudgetCategory(n: "Everything Else", open: false, goal: nil, items: [
+                    BudgetRow(n: "Gifts", a: 40, sel: false),
                     BudgetRow(n: "Buffer for surprises", a: 75, sel: false)
                 ])
             ]

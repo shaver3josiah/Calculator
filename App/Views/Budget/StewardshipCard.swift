@@ -92,7 +92,9 @@ struct StewardshipCard: View {
             Text("Give first")
                 .font(bloomNumber(17, weight: .semibold))
                 .foregroundStyle(theme.color("deep"))
-            Text("Set aside before anything else — figured from your gross income of \(Formatters.money(store.grossIncome)) a month.")
+            // In take-home mode the entered amount IS the base — calling it
+            // "gross" would be false, so the copy follows the mode.
+            Text("Set aside before anything else — figured from your \(store.anyNetMode ? "monthly income" : "gross income") of \(Formatters.money(store.grossIncome)) a month.")
                 .font(bloomBody(12))
                 .foregroundStyle(theme.color("muted"))
         }
@@ -184,9 +186,9 @@ struct StewardshipCard: View {
                     .font(bloomBody(14, weight: .semibold))
                     .foregroundStyle(theme.color("deep"))
                 Spacer()
-                Text("\(Formatters.money(given))  ·  \(pctLabel(pct)) of gross")
+                Text("\(Formatters.money(given))  ·  \(pctLabel(pct)) of \(store.anyNetMode ? "income" : "gross")")
                     .font(bloomNumber(14, weight: .semibold))
-                    .foregroundStyle(theme.color("primaryStrong"))
+                    .foregroundStyle(theme.color("accentInk"))
             }
             HStack {
                 Text("Left after giving")
