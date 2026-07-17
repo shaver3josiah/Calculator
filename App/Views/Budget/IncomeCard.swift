@@ -74,18 +74,26 @@ struct IncomeCard: View {
 
     private func incomeRow(_ index: Int) -> some View {
         let inc = store.month.inc[index]
+        let isNet = inc.net == true
         return VStack(alignment: .leading, spacing: 8) {
             TextField("Income label", text: labelBinding(index), prompt: Text("Income label").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(13, weight: .semibold))
                 .foregroundStyle(theme.color("text"))
                 .inputAccessories(labelBinding(index), compact: true)
+            modeControl(index, isNet: isNet)
             HStack(spacing: 10) {
-                fieldGroup(label: "Gross / month", text: grossBinding(index))
+                fieldGroup(label: isNet ? "Take-home / month" : "Gross / month", text: grossBinding(index))
             }
-            HStack(spacing: 10) {
-                fieldGroup(label: "Tax %", text: taxBinding(index))
-                fieldGroup(label: "Retire %", text: retBinding(index))
-                fieldGroup(label: "Other %", text: othBinding(index))
+            if isNet {
+                Text("Taxes & deductions already taken out.")
+                    .font(bloomBody(11))
+                    .foregroundStyle(theme.color("muted"))
+            } else {
+                HStack(spacing: 10) {
+                    fieldGroup(label: "Tax %", text: taxBinding(index))
+                    fieldGroup(label: "Retire %", text: retBinding(index))
+                    fieldGroup(label: "Other %", text: othBinding(index))
+                }
             }
             Text("Take-home \(Formatters.money(BudgetMath.netOf(inc)))")
                 .font(bloomBody(12, weight: .semibold))
@@ -93,6 +101,46 @@ struct IncomeCard: View {
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 14).fill(theme.color("surfaceSoft")))
+    }
+
+    /// One-tap gross ⇄ take-home switch. Take-home mode hides the deduction fields
+    /// but never wipes their stored percentages, so flipping back restores them.
+    @ViewBuilder
+    private func modeControl(_ index: Int, isNet: Bool) -> some View {
+        let control = HStack(spacing: 4) {
+            modeSegment("Gross", selected: !isNet) { setNetMode(index, false) }
+            modeSegment("Take-home", selected: isNet) { setNetMode(index, true) }
+        }
+        .background(Capsule().fill(theme.color("surface")))
+        // First-touch shimmer only on the first income's control — one hint is enough.
+        if index == 0 {
+            control.discoverable("budget.netMode", cornerRadius: 999)
+        } else {
+            control
+        }
+    }
+
+    private func modeSegment(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(bloomBody(12, weight: .semibold))
+                .foregroundStyle(selected ? .white : theme.color("text"))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Capsule().fill(selected ? theme.color("primaryStrong") : Color.clear))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 999))
+    }
+
+    private func setNetMode(_ index: Int, _ value: Bool) {
+        guard (store.month.inc[index].net == true) != value else { return }
+        if theme.motionEnabled && !reduceMotion {
+            withAnimation(BloomMotion.springSoft) {
+                store.setIncome(index, net: value)
+            }
+        } else {
+            store.setIncome(index, net: value)
+        }
     }
 
     private func fieldGroup(label: String, text: Binding<String>) -> some View {

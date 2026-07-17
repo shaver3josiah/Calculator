@@ -18,6 +18,8 @@ public enum StoreKey: String, CaseIterable, Sendable {
     case calcLog = "bloom_calclog"
     case chordWheel = "bloom_chordwheel"
     case stewardship = "bloom_stewardship"
+    case keyStyle = "bloom_keystyle"
+    case lightPreset = "bloom_lightpreset"
 }
 
 public final class JSONStore: @unchecked Sendable {

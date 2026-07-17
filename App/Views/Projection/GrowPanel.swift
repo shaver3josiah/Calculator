@@ -37,6 +37,14 @@ struct GrowPanel: View {
             }
         }
         .onAppear {
+            // Budget handoff: a MONTHLY leftover fills the monthly field (principal is
+            // left alone) and pre-selects the fund nearest the S&P's ~10% long-run rate.
+            if let pending = projectionStore.pendingGrow {
+                monthlyText = String(Int(pending.monthly.rounded()))
+                selectedFundID = projectionStore.funds.min(by: { abs($0.ratePct - 10) < abs($1.ratePct - 10) })?.id
+                projectionStore.pendingGrow = nil
+                ToastCenter.shared.show(title: "From your budget", message: "Your monthly leftover, growing at the market's long-run pace.")
+            }
             if selectedFundID == nil {
                 selectedFundID = projectionStore.funds.first?.id
             }

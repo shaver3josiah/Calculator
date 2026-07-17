@@ -4,10 +4,41 @@ import BloomCore
 @Observable
 final class ThemeStore {
     var spec: ThemeSpec
-    var presetNames: [String] = ["cherry", "rose", "peony", "soft"]
+    var presetNames: [String] = ["cherry", "rose", "peony", "soft", "midnight"]
     var radius: CGFloat = 22
     var showTabLabels: Bool = true {
         didSet { JSONStore.shared.set(.tabLabels, showTabLabels) }
+    }
+    /// Keypad key silhouette: "soft" (the rounded squares) or "circle".
+    /// Read by KeypadButton and the scientific keys; picked in the editor.
+    var keyStyle: String = "soft" {
+        didSet { JSONStore.shared.set(.keyStyle, keyStyle) }
+    }
+    /// Her last LIGHT preset, so the dark-mode switch is a true round trip:
+    /// moon on → midnight, moon off → exactly the palette she left.
+    private var lastLightPreset: String = "cherry" {
+        didSet { JSONStore.shared.set(.lightPreset, lastLightPreset) }
+    }
+
+    /// True when the current palette is the dark one (preset or a custom set
+    /// whose page background is genuinely dark). Drives preferredColorScheme
+    /// so system chrome — keyboards, sheets, share panels — matches her page.
+    var isDark: Bool {
+        if spec.name == "midnight" { return true }
+        guard let bg = spec.tokens["bg"] else { return false }
+        return ThemeStore.luminance(of: bg) < 0.35
+    }
+
+    /// One-tap dark mode. On → midnight; off → the light preset she had.
+    var darkModeOn: Bool {
+        get { isDark }
+        set {
+            if newValue {
+                if !isDark { setPreset("midnight") }
+            } else if isDark {
+                setPreset(lastLightPreset)
+            }
+        }
     }
     // Calc display-card left column visibility (both default on). Same persistence
     // shape as showTabLabels — a plain Bool file, loaded in init, saved on didSet.
@@ -76,6 +107,9 @@ final class ThemeStore {
         showTabLabels = JSONStore.shared.get(.tabLabels, as: Bool.self) ?? true
         showCalcLog = JSONStore.shared.get(.calcLog, as: Bool.self) ?? true
         showChordWheel = JSONStore.shared.get(.chordWheel, as: Bool.self) ?? true
+        keyStyle = JSONStore.shared.get(.keyStyle, as: String.self) ?? "soft"
+        lastLightPreset = JSONStore.shared.get(.lightPreset, as: String.self)
+            ?? (savedPresetName != "midnight" && savedPresetName != "custom" ? savedPresetName : "cherry")
 
         let motion = JSONStore.shared.get(.motion, as: MotionPrefs.self)
         seenTabs = Set(motion?.seenTabs ?? [])   // before the prefs — their didSet persists seenTabs
@@ -106,6 +140,24 @@ final class ThemeStore {
         }
         radius = ThemeStore.parseRadius(spec.tokens["radius"])
         JSONStore.shared.set(.theme, spec.name)
+        // Remember the light preset she came from, so the moon toggle can
+        // bring her home to it.
+        if name != "midnight" && name != "custom" {
+            lastLightPreset = name
+        }
+    }
+
+    /// Relative luminance of a "#RRGGBB" token — used to recognise a custom
+    /// palette as dark so the system chrome follows it.
+    private static func luminance(of hex: String) -> Double {
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("#") { s.removeFirst() }
+        guard s.count == 6, let v = UInt64(s, radix: 16) else { return 1 }
+        func lin(_ c: Double) -> Double { c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
+        let r = lin(Double((v >> 16) & 0xFF) / 255)
+        let g = lin(Double((v >> 8) & 0xFF) / 255)
+        let b = lin(Double(v & 0xFF) / 255)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
     }
 
     func setCustomToken(_ token: String, hex: String) {
@@ -195,6 +247,28 @@ final class ThemeStore {
                 "line": "#F4D8E1",
                 "flowerCenter": "#FFD488",
                 "shadow": "rgba(176,66,102,.14)"
+            ]) { _, new in new }
+        case "midnight":
+            // The dark garden. A warm plum-black — never flat gray — with the
+            // petals glowing brighter against the night. primaryStrong is kept
+            // DEEP (#C93E77, 4.7:1 under white) so every white-on-accent label
+            // in the app still reads without a token sweep; deep flips to a
+            // pale rose for headlines; shadows go true black.
+            return base.merging([
+                "bg": "#1B1118",
+                "surface": "#271823",
+                "surfaceSoft": "#35222E",
+                "surface2": "#2E1C28",
+                "primary": "#F58FB8",
+                "primaryStrong": "#C93E77",
+                "deep": "#F7C9DD",
+                "text": "#F7EAF0",
+                "muted": "#C9A3B5",
+                "line": "#3F2836",
+                "flowerCenter": "#FFC966",
+                "good": "#4FBE86",
+                "shadow": "rgba(0,0,0,.55)",
+                "ripple": "rgba(255,255,255,.16)"
             ]) { _, new in new }
         default:
             return base.merging([

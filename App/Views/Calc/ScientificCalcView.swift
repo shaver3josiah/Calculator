@@ -177,16 +177,24 @@ struct ScientificCalcView: View {
     // Lightweight on-theme key for scientific functions: surface2 tile, primaryStrong
     // label — quieter than the standard KeypadButton so the number pad stays the hero.
     private func sciButton(_ label: String, height: CGFloat, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        // Circle key style: visible face is a height-diameter disc centered in the
+        // cell, but the tap target stays the full cell width so fingers don't miss.
+        let isCircle = theme.keyStyle == "circle"
+        return Button(action: action) {
             Text(label)
                 .font(bloomBody(15, weight: .semibold))
                 .foregroundStyle(theme.color("primaryStrong"))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity)
+                // Exact width in circle mode — maxWidth alone would let a short
+                // label collapse the disc into a pill.
+                .frame(width: isCircle ? height : nil)
+                .frame(maxWidth: isCircle ? nil : .infinity)
                 .frame(height: height)
                 .background(theme.color("surface2"))
-                .clipShape(RoundedRectangle(cornerRadius: theme.radius * 0.6))
+                .clipShape(RoundedRectangle(cornerRadius: isCircle ? height / 2 : theme.radius * 0.6))
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

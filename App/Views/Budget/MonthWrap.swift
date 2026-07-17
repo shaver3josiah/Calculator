@@ -7,6 +7,7 @@ struct MonthWrap: View {
             IncomeCard()
             StewardshipCard()
             StatsRow()
+            GrowLeftoverCard()
             CategoriesSection()
             GoalsCard()
         }

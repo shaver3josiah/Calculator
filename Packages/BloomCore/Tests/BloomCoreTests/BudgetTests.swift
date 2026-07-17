@@ -164,6 +164,30 @@ final class BudgetTests: XCTestCase {
         }
     }
 
+    func testNetModeIgnoresPercentages() {
+        let income = BudgetIncome(label: "Income 1", gross: 5000, tax: 18, ret: 5, oth: 2, net: true)
+        XCTAssertEqual(BudgetMath.netOf(income), 5000, accuracy: 1e-9, "net mode returns gross as-is")
+        // Percentages survive the mode untouched — flipping back restores the old math.
+        XCTAssertEqual(income.tax, 18)
+        XCTAssertEqual(income.ret, 5)
+        XCTAssertEqual(income.oth, 2)
+        let negative = BudgetIncome(label: "Income 1", gross: -50, tax: 0, ret: 0, oth: 0, net: true)
+        XCTAssertEqual(BudgetMath.netOf(negative), 0, "net mode still clamps at zero")
+    }
+
+    func testNetNilBehavesAsBefore() {
+        let income = BudgetIncome(label: "Income 1", gross: 4200, tax: 18, ret: 5, oth: 2)
+        XCTAssertNil(income.net, "memberwise init defaults net to nil")
+        XCTAssertEqual(BudgetMath.netOf(income), 4200 * 0.75, accuracy: 1e-9, "nil net keeps the percentage math")
+    }
+
+    func testDecodingIncomeWithoutNetField() throws {
+        let json = #"{"label":"Income 1","gross":4200,"tax":18,"ret":5,"oth":2}"#
+        let decoded = try JSONDecoder().decode(BudgetIncome.self, from: Data(json.utf8))
+        XCTAssertNil(decoded.net, "old saved JSON without net still decodes to nil")
+        XCTAssertEqual(BudgetMath.netOf(decoded), 4200 * 0.75, accuracy: 1e-9)
+    }
+
     func testTakeHome() {
         for v in BudgetTests.vectors.budgetTakeHome {
             assertRelativelyClose(BudgetMath.takeHome(of: v.month), v.expect, label: "takeHome")

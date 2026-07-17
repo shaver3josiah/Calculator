@@ -27,6 +27,9 @@ private struct CompactToggle: View {
             .tint(theme.color("primaryStrong"))
             .scaleEffect(Self.scale)
             .frame(width: 51 * Self.scale, height: 31 * Self.scale)
+            // 44pt minimum tap area without growing the visual switch.
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
     }
 }
 
@@ -121,6 +124,7 @@ struct CategoriesSection: View {
                             Text("+ Add item")
                                 .font(bloomBody(13, weight: .semibold))
                                 .foregroundStyle(theme.color("primaryStrong"))
+                                .frame(minHeight: 44)
                         }
                         Spacer()
                         EncirclePressButton(cornerRadius: 8, lineWidth: 1) {
@@ -130,6 +134,7 @@ struct CategoriesSection: View {
                             Text("\u{21E9} Import a list")
                                 .font(bloomBody(13, weight: .semibold))
                                 .foregroundStyle(theme.color("muted"))
+                                .frame(minHeight: 44)
                         }
                     }
                     .padding(.top, 4)
@@ -151,10 +156,10 @@ struct CategoriesSection: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(theme.color("muted"))
                     .rotationEffect(.degrees(category.open ? 90 : 0))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .frame(width: 40, height: 44)
-            .contentShape(Rectangle())
+            .buttonStyle(TactilePressStyle(cornerRadius: 10))
 
             CompactToggle(isOn: catSelectAllBinding(index))
 
@@ -178,10 +183,10 @@ struct CategoriesSection: View {
                 } label: {
                     Image(systemName: "xmark.circle")
                         .foregroundStyle(theme.color("muted"))
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
+                .buttonStyle(TactilePressStyle(cornerRadius: 10))
                 .accessibilityLabel("Remove category")
             }
         }
@@ -231,10 +236,10 @@ struct CategoriesSection: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.color("muted"))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
+            .buttonStyle(TactilePressStyle(cornerRadius: 10))
             .accessibilityLabel("Remove item")
         }
     }
@@ -244,10 +249,10 @@ struct CategoriesSection: View {
             Image(systemName: systemName)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(theme.color("muted"))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .frame(width: 32, height: 40)
-        .contentShape(Rectangle())
+        .buttonStyle(TactilePressStyle(cornerRadius: 10))
     }
 
     private func catSelectAllBinding(_ index: Int) -> Binding<Bool> {

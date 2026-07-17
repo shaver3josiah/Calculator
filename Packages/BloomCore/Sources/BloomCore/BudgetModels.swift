@@ -18,13 +18,17 @@ public struct BudgetIncome: Codable, Equatable {
     public var tax: Double
     public var ret: Double
     public var oth: Double
+    // true → `gross` is already take-home, deductions skipped. Optional so saved
+    // JSON from before this field existed still decodes (absent key → nil → old math).
+    public var net: Bool?
 
-    public init(label: String, gross: Double, tax: Double, ret: Double, oth: Double) {
+    public init(label: String, gross: Double, tax: Double, ret: Double, oth: Double, net: Bool? = nil) {
         self.label = label
         self.gross = gross
         self.tax = tax
         self.ret = ret
         self.oth = oth
+        self.net = net
     }
 }
 

@@ -20,27 +20,12 @@ struct KeypadButton: View {
             feedbackTrigger.toggle()
             action()
         } label: {
-            Text(label)
-                .font(bloomNumber(22, weight: .medium))
-                .foregroundStyle(labelColor)
+            // Circle style shrinks the visible face to a height-diameter disc,
+            // but the tap target stays the full flexible cell so thumbs don't miss.
+            keyFace
                 .frame(maxWidth: .infinity)
                 .frame(height: height)
-                .background(backgroundColor)
-                .clipShape(RoundedRectangle(cornerRadius: themeStore.radius * 0.6))
-                .overlay {
-                    if themeStore.shimmerOn {
-                        ZStack {
-                            if isStrong {   // "=" is the one hero CTA — a slow ambient glint
-                                AmbientShimmer(cornerRadius: themeStore.radius * 0.6)
-                            }
-                            ShimmerSweep(
-                                trigger: feedbackTrigger,
-                                intense: isStrong || isAccent,   // darker-pink keys shine more
-                                cornerRadius: themeStore.radius * 0.6
-                            )
-                        }
-                    }
-                }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .scaleEffect(isPressed ? 0.96 : 1.0)
@@ -53,6 +38,41 @@ struct KeypadButton: View {
         .sensoryFeedback(.impact(weight: .light), trigger: feedbackTrigger) { _, _ in
             soundStore.hapticsEnabled
         }
+    }
+
+    // Reading themeStore.keyStyle here (called from body) keeps the switch live.
+    private var isCircle: Bool { themeStore.keyStyle == "circle" }
+
+    private var faceCornerRadius: CGFloat {
+        isCircle ? height / 2 : themeStore.radius * 0.6
+    }
+
+    private var keyFace: some View {
+        Text(label)
+            .font(bloomNumber(22, weight: .medium))
+            .foregroundStyle(labelColor)
+            // Circle: an EXACT height×height square (maxWidth alone would let a
+            // narrow glyph collapse the face into a pill), so fill, clip,
+            // shimmer, and glyph all share one true disc. Soft: full cell width.
+            .frame(width: isCircle ? height : nil)
+            .frame(maxWidth: isCircle ? nil : .infinity)
+            .frame(height: height)
+            .background(backgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: faceCornerRadius))
+            .overlay {
+                if themeStore.shimmerOn {
+                    ZStack {
+                        if isStrong {   // "=" is the one hero CTA — a slow ambient glint
+                            AmbientShimmer(cornerRadius: faceCornerRadius)
+                        }
+                        ShimmerSweep(
+                            trigger: feedbackTrigger,
+                            intense: isStrong || isAccent,   // darker-pink keys shine more
+                            cornerRadius: faceCornerRadius
+                        )
+                    }
+                }
+            }
     }
 
     private var backgroundColor: Color {

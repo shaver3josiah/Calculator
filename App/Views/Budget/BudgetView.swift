@@ -44,7 +44,7 @@ struct BudgetView: View {
                             .background(theme.color("surfaceSoft"))
                             .clipShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(TactilePressStyle(cornerRadius: 999))
                     .accessibilityLabel("Import a shared budget")
                     .discoverable("budget.import", cornerRadius: 999)
                 }

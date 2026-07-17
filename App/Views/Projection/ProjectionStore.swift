@@ -1,9 +1,20 @@
 import Foundation
 import BloomCore
 
+/// A one-shot handoff from the budget tab: "project this monthly leftover".
+/// Consumed (and cleared) by GrowPanel's onAppear.
+struct PendingGrow {
+    var monthly: Double
+}
+
 @Observable
 final class ProjectionStore {
     var funds: [Fund]
+
+    // Transient handoff state — deliberately NOT persisted: a relaunch should
+    // never replay an old "jump to Grow" or refill the monthly field.
+    var pendingGrow: PendingGrow?
+    var jumpToGrowEpoch = 0
 
     init() {
         if let saved = JSONStore.shared.get(.funds, as: [Fund].self), !saved.isEmpty {

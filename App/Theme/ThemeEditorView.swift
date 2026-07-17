@@ -10,7 +10,9 @@ struct ThemeEditorView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    darkModeRow
                     presetSection
+                    keysSection
                     displaySection
                     motionSection
                     editableTokensSection
@@ -27,6 +29,80 @@ struct ThemeEditorView: View {
                 }
             }
         }
+    }
+
+    // One friendly switch at the very top: moon on → the midnight garden,
+    // moon off → right back to the light palette she had.
+    private var darkModeRow: some View {
+        Toggle(isOn: Binding(get: { themeStore.darkModeOn }, set: { themeStore.darkModeOn = $0 })) {
+            HStack(spacing: 10) {
+                Image(systemName: themeStore.isDark ? "moon.stars.fill" : "moon")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(themeStore.color(themeStore.isDark ? "flowerCenter" : "primaryStrong"))
+                    .frame(width: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Dark mode")
+                        .font(bloomBody(15, weight: .semibold))
+                        .foregroundStyle(themeStore.color("text"))
+                    Text(themeStore.isDark ? "The garden at night" : "Lights down, petals still pink")
+                        .font(bloomBody(12))
+                        .foregroundStyle(themeStore.color("muted"))
+                }
+            }
+        }
+        .tint(themeStore.color("primaryStrong"))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(themeStore.color("surface"))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .discoverable("theme.darkMode", cornerRadius: 16)
+    }
+
+    // Keypad key silhouette — soft squares (the classic) or circles. The
+    // preview IS the control: two little keys, tap the one you want.
+    private var keysSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Calculator keys")
+                .font(bloomBody(13, weight: .semibold))
+                .foregroundStyle(themeStore.color("muted"))
+                .textCase(.uppercase)
+            HStack(spacing: 12) {
+                keyShapeChoice("soft", label: "Soft squares")
+                keyShapeChoice("circle", label: "Circles")
+            }
+        }
+    }
+
+    private func keyShapeChoice(_ style: String, label: String) -> some View {
+        let selected = themeStore.keyStyle == style
+        return Button {
+            withAnimation(BloomMotion.springSoft) { themeStore.keyStyle = style }
+        } label: {
+            VStack(spacing: 8) {
+                // A mini "7" key drawn in the chosen shape, glyph dead-center.
+                Text("7")
+                    .font(bloomNumber(20, weight: .medium))
+                    .foregroundStyle(themeStore.color("text"))
+                    .frame(width: 52, height: 52)
+                    .background(themeStore.color("surfaceSoft"))
+                    .clipShape(RoundedRectangle(cornerRadius: style == "circle" ? 26 : themeStore.radius * 0.6))
+                Text(label)
+                    .font(bloomBody(12, weight: selected ? .semibold : .medium))
+                    .foregroundStyle(themeStore.color(selected ? "deep" : "muted"))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(themeStore.color("surface"))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(selected ? themeStore.color("primaryStrong") : themeStore.color("line"),
+                                  lineWidth: selected ? 2 : 1)
+            )
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 16))
+        .accessibilityLabel("\(label) keys")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var displaySection: some View {
@@ -165,6 +241,7 @@ struct ThemeEditorView: View {
         case "rose": return Color(hex: "#E56A87") ?? .pink
         case "peony": return Color(hex: "#E15BA4") ?? .pink
         case "soft": return Color(hex: "#EE9DBB") ?? .pink
+        case "midnight": return Color(hex: "#1B1118") ?? .black
         default: return Color(hex: "#F06FA7") ?? .pink
         }
     }

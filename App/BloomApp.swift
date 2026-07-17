@@ -32,7 +32,9 @@ struct BloomApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .preferredColorScheme(.light)
+                // Follows HER palette, not the system: keyboards, sheets and
+                // share panels go dark the moment she picks the midnight garden.
+                .preferredColorScheme(themeStore.isDark ? .dark : .light)
                 .environment(themeStore)
                 .environment(historyStore)
                 .environment(soundStore)

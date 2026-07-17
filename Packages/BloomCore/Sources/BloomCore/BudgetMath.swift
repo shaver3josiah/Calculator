@@ -13,6 +13,11 @@ public enum BudgetMath {
     }
 
     public static func netOf(_ i: BudgetIncome) -> Double {
+        // Take-home mode: the entered amount IS the net. The stored percentages are
+        // kept untouched so flipping back to gross mode restores the old behavior.
+        if i.net == true {
+            return max(0, i.gross)
+        }
         let g = i.gross
         let p = i.tax + i.ret + i.oth
         return max(0, g * (1 - min(100, p) / 100))

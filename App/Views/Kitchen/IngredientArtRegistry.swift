@@ -1,22 +1,24 @@
 import SwiftUI
 
 /// Name → hand-drawn ingredient art. Resolves a parsed ingredient (or matched
-/// `Food`) name to one of the 30 `*Art` View structs in IngredientArtPack1–3.
+/// `Food`) name to one of the ~100 `*Art` View structs in IngredientArtPack1–7.
 ///
-/// Matching order: lowercase/trim the input, try the curated `exact` dictionary,
+/// Matching order: lowercase/trim the input, try the merged `exact` dictionary,
 /// then `contains` keyword fallbacks scanned LONGEST-KEYWORD-FIRST so a specific
-/// phrase always beats a general one ("brown sugar" beats "sugar", "cream cheese"
-/// beats "cheese"/"cream", "olive oil" beats "oil"). Returns nil when nothing
-/// fits, so the caller can fall through to PNG art / glyph / 🥣.
+/// phrase always beats a general one ("peanut butter" beats "butter", "strawberry
+/// jam" beats "jam", "cream cheese" beats "cheese"). The ordering is SORTED AT
+/// STARTUP from all seven packs' tables — packs never need to coordinate their
+/// keyword lengths by hand. Returns nil when nothing fits, so the caller can
+/// fall through to PNG art / glyph / 🥣.
 enum IngredientArt {
 
     static func view(for rawName: String) -> AnyView? {
         let name = rawName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
 
-        if let make = exact[name] { return make() }
+        if let make = allExact[name] { return make() }
 
-        for (keyword, make) in keywords {
+        for (keyword, make) in allKeywords {
             // "egg" must not swallow "eggplant" (a vegetable with no art).
             if keyword == "egg" {
                 if name.contains("egg") && !name.contains("eggplant") { return make() }
@@ -26,6 +28,28 @@ enum IngredientArt {
         }
         return nil
     }
+
+    // MARK: - Merged tables (packs 1–3 live below; 4–7 register themselves)
+
+    /// Exact names from every pack. Built-ins win any accidental collision so a
+    /// new pack can never silently re-skin a long-standing ingredient.
+    private static let allExact: [String: () -> AnyView] = {
+        var merged = Pack4Registry.exact
+        for (k, v) in Pack5Registry.exact { merged[k] = v }
+        for (k, v) in Pack6Registry.exact { merged[k] = v }
+        for (k, v) in Pack7Registry.exact { merged[k] = v }
+        for (k, v) in exact { merged[k] = v }
+        return merged
+    }()
+
+    /// Keywords from every pack, sorted longest-first ONCE at startup — the
+    /// specificity rule the old hand-maintained ordering enforced by eye.
+    private static let allKeywords: [(String, () -> AnyView)] = {
+        (keywords
+            + Pack4Registry.keywords + Pack5Registry.keywords
+            + Pack6Registry.keywords + Pack7Registry.keywords)
+            .sorted { $0.0.count > $1.0.count }
+    }()
 
     // MARK: - Exact, curated names (checked first)
 
@@ -201,12 +225,15 @@ enum IngredientArt {
     #if DEBUG
     /// Runnable invariant check (no toolchain here, but exercised if one appears).
     static func _selfCheck() {
-        let lens = keywords.map { $0.0.count }
+        let lens = allKeywords.map { $0.0.count }
         assert(lens == lens.sorted(by: >),
-               "IngredientArt.keywords must stay ordered longest-keyword-first")
+               "merged keyword table must be ordered longest-keyword-first")
         for s in ["brown sugar", "cream cheese", "sour cream", "heavy cream",
                   "olive oil", "vegetable oil", "chocolate chips", "baking soda",
-                  "2 eggs", "unsalted butter"] {
+                  "2 eggs", "unsalted butter",
+                  // the compounds that used to mis-match their generic halves
+                  "peanut butter", "strawberry jam", "cocoa powder",
+                  "chocolate bar", "coconut oil", "almond milk", "cornstarch"] {
             assert(view(for: s) != nil, "expected art for \(s)")
         }
         // Vegetable, not an egg — must fall through to the glyph.

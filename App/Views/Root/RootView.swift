@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(HistoryStore.self) private var historyStore
     @Environment(SoundStore.self) private var soundStore
     @Environment(MusicStore.self) private var musicStore
+    @Environment(ProjectionStore.self) private var projectionStore
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var vSize
@@ -42,6 +43,12 @@ struct RootView: View {
         }
         .onChange(of: vSize) { _, newValue in
             scheduleFlip(to: newValue == .compact)
+        }
+        // Budget's "Project it in the garden" handoff: the epoch bump lands here,
+        // the tab switch remounts ProjectionView (.id(selectedTab)), and GrowPanel's
+        // onAppear consumes projectionStore.pendingGrow.
+        .onChange(of: projectionStore.jumpToGrowEpoch) { _, _ in
+            switchTab(.proj)
         }
     }
 

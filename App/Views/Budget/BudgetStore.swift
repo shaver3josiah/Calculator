@@ -55,6 +55,12 @@ final class BudgetStore {
     var takeHome: Double { BudgetMath.takeHome(of: month) }
     var planned: Double { BudgetMath.planned(of: month) }
     var leftOver: Double { takeHome - planned }
+    // The give-first dollars (tithe + feast + poor, all % of gross). Innovation is a
+    // flat pledge, not a % of gross, so it stays out of the bottom-line subtraction.
+    var stewardshipTotal: Double { titheAmount + feastAmount + poorAmount }
+    // What's actually free to invest after giving AND planned spending. `leftOver`
+    // stays as-is — year view and older surfaces still read take-home − planned.
+    var trueLeftOver: Double { takeHome - stewardshipTotal - planned }
     // BudgetMath.monthDays returns 0 on a corrupt key; clamp so chart domains and
     // per-day division never see 0.
     var monthDays: Int { max(1, BudgetMath.monthDays(db.cur)) }
@@ -101,7 +107,7 @@ final class BudgetStore {
         BudgetMath.yearAggregate(db: db, year: yearSel)
     }
 
-    func setIncome(_ index: Int, label: String? = nil, gross: Double? = nil, tax: Double? = nil, ret: Double? = nil, oth: Double? = nil) {
+    func setIncome(_ index: Int, label: String? = nil, gross: Double? = nil, tax: Double? = nil, ret: Double? = nil, oth: Double? = nil, net: Bool? = nil) {
         var m = month
         guard m.inc.indices.contains(index) else { return }
         if let label { m.inc[index].label = label }
@@ -109,6 +115,7 @@ final class BudgetStore {
         if let tax { m.inc[index].tax = tax }
         if let ret { m.inc[index].ret = ret }
         if let oth { m.inc[index].oth = oth }
+        if let net { m.inc[index].net = net }
         month = m
         save()
     }
