@@ -151,17 +151,68 @@ struct ListsDraft: Codable, Equatable {
     var mode = "list"
 }
 
-/// A page of her own words. Bullet lines can become a real list on demand.
+/// The note she's writing right now — kept in the draft so a tab switch or a
+/// phone lock never costs her a word. `rtf` is the rich text (RTF Data); `body`
+/// is the plain-text mirror kept in sync for the "make a list" parse, search,
+/// and share. `id` ties the live page to a saved/archived note when she reopens
+/// one, so re-saving updates instead of duplicating.
 struct NotesDraft: Codable, Equatable {
+    var id: UUID? = nil
     var title = ""
     var body = ""
+    var rtf: Data? = nil
+}
+
+// MARK: - Projection (new panels)
+
+struct BabyDraft: Codable, Equatable {
+    var years = "18"            // birth to horizon
+    var lumpSum = "1000"        // prefilled with the Trump seed
+    var monthly = "50"
+    var assetClass = "stocks"   // stocks | balanced | bonds | realEstate
+    var rate = "7"              // seeded from the asset class, editable
+    var didCalculate = false
+}
+
+struct TrumpDraft: Codable, Equatable {
+    var birthYear = "2025"
+    var currentAge = "0"
+    var startBalance = "1000"   // seed if eligible
+    var annualContribution = "2000"
+    var employerContribution = "0"
+    var returnPct = "7"
+    var expenseRatio = "0.07"
+    var targetAge = "18"
+    var didCalculate = false
+}
+
+struct WholeLifeDraft: Codable, Equatable {
+    var annualPremium = "5000"
+    var yearsPaying = "20"
+    var projectionYears = "30"
+    var assumedRate = "5.75"        // NM 2026 dividend interest rate (reference)
+    var initialDeathBenefit = "250000"
+    var efficiency = "85"           // advanced: share of premium reaching cash value
+    var didCalculate = false
+}
+
+// MARK: - Tools (new card)
+
+/// Real-estate historical-growth card. No didCalculate — the chart is LIVE, it
+/// redraws as she types, so there's nothing to "run".
+struct RealEstateDraft: Codable, Equatable {
+    var currentValue = "300000"
+    var rate = "4.5"            // seeded from the "typical" preset
+    var years = "20"
+    var netYield = "0"          // optional rental income minus carrying costs
+    var kind = "home"           // home | land — just changes the seeded rate + copy
 }
 
 // MARK: - Sub-mode picks (these are choices too — losing them is the same bug)
 
 struct PanelPicks: Codable, Equatable {
-    /// ProjectionView's panel: "Grow", "Retire", "Match", "Real rate",
-    /// "Compare", "Rule of 72", "Beat market".
+    /// ProjectionView's panel: "Grow", "Baby", "Trump", "Whole life", "Retire",
+    /// "Match", "Real rate", "Compare", "Rule of 72", "Beat market".
     var projection = "Grow"
     /// RecipePanel's mode: "write", "link", "share".
     var recipeMode = "write"
@@ -177,11 +228,15 @@ final class DraftStore {
     var savings = SavingsGoalDraft() { didSet { schedulePersist() } }
 
     var grow = GrowDraft() { didSet { schedulePersist() } }
+    var baby = BabyDraft() { didSet { schedulePersist() } }
+    var trump = TrumpDraft() { didSet { schedulePersist() } }
+    var wholeLife = WholeLifeDraft() { didSet { schedulePersist() } }
     var retire = RetireDraft() { didSet { schedulePersist() } }
     var match = MatchDraft() { didSet { schedulePersist() } }
     var realRate = RealRateDraft() { didSet { schedulePersist() } }
     var compare = CompareDraft() { didSet { schedulePersist() } }
     var rule72 = Rule72Draft() { didSet { schedulePersist() } }
+    var realEstate = RealEstateDraft() { didSet { schedulePersist() } }
 
     var recipeWrite = RecipeWriteDraft() { didSet { schedulePersist() } }
     var recipeLink = RecipeLinkDraft() { didSet { schedulePersist() } }
@@ -212,10 +267,14 @@ final class DraftStore {
         percentage = PercentageDraft()
         loan = LoanDraft()
         savings = SavingsGoalDraft()
+        realEstate = RealEstateDraft()
     }
 
     func clearProjection() {
         grow = GrowDraft()
+        baby = BabyDraft()
+        trump = TrumpDraft()
+        wholeLife = WholeLifeDraft()
         retire = RetireDraft()
         match = MatchDraft()
         realRate = RealRateDraft()
@@ -234,11 +293,15 @@ final class DraftStore {
         var loan: LoanDraft?
         var savings: SavingsGoalDraft?
         var grow: GrowDraft?
+        var baby: BabyDraft?
+        var trump: TrumpDraft?
+        var wholeLife: WholeLifeDraft?
         var retire: RetireDraft?
         var match: MatchDraft?
         var realRate: RealRateDraft?
         var compare: CompareDraft?
         var rule72: Rule72Draft?
+        var realEstate: RealEstateDraft?
         var recipeWrite: RecipeWriteDraft?
         var recipeLink: RecipeLinkDraft?
         var recipeShare: RecipeShareDraft?
@@ -254,11 +317,15 @@ final class DraftStore {
         loan = b.loan ?? LoanDraft()
         savings = b.savings ?? SavingsGoalDraft()
         grow = b.grow ?? GrowDraft()
+        baby = b.baby ?? BabyDraft()
+        trump = b.trump ?? TrumpDraft()
+        wholeLife = b.wholeLife ?? WholeLifeDraft()
         retire = b.retire ?? RetireDraft()
         match = b.match ?? MatchDraft()
         realRate = b.realRate ?? RealRateDraft()
         compare = b.compare ?? CompareDraft()
         rule72 = b.rule72 ?? Rule72Draft()
+        realEstate = b.realEstate ?? RealEstateDraft()
         recipeWrite = b.recipeWrite ?? RecipeWriteDraft()
         recipeLink = b.recipeLink ?? RecipeLinkDraft()
         recipeShare = b.recipeShare ?? RecipeShareDraft()
@@ -270,8 +337,9 @@ final class DraftStore {
 
     private func makeBlob() -> Blob {
         Blob(tipSplit: tipSplit, percentage: percentage, loan: loan, savings: savings,
-             grow: grow, retire: retire, match: match, realRate: realRate,
-             compare: compare, rule72: rule72,
+             grow: grow, baby: baby, trump: trump, wholeLife: wholeLife,
+             retire: retire, match: match, realRate: realRate,
+             compare: compare, rule72: rule72, realEstate: realEstate,
              recipeWrite: recipeWrite, recipeLink: recipeLink,
              recipeShare: recipeShare, visualize: visualize,
              lists: lists, notes: notes, picks: picks)

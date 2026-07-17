@@ -11,27 +11,26 @@ struct ListsView: View {
     @State private var showNewListPrompt = false
     @State private var editingRow: ShopListRow?
     @State private var editingListId: UUID?
+    /// True while she's typing in the notes editor — hides the tab bar so the
+    /// page is hers alone.
+    @State private var composing = false
 
     var body: some View {
         @Bindable var d = drafts
-        return ScrollView {
-            VStack(spacing: 16) {
-                KTabBar(items: ["Lists", "Notes"], selection: modeBinding)
-                if drafts.lists.mode == "notes" {
-                    notesPage
-                } else {
-                    listPicker
-                    if let list = store.activeList {
-                        listCard(list)
-                    } else {
-                        emptyState
-                    }
-                }
+        return VStack(spacing: 0) {
+            if !composing {
+                KTabBar(items: ["Lists", "Notes", "Archive"], selection: modeBinding)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
-            .padding(16)
+            content
         }
         .background(theme.color("bg"))
-        .scrollDismissesKeyboard(.interactively)
+        .onChange(of: drafts.lists.mode) { _, newMode in
+            if newMode != "notes" { composing = false }
+        }
         .sheet(item: $editingRow) { row in
             EditListItemSheet(row: row) { updated in
                 if let listId = editingListId {
@@ -53,12 +52,53 @@ struct ListsView: View {
         }
     }
 
-    /// The draft speaks "list"/"notes"; the tab bar shows her the words she'd
-    /// use. Kept apart so a label change can never rewrite what's on disk.
+    @ViewBuilder
+    private var content: some View {
+        switch drafts.lists.mode {
+        case "notes":
+            // Manages its own scrolling (a UITextView underneath) and its own
+            // full height — deliberately NOT wrapped in the outer ScrollView.
+            NotesEditorView(composing: $composing)
+        case "archive":
+            ScrollView {
+                NotesArchiveView()
+                    .padding(16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        default:
+            ScrollView {
+                VStack(spacing: 16) {
+                    listPicker
+                    if let list = store.activeList {
+                        listCard(list)
+                    } else {
+                        emptyState
+                    }
+                }
+                .padding(16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+    }
+
+    /// The draft speaks "list"/"notes"/"archive"; the tab bar shows her the words.
+    /// Kept apart so a label change can never rewrite what's on disk.
     private var modeBinding: Binding<String> {
         Binding(
-            get: { drafts.lists.mode == "notes" ? "Notes" : "Lists" },
-            set: { drafts.lists.mode = ($0 == "Notes") ? "notes" : "list" }
+            get: {
+                switch drafts.lists.mode {
+                case "notes": return "Notes"
+                case "archive": return "Archive"
+                default: return "Lists"
+                }
+            },
+            set: {
+                switch $0 {
+                case "Notes": drafts.lists.mode = "notes"
+                case "Archive": drafts.lists.mode = "archive"
+                default: drafts.lists.mode = "list"
+                }
+            }
         )
     }
 
@@ -107,127 +147,6 @@ struct ListsView: View {
         .padding(.top, 60)
     }
 
-    // MARK: - Notes
-
-    private var noteBodyIsBlank: Bool {
-        drafts.notes.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var notesPage: some View {
-        @Bindable var d = drafts
-        return VStack(alignment: .leading, spacing: 12) {
-            TextField("Name this note", text: $d.notes.title, prompt: Text("Name this note").foregroundStyle(theme.color("muted")))
-                .font(bloomNumber(19, weight: .semibold))
-                .foregroundStyle(theme.color("deep"))
-                .frame(minHeight: 44)
-
-            TextField("", text: $d.notes.body, axis: .vertical)
-                .lineLimit(12...40)
-                // Genuinely large — the app-wide Dynamic Type cap freezes custom
-                // fonts at the standard size, so "large" has to be the literal here.
-                .font(bloomBody(21))
-                .foregroundStyle(theme.color("text"))
-                .lineSpacing(5)
-                .inputAccessories($d.notes.body, alignment: .top)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(theme.color("surfaceSoft"))
-                )
-
-            Text("Start lines with - or • and I'll make them a list.")
-                .font(bloomBody(12))
-                .foregroundStyle(theme.color("muted"))
-
-            HStack(spacing: 10) {
-                Button {
-                    saveNote()
-                } label: {
-                    Text("Save to history")
-                        .font(bloomBody(15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(
-                            // primaryStrong, not primary — white text needs the
-                            // deeper fill to clear AA (and white-on-primary is the
-                            // one spot in the app that breaks that rule).
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(theme.color("primaryStrong"))
-                        )
-                }
-                .buttonStyle(TactilePressStyle(cornerRadius: 14))
-                .discoverable("notes.save", cornerRadius: 14)
-
-                Button {
-                    makeListFromNote()
-                } label: {
-                    Text("Make it a list")
-                        .font(bloomBody(15, weight: .semibold))
-                        .foregroundStyle(theme.color("accentInk"))
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(theme.color("surfaceSoft"))
-                        )
-                }
-                .buttonStyle(TactilePressStyle(cornerRadius: 14))
-                .discoverable("notes.toList", cornerRadius: 14)
-            }
-            // A blank page has nothing to save and nothing to listify — she
-            // should never end up with an empty list or a history entry of air.
-            .disabled(noteBodyIsBlank)
-            .opacity(noteBodyIsBlank ? 0.5 : 1)
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: theme.radius)
-                .fill(theme.color("surface"))
-        )
-    }
-
-    private var noteDisplayTitle: String {
-        let trimmed = drafts.notes.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Note" : trimmed
-    }
-
-    private func saveNote() {
-        guard !noteBodyIsBlank else { return }
-        let body = drafts.notes.body
-        let lines = ListsStore.listItems(from: body).count
-        history.add(
-            type: "note",
-            title: noteDisplayTitle,
-            value: "\(lines) line\(lines == 1 ? "" : "s")",
-            extra: ["text": body]
-        )
-        sound.play("success")
-        ToastCenter.shared.show(title: "Saved", message: "\(noteDisplayTitle) is in your history.")
-    }
-
-    private func makeListFromNote() {
-        let items = ListsStore.listItems(from: drafts.notes.body)
-        // A page of nothing but bullet marks parses to zero items, so the blank
-        // check above isn't enough on its own.
-        guard !items.isEmpty else { return }
-        let trimmed = drafts.notes.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let id = store.createList(title: trimmed.isEmpty ? "Notes list" : trimmed)
-        for item in items {
-            store.addRow(to: id, name: item, qty: 1, unitPrice: 0)
-        }
-        drafts.lists.mode = "list"
-        sound.play("success")
-        // listItems caps at 200; if the note held more non-empty lines than that,
-        // say so rather than let the count imply everything made it.
-        let rawLines = drafts.notes.body
-            .split(whereSeparator: \.isNewline)
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            .count
-        let tail = (items.count == 200 && rawLines > 200) ? " (the first 200)" : ""
-        ToastCenter.shared.show(title: "Made a list",
-                                message: "\(items.count) item\(items.count == 1 ? "" : "s") added\(tail).")
-    }
-
     // MARK: - Lists
 
     private func listCard(_ list: ShopList) -> some View {
@@ -243,14 +162,23 @@ struct ListsView: View {
             }
             addRow(listId: list.id)
             totalsBar(list)
-            HStack {
+            HStack(spacing: 14) {
                 Button("Delete list") {
                     store.deleteList(list.id)
                 }
                 .font(bloomBody(13))
                 .foregroundStyle(theme.color("muted"))
+
+                ShareLink(item: listShareText(list)) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                        .font(bloomBody(13, weight: .semibold))
+                        .foregroundStyle(theme.color("accentInk"))
+                }
+                .disabled(list.rows.isEmpty)
+                .opacity(list.rows.isEmpty ? 0.4 : 1)
+
                 Spacer()
-                Button("Log total to history") {
+                Button("Log total") {
                     store.logTotalToHistory(listId: list.id, history: history)
                     sound.play("success")
                 }
@@ -264,6 +192,22 @@ struct ListsView: View {
             RoundedRectangle(cornerRadius: theme.radius)
                 .fill(theme.color("surface"))
         )
+    }
+
+    /// Plain-text version of a list she can drop into a message.
+    private func listShareText(_ list: ShopList) -> String {
+        var lines = [list.title.isEmpty ? "List" : list.title, ""]
+        for row in list.rows {
+            let check = row.checked ? "✓ " : "• "
+            if row.qty != 1 || row.unitPrice != 0 {
+                lines.append("\(check)\(row.name) — \(Formatters.plain(row.qty)) × \(Formatters.money(row.unitPrice)) = \(Formatters.money(row.lineTotal))")
+            } else {
+                lines.append("\(check)\(row.name)")
+            }
+        }
+        lines.append("")
+        lines.append("Total: \(Formatters.money(list.total))")
+        return lines.joined(separator: "\n")
     }
 
     private func rowView(listId: UUID, row: ShopListRow) -> some View {

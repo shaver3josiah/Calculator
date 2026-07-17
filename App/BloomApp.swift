@@ -14,6 +14,7 @@ struct BloomApp: App {
     @State private var projectionStore = ProjectionStore()
     @State private var budgetStore = BudgetStore()
     @State private var draftStore = DraftStore()
+    @State private var notesArchive = NotesArchiveStore()
     @Environment(\.scenePhase) private var scenePhase
     @State private var songBook = SongBook()
 
@@ -54,6 +55,7 @@ struct BloomApp: App {
                 .environment(budgetStore)
                 .environment(songBook)
                 .environment(draftStore)
+                .environment(notesArchive)
                 // Leaving the app is the last guaranteed moment to write her
                 // in-progress numbers down; the debounce may still be pending.
                 .onChange(of: scenePhase) { _, phase in
