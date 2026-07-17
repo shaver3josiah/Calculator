@@ -114,7 +114,7 @@ final class RichTextController {
         guard let tv = textView else { return }
         let size = headingSize(headingLevel)
         let range = tv.selectedRange
-        func styled(_ base: UIFont, from old: UIFont?) -> UIFont {
+        func styled(from old: UIFont?) -> UIFont {
             var f = RichTextController.baseFont(fontKey, size: size)
             if let old, old.fontDescriptor.symbolicTraits.contains(.traitBold) { f = f.withTrait(.traitBold, on: true) }
             if headingLevel == 1 { f = f.withTrait(.traitBold, on: true) }
@@ -125,11 +125,11 @@ final class RichTextController {
             let storage = tv.textStorage
             storage.beginEditing()
             storage.enumerateAttribute(.font, in: range, options: []) { value, sub, _ in
-                storage.addAttribute(.font, value: styled(value as? UIFont ?? UIFont.systemFont(ofSize: size), from: value as? UIFont), range: sub)
+                storage.addAttribute(.font, value: styled(from: value as? UIFont), range: sub)
             }
             storage.endEditing()
         }
-        tv.typingAttributes[.font] = styled(nil, from: tv.typingAttributes[.font] as? UIFont)
+        tv.typingAttributes[.font] = styled(from: tv.typingAttributes[.font] as? UIFont)
         refreshActiveStyles()
         notifyChange()
     }
