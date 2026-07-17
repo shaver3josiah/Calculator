@@ -79,7 +79,8 @@ final class FinanceMathBatch3Tests: XCTestCase {
                                          currentAge: 0, targetAge: 18, returnPct: 10, expenseRatioPct: 0.10).last!.balance
         XCTAssertLessThan(lo, hi)
         close(hi, 1000 * pow(1.10, 18), 1e-6)
-        close(lo, 1000 * pow(1.0993, 18), 1e-6)
+        // net = 10% − 0.10% expense = 9.90% → factor 1.099
+        close(lo, 1000 * pow(1.099, 18), 1e-6)
     }
 
     // MARK: whole life
