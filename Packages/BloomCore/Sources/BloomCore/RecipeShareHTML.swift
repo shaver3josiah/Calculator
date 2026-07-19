@@ -36,16 +36,19 @@ extension RecipeShare {
     }
 }
 
-private let _rp0 = #"""<!doctype html>
+private let _rp0 = #"""
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#F2D6A4">
-<title>"""#
+<title>
+"""#
 
-private let _rp1 = #"""</title>
+private let _rp1 = #"""
+</title>
 <style>
 :root{
   /* champagne wash */
@@ -424,16 +427,22 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
       <svg class="gem g5" viewBox="0 0 100 100"><use href="#gem"/></svg>
     </div>
     <p class="eyebrow">a little recipe to treasure &#9825;</p>
-    <h1 class="title">"""#
+    <h1 class="title">
+"""#
 
-private let _rp2 = #"""</h1>
+private let _rp2 = #"""
+</h1>
     <p class="flourish">made with love</p>
-    <div class="meta">"""#
+    <div class="meta">
+"""#
 
-private let _rp3 = #"""</div>
-    """#
+private let _rp3 = #"""
+</div>
+    
+"""#
 
 private let _rp4 = #"""
+
     <div class="rule"><span class="star">&#10022;</span></div>
   </section>
 
@@ -442,9 +451,11 @@ private let _rp4 = #"""
     <div class="section-head"><svg class="gem" viewBox="0 0 100 100"><use href="#gem"/></svg><h2>Ingredients</h2></div>
     <p class="section-note">Tap each one as you gather it and watch it turn into a little diamond &#9825;</p>
     <div class="card">
-      <ul class="checklist" id="ingredientList">"""#
+      <ul class="checklist" id="ingredientList">
+"""#
 
-private let _rp5 = #"""</ul>
+private let _rp5 = #"""
+</ul>
     </div>
   </section>
 
@@ -458,16 +469,20 @@ private let _rp5 = #"""</ul>
   <section class="section" id="method">
     <div class="section-head"><svg class="gem" viewBox="0 0 100 100"><use href="#gem"/></svg><h2>Method</h2><span class="done-count" id="doneCount"></span></div>
     <p class="section-note">Check off each step &mdash; each one blooms into a diamond that twinkles just for you &#10022;</p>
-    <ol class="steps" id="stepList">"""#
+    <ol class="steps" id="stepList">
+"""#
 
-private let _rp6 = #"""</ol>
+private let _rp6 = #"""
+</ol>
     <button class="reset-steps" id="resetSteps">Start over &#8635;</button>
   </section>
 
   <!-- notes -->
-  """#
+  
+"""#
 
 private let _rp7 = #"""
+
 
   <!-- kitchen timer, right where you need it before baking -->
   <section class="section timer card" id="timerCard">
@@ -845,4 +860,5 @@ private let _rp7 = #"""
 </script>
 </body>
 </html>
+
 """#
