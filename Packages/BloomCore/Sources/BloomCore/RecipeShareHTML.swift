@@ -3,10 +3,10 @@
 import Foundation
 
 extension RecipeShare {
-    /// A self-contained "pretty page" HTML for one recipe: champagne wash, faceted
-    /// yellow-gold diamonds (three cuts) that turn on the vertical axis, a Web-Audio
-    /// kitchen timer, check-off steps and a table of contents. Opens standalone in
-    /// Safari from a text; every recipe field is HTML-escaped.
+    /// A self-contained "pretty page" HTML for one recipe: champagne wash, white
+    /// crystal diamonds (three cuts) that turn in 3D around the vertical axis, a
+    /// Web-Audio kitchen timer, check-off steps and a table of contents. Opens
+    /// standalone in Safari from a text; every recipe field is HTML-escaped.
     public static func html(name: String, serves: String, time: String,
                             ingredients: [String], steps: [String],
                             notes: String, sourceUrl: String) -> String {
@@ -26,13 +26,14 @@ extension RecipeShare {
             "<li class=\"check-row\"><label class=\"check\"><input type=\"checkbox\"><span class=\"box\"></span><svg class=\"gem-ic\" viewBox=\"0 0 100 100\" style=\"--i:\(i)\"><use href=\"#\(shapes[(i + 1) % 3])\"/></svg></label><span class=\"label\">" + htmlEscape(s) + "</span></li>"
         }.joined(separator: "\n")
         let stepHTML = cleanLines(steps).enumerated().map { (i, s) in
-            "<li class=\"step\"><label class=\"badge\"><input type=\"checkbox\"><span class=\"num\"></span><span class=\"diamond\"><svg viewBox=\"0 0 100 100\" style=\"--i:\(i)\"><use href=\"#\(shapes[i % 3])\"/></svg></span></label><div class=\"body\"><p><span class=\"line\">" + htmlEscape(flatten(s)) + "</span></p></div></li>"
+            let sh = shapes[i % 3]
+            return "<li class=\"step\"><label class=\"badge\"><input type=\"checkbox\"><span class=\"num\"></span><span class=\"diamond\" style=\"--i:\(i)\"><span class=\"d3i\"><svg viewBox=\"0 0 100 100\"><use href=\"#\(sh)\"/></svg><svg class=\"s2\" viewBox=\"0 0 100 100\"><use href=\"#\(sh)\"/></svg></span></span></label><div class=\"body\"><p><span class=\"line\">" + htmlEscape(flatten(s)) + "</span></p></div></li>"
         }.joined(separator: "\n")
         var notesHTML = ""
         let nt = trimmed(notes)
         if !nt.isEmpty {
             let body = htmlEscape(nt).replacingOccurrences(of: "\n", with: "<br>")
-            notesHTML = "<section class=\"section\" id=\"notes\"><div class=\"section-head\"><svg class=\"gem\" viewBox=\"0 0 100 100\"><use href=\"#gem\"/></svg><h2>Notes</h2></div><div class=\"card\"><p style=\"margin:0;color:var(--ink-soft)\">" + body + "</p></div></section>"
+            notesHTML = "<section class=\"section\" id=\"notes\"><div class=\"section-head\"><span class=\"gem d3\"><span class=\"d3i\"><svg viewBox=\"0 0 100 100\"><use href=\"#gem\"/></svg><svg class=\"s2\" viewBox=\"0 0 100 100\"><use href=\"#gem\"/></svg></span></span><h2>Notes</h2></div><div class=\"card\"><p style=\"margin:0;color:var(--ink-soft)\">" + body + "</p></div></section>"
         }
         return _rp0 + titleTag + _rp1 + title + _rp2 + meta + _rp3 + source + _rp4 + ingHTML + _rp5 + stepHTML + _rp6 + notesHTML + _rp7
     }
@@ -237,21 +238,24 @@ body:not(.no-twinkle) .check input:checked ~ .gem-ic .twinkle{
 }
 
 /* ---------- gem clusters (rock candy) — brought to the front, and they spin ---------- */
-/* spin = a turn around the VERTICAL axis (rotateY), with perspective so the
-   facets catch the light as the gem revolves — not a flat in-plane spin. */
-@keyframes spin{from{transform:perspective(520px) rotateY(0)}to{transform:perspective(520px) rotateY(360deg)}}
-@keyframes spinRev{from{transform:perspective(520px) rotateY(0)}to{transform:perspective(520px) rotateY(-360deg)}}
-@keyframes shimmer{
-  0%,100%{filter:drop-shadow(0 2px 7px rgba(190,140,20,.45)) brightness(1.05)}
-  50%{filter:drop-shadow(0 4px 12px rgba(240,190,40,.6)) brightness(1.42)}
-}
+/* Real 3D spin around the VERTICAL axis. .d3 holds the perspective; .d3i turns;
+   two crossed faces (.s2 pre-rotated 90deg) keep the gem solid so it never
+   flattens to an invisible edge. White glow is baked into the SVG (#wglow), so
+   nothing on this 3D chain carries a CSS filter (which would flatten it). */
+.d3{perspective:320px;perspective-origin:50% 44%;display:block}
+.d3i{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.d3i > svg{position:absolute;inset:0;width:100%;height:100%}
+.d3i > svg.s2{transform:rotateY(90deg)}
+@keyframes spin3d{to{transform:rotateY(360deg)}}
+body:not(.no-twinkle) .d3i{animation:spin3d 9s linear infinite}
+
 .cluster{position:absolute;pointer-events:none;z-index:var(--z-diamond);width:150px;height:130px}
-.cluster .gem{position:absolute;filter:drop-shadow(0 2px 7px rgba(190,140,20,.45)) brightness(1.06)}
-body:not(.no-twinkle) .cluster .g1{animation:spin 17s linear infinite, shimmer 4.6s ease-in-out infinite}
-body:not(.no-twinkle) .cluster .g2{animation:spinRev 23s linear infinite, shimmer 5.3s ease-in-out infinite}
-body:not(.no-twinkle) .cluster .g3{animation:spin 15s linear infinite, shimmer 4s ease-in-out infinite}
-body:not(.no-twinkle) .cluster .g4{animation:spinRev 27s linear infinite, shimmer 6.1s ease-in-out infinite}
-body:not(.no-twinkle) .cluster .g5{animation:spin 20s linear infinite, shimmer 4.4s ease-in-out infinite}
+.cluster .gem{position:absolute;aspect-ratio:1}
+body:not(.no-twinkle) .cluster .g1 .d3i{animation-duration:8s}
+body:not(.no-twinkle) .cluster .g2 .d3i{animation-duration:11s;animation-direction:reverse}
+body:not(.no-twinkle) .cluster .g3 .d3i{animation-duration:7s}
+body:not(.no-twinkle) .cluster .g4 .d3i{animation-duration:13s;animation-direction:reverse}
+body:not(.no-twinkle) .cluster .g5 .d3i{animation-duration:9.5s}
 .cluster .g1{width:66px;top:0;left:42px}
 .cluster .g2{width:42px;top:34px;left:2px;opacity:.92}
 .cluster .g3{width:50px;top:60px;left:78px;opacity:.85}
@@ -262,15 +266,15 @@ body:not(.no-twinkle) .cluster .g5{animation:spin 20s linear infinite, shimmer 4
 
 /* single showcase diamond (divider) — spins, tappable */
 .showcase{display:flex;align-items:center;justify-content:center;gap:1rem;margin:2.6rem 0;position:relative;z-index:var(--z-diamond)}
-.showcase .big{width:76px;height:76px;filter:drop-shadow(0 4px 13px rgba(190,140,20,.55)) brightness(1.06);cursor:pointer}
-body:not(.no-twinkle) .showcase .big{animation:spin 16s linear infinite}
+.showcase .big{width:80px;aspect-ratio:1;cursor:pointer}
+body:not(.no-twinkle) .showcase .big .d3i{animation-duration:7s}
 body:not(.no-twinkle) .showcase .big .twinkle{animation:twinkle 8s ease-in-out infinite}
 .showcase .side{height:1px;flex:1;max-width:6rem;background:linear-gradient(90deg,transparent,var(--gold-line))}
 .showcase .side.r{background:linear-gradient(90deg,var(--gold-line),transparent)}
-/* the section gems, the header mark, and every checked step-diamond turn too */
-body:not(.no-twinkle) .section-head .gem{animation:spin 24s linear infinite}
-body:not(.no-twinkle) .brand .brand-mark{animation:spin 30s linear infinite}
-body:not(.no-twinkle) .step .badge input:checked ~ .diamond svg{animation:spin 14s linear infinite}
+/* section gems + header mark turn a touch slower; step diamonds get their own perspective */
+body:not(.no-twinkle) .section-head .gem .d3i{animation-duration:12s}
+body:not(.no-twinkle) .brand .brand-mark .d3i{animation-duration:16s}
+.step .diamond{perspective:260px}
 
 /* ---------- timer ---------- */
 .timer{position:relative;overflow:hidden}
@@ -366,8 +370,7 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
   .check .box,.check .gem-ic,.step .num,.step .diamond{transition:opacity .01s linear !important;transform:none !important}
   body .step .diamond .twinkle,body .check .gem-ic .twinkle,body .showcase .big .twinkle{animation:none !important;
     filter:brightness(1.12) drop-shadow(0 1px 3px rgba(122,30,46,.2)) !important}
-  body .cluster .gem,body .showcase .big,body .section-head .gem,body .brand .brand-mark,body .step .diamond svg{
-    animation:none !important;filter:drop-shadow(0 2px 6px rgba(122,30,46,.22)) brightness(1.12) !important}
+  body .d3i{animation:none !important;transform:rotateY(20deg) !important}
   .btn:active,.chip:active,.icon-btn:active{transform:none}
 }
 </style>
@@ -378,31 +381,36 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
 <!-- gem symbol: a champagne brilliant-cut diamond (reused everywhere via <use>) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <!-- yellow-gold, high-shine gem gradients -->
+    <!-- white / crystal gem gradients (colorless diamond, cool silver facets) -->
     <linearGradient id="dTable" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFFEF2"/><stop offset="1" stop-color="#FCE38A"/></linearGradient>
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9EEF4"/></linearGradient>
     <linearGradient id="dLeft" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FDEFA0"/><stop offset="1" stop-color="#E5A81A"/></linearGradient>
+      <stop offset="0" stop-color="#FBFCFE"/><stop offset="1" stop-color="#C4CFDC"/></linearGradient>
     <linearGradient id="dRight" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F6CF4A"/></linearGradient>
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DBE4EE"/></linearGradient>
     <linearGradient id="dPav" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#F0BE2A"/><stop offset="1" stop-color="#9C6E0E"/></linearGradient>
+      <stop offset="0" stop-color="#D2DCE7"/><stop offset="1" stop-color="#9CACBE"/></linearGradient>
     <linearGradient id="dPav2" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FBD956"/><stop offset="1" stop-color="#BE8908"/></linearGradient>
+      <stop offset="0" stop-color="#E7EDF4"/><stop offset="1" stop-color="#B6C4D4"/></linearGradient>
     <radialGradient id="dGlint" cx="0.42" cy="0.35" r="0.6">
-      <stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="0.5" stop-color="#FFF6CC" stop-opacity="0.75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <!-- soft WHITE glow baked into the gem body (so no CSS filter is needed on the 3D wrapper) -->
+    <filter id="wglow" x="-45%" y="-45%" width="190%" height="190%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="#ffffff" flood-opacity="0.95"/></filter>
     <!-- 1) round brilliant -->
     <symbol id="gem" viewBox="0 0 100 100">
-      <polygon points="35,17 65,17 79,33 21,33" fill="url(#dTable)"/>
-      <polygon points="21,33 35,17 12,33" fill="url(#dLeft)"/>
-      <polygon points="79,33 65,17 88,33" fill="url(#dRight)"/>
-      <polygon points="12,33 50,92 6,37" fill="url(#dPav)"/>
-      <polygon points="88,33 50,92 94,37" fill="url(#dPav)"/>
-      <polygon points="21,33 50,92 12,33" fill="url(#dPav2)"/>
-      <polygon points="79,33 88,33 50,92" fill="url(#dPav2)"/>
-      <polygon points="21,33 79,33 50,92" fill="url(#dPav)" opacity="0.72"/>
-      <polygon points="35,17 65,17 50,33" fill="url(#dRight)" opacity="0.75"/>
-      <polygon points="50,17 65,17 50,50" fill="#FFFFFF" opacity="0.35"/>
+      <g filter="url(#wglow)">
+        <polygon points="35,17 65,17 79,33 21,33" fill="url(#dTable)"/>
+        <polygon points="21,33 35,17 12,33" fill="url(#dLeft)"/>
+        <polygon points="79,33 65,17 88,33" fill="url(#dRight)"/>
+        <polygon points="12,33 50,92 6,37" fill="url(#dPav)"/>
+        <polygon points="88,33 50,92 94,37" fill="url(#dPav)"/>
+        <polygon points="21,33 50,92 12,33" fill="url(#dPav2)"/>
+        <polygon points="79,33 88,33 50,92" fill="url(#dPav2)"/>
+        <polygon points="21,33 79,33 50,92" fill="url(#dPav)" opacity="0.72"/>
+        <polygon points="35,17 65,17 50,33" fill="url(#dRight)" opacity="0.85"/>
+        <polygon points="50,17 65,17 50,50" fill="#FFFFFF" opacity="0.45"/>
+      </g>
       <g class="twinkle">
         <circle cx="60" cy="26" r="9" fill="url(#dGlint)"/>
         <path d="M40 40 L42.5 48 L50 50.5 L42.5 53 L40 61 L37.5 53 L30 50.5 L37.5 48 Z" fill="#fff"/>
@@ -410,12 +418,14 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
     </symbol>
     <!-- 2) marquise (pointed) -->
     <symbol id="gemMarquise" viewBox="0 0 100 100">
-      <polygon points="50,4 78,42 50,50 22,42" fill="url(#dTable)"/>
-      <polygon points="22,42 50,50 50,96" fill="url(#dPav)"/>
-      <polygon points="78,42 50,50 50,96" fill="url(#dPav2)"/>
-      <polygon points="50,4 22,42 50,50" fill="url(#dLeft)" opacity="0.9"/>
-      <polygon points="50,4 78,42 50,50" fill="url(#dRight)" opacity="0.9"/>
-      <polygon points="50,4 50,50 66,34" fill="#FFFFFF" opacity="0.35"/>
+      <g filter="url(#wglow)">
+        <polygon points="50,4 78,42 50,50 22,42" fill="url(#dTable)"/>
+        <polygon points="22,42 50,50 50,96" fill="url(#dPav)"/>
+        <polygon points="78,42 50,50 50,96" fill="url(#dPav2)"/>
+        <polygon points="50,4 22,42 50,50" fill="url(#dLeft)" opacity="0.95"/>
+        <polygon points="50,4 78,42 50,50" fill="url(#dRight)" opacity="0.95"/>
+        <polygon points="50,4 50,50 66,34" fill="#FFFFFF" opacity="0.45"/>
+      </g>
       <g class="twinkle">
         <circle cx="56" cy="24" r="8" fill="url(#dGlint)"/>
         <path d="M42 58 L44 64 L50 66 L44 68 L42 74 L40 68 L34 66 L40 64 Z" fill="#fff" opacity="0.9"/>
@@ -423,10 +433,12 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
     </symbol>
     <!-- 3) heart -->
     <symbol id="gemHeart" viewBox="0 0 100 100">
-      <path d="M50 32 C 44 16, 24 14, 18 32 C 12 50, 33 64, 50 84 C 67 64, 88 50, 82 32 C 76 14, 56 16, 50 32 Z" fill="url(#dTable)"/>
-      <path d="M50 32 C 46 20, 34 20, 30 30 L 50 84 Z" fill="url(#dLeft)" opacity="0.7"/>
-      <path d="M50 32 C 54 20, 66 20, 70 30 L 50 84 Z" fill="url(#dPav2)" opacity="0.68"/>
-      <path d="M30 30 L 50 84 L 22 44 Z" fill="url(#dPav)" opacity="0.5"/>
+      <g filter="url(#wglow)">
+        <path d="M50 32 C 44 16, 24 14, 18 32 C 12 50, 33 64, 50 84 C 67 64, 88 50, 82 32 C 76 14, 56 16, 50 32 Z" fill="url(#dTable)"/>
+        <path d="M50 32 C 46 20, 34 20, 30 30 L 50 84 Z" fill="url(#dLeft)" opacity="0.8"/>
+        <path d="M50 32 C 54 20, 66 20, 70 30 L 50 84 Z" fill="url(#dPav2)" opacity="0.78"/>
+        <path d="M30 30 L 50 84 L 22 44 Z" fill="url(#dPav)" opacity="0.6"/>
+      </g>
       <g class="twinkle">
         <circle cx="34" cy="34" r="8" fill="url(#dGlint)"/>
         <path d="M62 30 L64 36 L70 38 L64 40 L62 46 L60 40 L54 38 L60 36 Z" fill="#fff" opacity="0.9"/>
@@ -443,7 +455,7 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
   <button class="icon-btn" id="tocBtn" aria-label="Recipe steps menu" aria-haspopup="dialog">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
-  <div class="brand"><svg class="brand-mark" viewBox="0 0 100 100"><use href="#gem"/></svg><span>Hannah&rsquo;s Kitchen</span></div>
+  <div class="brand"><span class="brand-mark d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span><span>Hannah&rsquo;s Kitchen</span></div>
   <button class="icon-btn" id="setBtn" aria-label="Settings" aria-haspopup="dialog">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19" stroke-linecap="round"/></svg>
   </button>
@@ -453,11 +465,11 @@ footer small{display:block;margin-top:.4rem;font-size:.74rem;letter-spacing:.04e
 <main>
   <section class="hero">
     <div class="cluster top-right" aria-hidden="true">
-      <svg class="gem g1" viewBox="0 0 100 100"><use href="#gem"/></svg>
-      <svg class="gem g2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg>
-      <svg class="gem g3" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
-      <svg class="gem g4" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
-      <svg class="gem g5" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg>
+      <span class="gem g1 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span>
+      <span class="gem g2 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemMarquise"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg></span></span>
+      <span class="gem g3 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
+      <span class="gem g4 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
+      <span class="gem g5 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemMarquise"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg></span></span>
     </div>
     <p class="eyebrow">a little recipe to treasure &#9825;</p>
     <h1 class="title">
@@ -481,7 +493,7 @@ private let _rp4 = #"""
 
   <!-- ingredients -->
   <section class="section" id="ingredients">
-    <div class="section-head"><svg class="gem" viewBox="0 0 100 100"><use href="#gem"/></svg><h2>Ingredients</h2></div>
+    <div class="section-head"><span class="gem d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span><h2>Ingredients</h2></div>
     <p class="section-note">Tap each one as you gather it and watch it turn into a little diamond &#9825;</p>
     <div class="card">
       <ul class="checklist" id="ingredientList">
@@ -494,13 +506,13 @@ private let _rp5 = #"""
 
   <div class="showcase" aria-hidden="true">
     <span class="side"></span>
-    <svg class="big" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
+    <span class="big d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
     <span class="side r"></span>
   </div>
 
   <!-- method -->
   <section class="section" id="method">
-    <div class="section-head"><svg class="gem" viewBox="0 0 100 100"><use href="#gem"/></svg><h2>Method</h2><span class="done-count" id="doneCount"></span></div>
+    <div class="section-head"><span class="gem d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span><h2>Method</h2><span class="done-count" id="doneCount"></span></div>
     <p class="section-note">Check off each step &mdash; each one blooms into a diamond that twinkles just for you &#10022;</p>
     <ol class="steps" id="stepList">
 """#
@@ -520,10 +532,10 @@ private let _rp7 = #"""
   <!-- kitchen timer, right where you need it before baking -->
   <section class="section timer card" id="timerCard">
     <div class="cluster foot" aria-hidden="true" style="position:absolute;top:-30px;right:-18px;opacity:.4;pointer-events:none">
-      <svg class="gem g4" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
-      <svg class="gem g5" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg>
+      <span class="gem g4 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
+      <span class="gem g5 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemMarquise"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg></span></span>
     </div>
-    <div class="section-head"><svg class="gem" viewBox="0 0 100 100"><use href="#gem"/></svg><h2>Kitchen timer</h2></div>
+    <div class="section-head"><span class="gem d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span><h2>Kitchen timer</h2></div>
     <p class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6" stroke-linecap="round"/></svg>
       This little timer only rings while the page is open &mdash; keep it up front, love. &#9825;</p>
     <div class="clock" id="clock" aria-live="polite">10:00</div>
@@ -546,11 +558,11 @@ private let _rp7 = #"""
   </section>
 
   <div class="cluster foot" aria-hidden="true">
-    <svg class="gem g1" viewBox="0 0 100 100"><use href="#gem"/></svg>
-    <svg class="gem g2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg>
-    <svg class="gem g3" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
-    <svg class="gem g4" viewBox="0 0 100 100"><use href="#gemHeart"/></svg>
-    <svg class="gem g5" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg>
+    <span class="gem g1 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gem"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gem"/></svg></span></span>
+    <span class="gem g2 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemMarquise"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg></span></span>
+    <span class="gem g3 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
+    <span class="gem g4 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemHeart"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemHeart"/></svg></span></span>
+    <span class="gem g5 d3"><span class="d3i"><svg viewBox="0 0 100 100"><use href="#gemMarquise"/></svg><svg class="s2" viewBox="0 0 100 100"><use href="#gemMarquise"/></svg></span></span>
   </div>
 </main>
 
@@ -762,7 +774,7 @@ private let _rp7 = #"""
     g.addEventListener('click', function(e){
       e.stopPropagation();
       var r=g.getBoundingClientRect(); burst(r.left+r.width/2, r.top+r.height/2, 12);
-      if(!reduceMotion){ try{ g.animate([{transform:'perspective(520px) rotateY(0) scale(1)'},{transform:'perspective(520px) rotateY(200deg) scale(1.25)'},{transform:'perspective(520px) rotateY(360deg) scale(1)'}],{duration:700,easing:'cubic-bezier(.22,1,.36,1)'}); }catch(_){ } }
+      if(!reduceMotion){ try{ g.animate([{transform:'scale(1)'},{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:520,easing:'cubic-bezier(.34,1.56,.64,1)'}); }catch(_){ } }
     });
   });
   // start over — uncheck every step with a little poof
