@@ -56,4 +56,30 @@ public enum KeypadLayout {
     public static func labelFont(keyHeight: CGFloat) -> CGFloat {
         min(38, max(22, keyHeight * 0.42))
     }
+
+    /// How far to shift a key label so its INK sits on the centre of the disc.
+    /// Positive = down. All arguments in the same unit (points, or em for a 1pt font);
+    /// `descender` is negative, matching the UIFont/CoreText convention.
+    ///
+    /// SwiftUI centres a Text by its LINE BOX (ascender→descender), not by the ink the
+    /// glyph actually paints. For this keypad that is the wrong centre twice over:
+    ///
+    ///  1. Playfair Display's ascender is 1.082 em — sized to clear its tall diacritics —
+    ///     against a 0.251 em descender, so the line-box centre lands 0.4155 em above the
+    ///     baseline. No glyph's ink centre gets near that, so every label draws low.
+    ///  2. Playfair ships OLD-STYLE figures. Measured off the pinned
+    ///     `PlayfairDisplay[wght].ttf`: 0/1/2 sit at x-height (ink centre ≈0.26 em),
+    ///     3/4/5/7/9 hang ~0.15 em BELOW the baseline (≈0.19 em), and 6/8 rise to cap
+    ///     height (≈0.354 em). That 0.169 em spread is ~4.9pt at a 29pt label — the
+    ///     digits visibly bounce from key to key.
+    ///
+    /// Old-style figures are the point of the font in running text (the result display,
+    /// history), where a shared baseline makes the rhythm read as intended. A keypad has
+    /// no shared baseline — each glyph is alone in its own disc — so each is centred on
+    /// its own ink instead. This is deliberately NOT applied to `bloomNumber` globally.
+    public static func opticalCenterShift(inkCenter: CGFloat,
+                                          ascender: CGFloat,
+                                          descender: CGFloat) -> CGFloat {
+        inkCenter - (ascender + descender) / 2
+    }
 }

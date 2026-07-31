@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import CoreText
 import BloomCore
 
 struct KeypadButton: View {
@@ -49,14 +51,19 @@ struct KeypadButton: View {
     }
 
     private var keyFace: some View {
-        Text(label)
+        let fontSize = KeypadLayout.labelFont(keyHeight: height)
+        return Text(label)
             // Tracks the key instead of sitting at a flat 22pt — on a 6.9" phone that
             // read as a speck floating in the disc. minimumScaleFactor absorbs the wide
             // labels ("+/−") rather than letting them push past the circle's edge.
-            .font(bloomNumber(KeypadLayout.labelFont(keyHeight: height), weight: .medium))
+            .font(bloomNumber(fontSize, weight: .medium))
             .lineLimit(1)
             .minimumScaleFactor(0.6)
             .foregroundStyle(labelColor)
+            // Centre the label's INK in the disc, not its line box — Playfair's old-style
+            // figures otherwise leave 6/8 riding high and 3/7/9 hanging low. Layout is
+            // untouched (offset is draw-time only), so the tap target does not move.
+            .offset(y: OpticalCenter.shiftPerPoint(label) * fontSize)
             // Circle: an EXACT height×height square (maxWidth alone would let a
             // narrow glyph collapse the face into a pill), so fill, clip,
             // shimmer, and glyph all share one true disc. Soft: full cell width.
@@ -89,6 +96,49 @@ struct KeypadButton: View {
     private var labelColor: Color {
         if isStrong || isPending { return .white }
         return themeStore.color("text")
+    }
+}
+
+/// Measures where a key label's ink actually sits, so `KeypadLayout.opticalCenterShift`
+/// can pull it onto the centre of the disc.
+///
+/// Measured, not tabulated, for two reasons: the numbers would otherwise be a wall of
+/// Playfair-specific constants that go silently wrong the day the font changes, and the
+/// backspace glyph "⌫" (U+232B) is NOT in Playfair Display at all — iOS substitutes it
+/// from a fallback face, whose metrics no hand-written table could know. CoreText sees
+/// the substitution; a table cannot.
+@MainActor
+private enum OpticalCenter {
+    // The shift is linear in point size, so each label is measured once at a reference
+    // size and stored per-point. Eleven distinct labels, so the cache stays tiny.
+    // ponytail: a plain dictionary — every caller is a SwiftUI body on the main actor.
+    private static var cache: [String: CGFloat] = [:]
+
+    /// Shift per point of font size. Positive = down.
+    static func shiftPerPoint(_ label: String) -> CGFloat {
+        if let hit = cache[label] { return hit }
+        let measured = measure(label)
+        cache[label] = measured
+        return measured
+    }
+
+    private static func measure(_ label: String) -> CGFloat {
+        let reference: CGFloat = 100
+        // No Playfair (font failed to register) → 0, i.e. exactly today's centring.
+        guard let font = UIFont(name: BloomFontRole.numberFamily, size: reference) else { return 0 }
+        let line = CTLineCreateWithAttributedString(
+            NSAttributedString(string: label, attributes: [.font: font])
+        )
+        // Ink bounds, measured from the baseline. Empty for whitespace-only labels.
+        let ink = CTLineGetImageBounds(line, nil)
+        guard ink.height > 0 else { return 0 }
+        // Line metrics come from Playfair even where a glyph was substituted — that is
+        // correct: SwiftUI sizes the line box from the specified font either way.
+        return KeypadLayout.opticalCenterShift(
+            inkCenter: ink.midY,
+            ascender: font.ascender,
+            descender: font.descender
+        ) / reference
     }
 }
 
