@@ -1,4 +1,5 @@
 import SwiftUI
+import BloomCore
 
 struct KeypadButton: View {
     @Environment(ThemeStore.self) private var themeStore
@@ -49,7 +50,12 @@ struct KeypadButton: View {
 
     private var keyFace: some View {
         Text(label)
-            .font(bloomNumber(22, weight: .medium))
+            // Tracks the key instead of sitting at a flat 22pt — on a 6.9" phone that
+            // read as a speck floating in the disc. minimumScaleFactor absorbs the wide
+            // labels ("+/−") rather than letting them push past the circle's edge.
+            .font(bloomNumber(KeypadLayout.labelFont(keyHeight: height), weight: .medium))
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
             .foregroundStyle(labelColor)
             // Circle: an EXACT height×height square (maxWidth alone would let a
             // narrow glyph collapse the face into a pill), so fill, clip,
@@ -57,8 +63,7 @@ struct KeypadButton: View {
             .frame(width: isCircle ? height : nil)
             .frame(maxWidth: isCircle ? nil : .infinity)
             .frame(height: height)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: faceCornerRadius))
+            .bloomKeyGlass(tint: backgroundColor, cornerRadius: faceCornerRadius)
             .overlay {
                 if themeStore.shimmerOn {
                     ZStack {
@@ -84,5 +89,44 @@ struct KeypadButton: View {
     private var labelColor: Color {
         if isStrong || isPending { return .white }
         return themeStore.color("text")
+    }
+}
+
+/// Liquid Glass key faces, shared by the portrait keypad and the landscape scientific
+/// pad so the whole keyboard is one material.
+///
+/// The theme's key colours are fully opaque brand pinks; tinting glass with them at full
+/// strength would just repaint the flat button and throw away the refraction. Tinting at
+/// `glassTintStrength` keeps the palette recognisable while the glass still reads.
+// ponytail: one tint strength for every key. It is the knob — glass over a busy petal
+// background may want it lower, over a flat theme higher.
+private let glassTintStrength: Double = 0.5
+
+extension View {
+    /// iOS 26+ gets real Liquid Glass; everything back to the iOS 17 deployment target
+    /// keeps the flat fill it has today.
+    @ViewBuilder
+    func bloomKeyGlass(tint: Color, cornerRadius: CGFloat) -> some View {
+        // compiler guard as well as #available: `.glassEffect` does not exist in SDKs
+        // before Xcode 26, so without this the project fails to BUILD on an older
+        // toolchain rather than merely falling back at runtime.
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(
+                .regular.tint(tint.opacity(glassTintStrength)).interactive(),
+                in: .rect(cornerRadius: cornerRadius)
+            )
+        } else {
+            self.bloomFlatKeyFace(tint: tint, cornerRadius: cornerRadius)
+        }
+        #else
+        self.bloomFlatKeyFace(tint: tint, cornerRadius: cornerRadius)
+        #endif
+    }
+
+    /// The pre-26 key face, and the fallback the glass path falls back to.
+    func bloomFlatKeyFace(tint: Color, cornerRadius: CGFloat) -> some View {
+        background(tint)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 }

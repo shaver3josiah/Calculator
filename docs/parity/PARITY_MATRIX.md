@@ -123,7 +123,9 @@ This register tracks feature parity between the Bloom Calculator v1.0 iOS releas
 
 ## Parking Lot (Post-1.0)
 
-- Liquid Glass mode (v1.1, D10 decision)
+- ~~Liquid Glass mode (v1.1, D10 decision)~~ — **pulled forward 2026-07-31** (D13). The
+  keypad key faces now use `.glassEffect` behind `#available(iOS 26)`, with the flat fill
+  as the pre-26 fallback. Still parked for the rest of the app: cards, sheets, tab bar.
 - Universal share via iOS share extension forwarding to other apps
 - iPad landscape and split-view layouts
 - Localization and internationalization support

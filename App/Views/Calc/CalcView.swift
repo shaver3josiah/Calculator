@@ -35,7 +35,9 @@ struct CalcView: View {
     var body: some View {
         // Everything is sized from CalcView's real slot so NOTHING can clip, and it
         // scales up (never just leaves a void) on larger devices:
-        //   • keys grow 44→72pt (44 floor keeps them tappable on an SE)
+        //   • keys grow from the 44pt SE floor up to a full grid cell — so a 6.9" phone
+        //     and an iPad actually draw bigger keys instead of banking the extra room as
+        //     dead air the way the old flat 72pt cap did (see BloomCore.KeypadLayout)
         //   • the card is the residual after the keypad, clamped 128–210 — so on
         //     phones it fills (cluster ≈ slot, keypad sits near the bottom) and on a
         //     tablet it caps at a generous 210 rather than ballooning
@@ -46,9 +48,9 @@ struct CalcView: View {
         // balanced margins instead of dumping a ~380pt gap under the card.
         GeometryReader { geo in
             let slack = geo.size.height - 98            // 98 = ~memory bar + gaps
-            let keyHeight = min(72.0, max(44.0, (slack - 190) / 5))
-            let keypadBlock = keyHeight * 5 + 40        // 5 rows + 4×10 gaps
-            let cardHeight = min(210.0, max(128.0, slack - keypadBlock))
+            let keyHeight = KeypadLayout.keyHeight(slack: slack, width: geo.size.width)
+            let keypadBlock = KeypadLayout.keypadBlock(keyHeight: keyHeight)
+            let cardHeight = min(210.0, max(KeypadLayout.cardFloor, slack - keypadBlock))
             let resultFont = min(92.0, max(40.0, cardHeight * 0.44))
             VStack(spacing: 16) {
                 displayArea(resultFont: resultFont)
@@ -56,9 +58,9 @@ struct CalcView: View {
                 // The tappable cluster caps at 460 centered so keys don't become
                 // ~160pt slabs on iPad. On compact phones (<460) these don't constrain.
                 memoryBar
-                    .frame(maxWidth: 460)
+                    .frame(maxWidth: KeypadLayout.maxWidth)
                 keypad(keyHeight: keyHeight)
-                    .frame(maxWidth: 460)
+                    .frame(maxWidth: KeypadLayout.maxWidth)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
@@ -382,9 +384,28 @@ struct CalcView: View {
         .buttonStyle(.plain)
     }
 
+    // One GlassEffectContainer batches all 20 glass faces into a single render pass.
+    // Its spacing is the MERGE threshold, not a layout gap: kept well under the 10pt
+    // grid gap so neighbouring keys stay separate discs instead of fusing into blobs.
+    @ViewBuilder
     private func keypad(keyHeight: CGFloat) -> some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-        return LazyVGrid(columns: columns, spacing: 10) {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 2) { keypadGrid(keyHeight: keyHeight) }
+        } else {
+            keypadGrid(keyHeight: keyHeight)
+        }
+        #else
+        keypadGrid(keyHeight: keyHeight)
+        #endif
+    }
+
+    private func keypadGrid(keyHeight: CGFloat) -> some View {
+        let columns = Array(
+            repeating: GridItem(.flexible(), spacing: KeypadLayout.gap),
+            count: Int(KeypadLayout.columns)
+        )
+        return LazyVGrid(columns: columns, spacing: KeypadLayout.gap) {
             ForEach(keypadRows.flatMap { $0 }) { def in
                 KeypadButton(
                     label: def.label,

@@ -141,7 +141,22 @@ struct ScientificCalcView: View {
         .discoverable("calc.decimalSwipe", cornerRadius: theme.radius)
     }
 
+    // Container spacing is the glass MERGE threshold, not a layout gap — kept well under
+    // the grid gap so the 40 landscape keys stay separate faces. See CalcView.keypad.
+    @ViewBuilder
     private func keypad(rowH: CGFloat, gap: CGFloat) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 2) { keypadGrid(rowH: rowH, gap: gap) }
+        } else {
+            keypadGrid(rowH: rowH, gap: gap)
+        }
+        #else
+        keypadGrid(rowH: rowH, gap: gap)
+        #endif
+    }
+
+    private func keypadGrid(rowH: CGFloat, gap: CGFloat) -> some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: gap), count: 8)
         return LazyVGrid(columns: columns, spacing: gap) {
             ForEach(cells) { cell in
@@ -183,6 +198,7 @@ struct ScientificCalcView: View {
         // Circle key style: visible face is a height-diameter disc centered in the
         // cell, but the tap target stays the full cell width so fingers don't miss.
         let isCircle = theme.keyStyle == "circle"
+        let radius = isCircle ? height / 2 : theme.radius * 0.6
         return Button(action: action) {
             Text(label)
                 .font(bloomBody(15, weight: .semibold))
@@ -194,14 +210,15 @@ struct ScientificCalcView: View {
                 .frame(width: isCircle ? height : nil)
                 .frame(maxWidth: isCircle ? nil : .infinity)
                 .frame(height: height)
-                .background(theme.color("surface2"))
-                .clipShape(RoundedRectangle(cornerRadius: isCircle ? height / 2 : theme.radius * 0.6))
+                // Same material as the standard keys beside it, so the pad reads as
+                // one keyboard rather than glass digits next to flat functions.
+                .bloomKeyGlass(tint: theme.color("surface2"), cornerRadius: radius)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
         }
         // Same visible sink as the standard keys beside it — one keyboard,
         // one press language.
-        .buttonStyle(TactilePressStyle(cornerRadius: isCircle ? height / 2 : theme.radius * 0.6))
+        .buttonStyle(TactilePressStyle(cornerRadius: radius))
     }
 }
 
