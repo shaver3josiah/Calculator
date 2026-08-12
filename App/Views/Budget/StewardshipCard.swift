@@ -65,22 +65,30 @@ struct StewardshipCard: View {
 
     @State private var expandFeast = false
     @State private var expandPoor = false
+    // Tucked away by default: the tithe section still counts in the bottom line,
+    // but only unfolds when she asks for it. Persisted so her choice sticks.
+    @AppStorage("budget.giveFirstOpen") private var isOpen = false
 
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 14) {
                 header
-                mainRow(
-                    title: "Tithe",
-                    subtitle: "Off the top, first",
-                    pct: bump(\.tithePct),
-                    amount: store.titheAmount
-                )
-                feastRow
-                poorRow
-                innovationRow
-                Rectangle().fill(theme.color("line")).frame(height: 1)
-                summary
+                if isOpen {
+                    Group {
+                        mainRow(
+                            title: "Tithe",
+                            subtitle: "Off the top, first",
+                            pct: bump(\.tithePct),
+                            amount: store.titheAmount
+                        )
+                        feastRow
+                        poorRow
+                        innovationRow
+                        Rectangle().fill(theme.color("line")).frame(height: 1)
+                        summary
+                    }
+                    .transition(subTransition)
+                }
             }
         }
     }
@@ -88,16 +96,32 @@ struct StewardshipCard: View {
     // MARK: Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Give first")
-                .font(bloomNumber(17, weight: .semibold))
-                .foregroundStyle(theme.color("deep"))
-            // In take-home mode the entered amount IS the base — calling it
-            // "gross" would be false, so the copy follows the mode.
-            Text("Set aside before anything else — figured from your \(store.anyNetMode ? "monthly income" : "gross income") of \(Formatters.money(store.grossIncome)) a month.")
-                .font(bloomBody(12))
-                .foregroundStyle(theme.color("muted"))
+        Button {
+            toggle($isOpen)
+        } label: {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Give first")
+                        .font(bloomNumber(17, weight: .semibold))
+                        .foregroundStyle(theme.color("deep"))
+                    // In take-home mode the entered amount IS the base — calling it
+                    // "gross" would be false, so the copy follows the mode.
+                    Text(isOpen
+                         ? "Set aside before anything else — figured from your \(store.anyNetMode ? "monthly income" : "gross income") of \(Formatters.money(store.grossIncome)) a month."
+                         : "\(Formatters.money(store.givenFirstTotal)) set aside — tap to adjust.")
+                        .font(bloomBody(12))
+                        .foregroundStyle(theme.color("muted"))
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(theme.color("muted"))
+                    .rotationEffect(.degrees(isOpen ? 90 : 0))
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOpen ? "Collapse Give first" : "Expand Give first")
     }
 
     // MARK: Feasting (expandable)
@@ -160,12 +184,8 @@ struct StewardshipCard: View {
                 Text("$")
                     .font(bloomBody(13))
                     .foregroundStyle(theme.color("muted"))
-                TextField("0", text: innovationBinding, prompt: Text("0").foregroundStyle(theme.color("muted")))
-                    .keyboardType(.decimalPad)
-                    .font(bloomNumber(14, weight: .semibold))
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 64)
-                    .inputAccessories(innovationBinding, compact: true)
+                DecimalField(value: innovationBinding, font: bloomNumber(14, weight: .semibold),
+                             alignment: .trailing, width: 64)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .background(theme.color("surfaceSoft"))
@@ -295,10 +315,10 @@ struct StewardshipCard: View {
         )
     }
 
-    private var innovationBinding: Binding<String> {
+    private var innovationBinding: Binding<Double> {
         Binding(
-            get: { Formatters.plain(store.stewardship.innovationFlat) },
-            set: { store.stewardship.innovationFlat = max(0, Double($0) ?? 0) }
+            get: { store.stewardship.innovationFlat },
+            set: { store.stewardship.innovationFlat = max(0, $0) }
         )
     }
 

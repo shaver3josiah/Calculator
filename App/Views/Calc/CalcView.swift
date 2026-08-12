@@ -439,7 +439,10 @@ struct DecimalSwipeModifier: ViewModifier {
     @State private var hint: String?
     @State private var hintEpoch = 0
 
-    private static let travelPerStep: CGFloat = 44
+    // 44 read as clunky — a full swipe barely moved two places. 30 keeps a flick from
+    // overshooting (min distance 24 still guards scrolling) while one thumb-stroke can
+    // sweep the whole 0…8 range.
+    private static let travelPerStep: CGFloat = 30
 
     func body(content: Content) -> some View {
         content

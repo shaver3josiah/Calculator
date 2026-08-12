@@ -171,11 +171,10 @@ final class BudgetStore {
         save()
     }
 
-    func reorderCategory(_ index: Int, direction: Int) {
+    /// Drag-and-drop commit: `to` is the final resting index. One save per drop.
+    func moveCategory(from: Int, to: Int) {
         var m = month
-        let j = index + direction
-        guard m.cats.indices.contains(index), m.cats.indices.contains(j) else { return }
-        m.cats.swapAt(index, j)
+        m.cats = BudgetMath.move(m.cats, from: from, to: to)
         month = m
         save()
     }
@@ -217,12 +216,10 @@ final class BudgetStore {
         save()
     }
 
-    func reorderRow(category categoryIndex: Int, row rowIndex: Int, direction: Int) {
+    func moveRow(category categoryIndex: Int, from: Int, to: Int) {
         var m = month
         guard m.cats.indices.contains(categoryIndex) else { return }
-        let j = rowIndex + direction
-        guard m.cats[categoryIndex].items.indices.contains(rowIndex), m.cats[categoryIndex].items.indices.contains(j) else { return }
-        m.cats[categoryIndex].items.swapAt(rowIndex, j)
+        m.cats[categoryIndex].items = BudgetMath.move(m.cats[categoryIndex].items, from: from, to: to)
         month = m
         save()
     }

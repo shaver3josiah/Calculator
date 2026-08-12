@@ -120,6 +120,8 @@ This register tracks feature parity between the Bloom Calculator v1.0 iOS releas
 | DIV-007 | Keyboard navigation via system accessibility | iOS system keyboard navigation used instead of HTML key bindings; respects accessibility settings |
 | DIV-008 | History as overlay not persistent tab | Native iOS patterns prefer overlay dialogs for supplementary information over adding tab bar items |
 | DIV-009 | Native print controller instead of HTML print route | iOS print sheet invokes system print controller rather than HTML print media queries |
+| DIV-010 | Budget reorder by press-and-drag instead of up/down arrows | HTML used paired arrow buttons per row; iOS uses a direct-manipulation grip handle with a folded card deck and petal confetti on placement, matching native reorder gestures. VoiceOver retains discrete Move up / Move down actions |
+| DIV-011 | Give-first (tithe) card collapsed by default | HTML rendered the giving breakdown always-expanded; iOS collapses it to a one-line summary (`budget.giveFirstOpen`, default false) to shorten the budget scroll. The amounts still count in the bottom line whether open or closed |
 
 ## Parking Lot (Post-1.0)
 

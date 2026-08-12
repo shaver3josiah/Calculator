@@ -122,16 +122,27 @@ private enum OpticalCenter {
         return measured
     }
 
+    // CTLineGetImageBounds with a nil context returns CGRectNull — which made every
+    // measurement fail the ink.height guard and silently disabled the centring. A 1×1
+    // throwaway bitmap context satisfies it; the rect is computed from font tables, so
+    // the context's size is irrelevant.
+    private static let inkContext = CGContext(
+        data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )
+
     private static func measure(_ label: String) -> CGFloat {
         let reference: CGFloat = 100
         // No Playfair (font failed to register) → 0, i.e. exactly today's centring.
-        guard let font = UIFont(name: BloomFontRole.numberFamily, size: reference) else { return 0 }
+        guard let font = UIFont(name: BloomFontRole.numberFamily, size: reference),
+              let context = inkContext else { return 0 }
         let line = CTLineCreateWithAttributedString(
             NSAttributedString(string: label, attributes: [.font: font])
         )
         // Ink bounds, measured from the baseline. Empty for whitespace-only labels.
-        let ink = CTLineGetImageBounds(line, nil)
-        guard ink.height > 0 else { return 0 }
+        let ink = CTLineGetImageBounds(line, context)
+        guard !ink.isNull, ink.height > 0 else { return 0 }
         // Line metrics come from Playfair even where a glyph was substituted — that is
         // correct: SwiftUI sizes the line box from the specified font either way.
         return KeypadLayout.opticalCenterShift(
@@ -154,7 +165,7 @@ private let glassTintStrength: Double = 0.5
 
 extension View {
     /// iOS 26+ gets real Liquid Glass; everything back to the iOS 17 deployment target
-    /// keeps the flat fill it has today.
+    /// gets the hand-drawn glass replica below.
     @ViewBuilder
     func bloomKeyGlass(tint: Color, cornerRadius: CGFloat) -> some View {
         // compiler guard as well as #available: `.glassEffect` does not exist in SDKs
@@ -167,16 +178,39 @@ extension View {
                 in: .rect(cornerRadius: cornerRadius)
             )
         } else {
-            self.bloomFlatKeyFace(tint: tint, cornerRadius: cornerRadius)
+            self.bloomGlassReplicaFace(tint: tint, cornerRadius: cornerRadius)
         }
         #else
-        self.bloomFlatKeyFace(tint: tint, cornerRadius: cornerRadius)
+        self.bloomGlassReplicaFace(tint: tint, cornerRadius: cornerRadius)
         #endif
     }
 
-    /// The pre-26 key face, and the fallback the glass path falls back to.
-    func bloomFlatKeyFace(tint: Color, cornerRadius: CGFloat) -> some View {
-        background(tint)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    /// The pre-26 fallback: hand-drawn glass that replicates the Liquid Glass look —
+    /// translucent tint, a top sheen, and a specular hairline border. All gradients,
+    /// no Material: the keys sit on a flat themed background, so a live backdrop blur
+    /// (×20 keys) would buy nothing and cost real GPU on older phones.
+    func bloomGlassReplicaFace(tint: Color, cornerRadius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        return background {
+            ZStack {
+                shape.fill(tint.opacity(0.85))
+                shape.fill(LinearGradient(
+                    stops: [
+                        .init(color: .white.opacity(0.32), location: 0),
+                        .init(color: .white.opacity(0.06), location: 0.45),
+                        .init(color: .clear, location: 0.55),
+                        .init(color: .white.opacity(0.1), location: 1),
+                    ],
+                    startPoint: .top, endPoint: .bottom
+                ))
+                shape.strokeBorder(LinearGradient(
+                    colors: [.white.opacity(0.55), .white.opacity(0.06)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                ), lineWidth: 1)
+            }
+            .compositingGroup()
+            // Outside the shape fills, so no clip — a clipShape here would shear it off.
+            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 3)
+        }
     }
 }

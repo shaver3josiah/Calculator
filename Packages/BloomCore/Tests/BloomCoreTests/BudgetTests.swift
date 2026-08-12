@@ -323,6 +323,15 @@ final class BudgetTests: XCTestCase {
         }
     }
 
+    func testMove() {
+        let a = ["a", "b", "c", "d"]
+        XCTAssertEqual(BudgetMath.move(a, from: 0, to: 2), ["b", "c", "a", "d"], "move down lands at final index")
+        XCTAssertEqual(BudgetMath.move(a, from: 3, to: 1), ["a", "d", "b", "c"], "move up lands at final index")
+        XCTAssertEqual(BudgetMath.move(a, from: 2, to: 2), a, "no-op move")
+        XCTAssertEqual(BudgetMath.move(a, from: 5, to: 0), a, "out-of-range from is safe")
+        XCTAssertEqual(BudgetMath.move(a, from: 0, to: -1), a, "out-of-range to is safe")
+    }
+
     func assertRelativelyClose(_ got: Double, _ expect: Double, label: String, file: StaticString = #filePath, line: UInt = #line) {
         if expect == 0 {
             XCTAssertTrue(abs(got) < 1e-9, "\(label): expected ~0, got \(got)", file: file, line: line)

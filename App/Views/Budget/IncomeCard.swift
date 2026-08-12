@@ -82,7 +82,7 @@ struct IncomeCard: View {
                 .inputAccessories(labelBinding(index), compact: true)
             modeControl(index, isNet: isNet)
             HStack(spacing: 10) {
-                fieldGroup(label: isNet ? "Take-home / month" : "Gross / month", text: grossBinding(index))
+                fieldGroup(label: isNet ? "Take-home / month" : "Gross / month", value: grossBinding(index))
             }
             if isNet {
                 Text("Taxes & deductions already taken out.")
@@ -90,9 +90,9 @@ struct IncomeCard: View {
                     .foregroundStyle(theme.color("muted"))
             } else {
                 HStack(spacing: 10) {
-                    fieldGroup(label: "Tax %", text: taxBinding(index))
-                    fieldGroup(label: "Retire %", text: retBinding(index))
-                    fieldGroup(label: "Other %", text: othBinding(index))
+                    fieldGroup(label: "Tax %", value: taxBinding(index))
+                    fieldGroup(label: "Retire %", value: retBinding(index))
+                    fieldGroup(label: "Other %", value: othBinding(index))
                 }
             }
             Text("Take-home \(Formatters.money(BudgetMath.netOf(inc)))")
@@ -143,15 +143,12 @@ struct IncomeCard: View {
         }
     }
 
-    private func fieldGroup(label: String, text: Binding<String>) -> some View {
+    private func fieldGroup(label: String, value: Binding<Double>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(bloomBody(10, weight: .medium))
                 .foregroundStyle(theme.color("muted"))
-            TextField("0", text: text, prompt: Text("0").foregroundStyle(theme.color("muted")))
-                .keyboardType(.decimalPad)
-                .font(bloomBody(14))
-                .inputAccessories(text, compact: true)
+            DecimalField(value: value, font: bloomBody(14))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .background(theme.color("surface"))
@@ -166,26 +163,19 @@ struct IncomeCard: View {
         )
     }
 
-    private func grossBinding(_ index: Int) -> Binding<String> {
-        numericBinding(get: { store.month.inc[index].gross }, set: { store.setIncome(index, gross: $0) })
+    private func grossBinding(_ index: Int) -> Binding<Double> {
+        Binding(get: { store.month.inc[index].gross }, set: { store.setIncome(index, gross: $0) })
     }
 
-    private func taxBinding(_ index: Int) -> Binding<String> {
-        numericBinding(get: { store.month.inc[index].tax }, set: { store.setIncome(index, tax: $0) })
+    private func taxBinding(_ index: Int) -> Binding<Double> {
+        Binding(get: { store.month.inc[index].tax }, set: { store.setIncome(index, tax: $0) })
     }
 
-    private func retBinding(_ index: Int) -> Binding<String> {
-        numericBinding(get: { store.month.inc[index].ret }, set: { store.setIncome(index, ret: $0) })
+    private func retBinding(_ index: Int) -> Binding<Double> {
+        Binding(get: { store.month.inc[index].ret }, set: { store.setIncome(index, ret: $0) })
     }
 
-    private func othBinding(_ index: Int) -> Binding<String> {
-        numericBinding(get: { store.month.inc[index].oth }, set: { store.setIncome(index, oth: $0) })
-    }
-
-    private func numericBinding(get: @escaping () -> Double, set: @escaping (Double) -> Void) -> Binding<String> {
-        Binding(
-            get: { Formatters.plain(get()) },
-            set: { newValue in set(Double(newValue) ?? 0) }
-        )
+    private func othBinding(_ index: Int) -> Binding<Double> {
+        Binding(get: { store.month.inc[index].oth }, set: { store.setIncome(index, oth: $0) })
     }
 }

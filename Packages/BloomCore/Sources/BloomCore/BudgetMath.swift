@@ -12,6 +12,15 @@ public enum BudgetMath {
         return f
     }
 
+    /// Move one element to its final resting index `to` (drag-and-drop semantics:
+    /// `to` is where the item ends up, in either direction). Bad indices → unchanged.
+    public static func move<T>(_ array: [T], from: Int, to: Int) -> [T] {
+        guard array.indices.contains(from), array.indices.contains(to), from != to else { return array }
+        var out = array
+        out.insert(out.remove(at: from), at: to)
+        return out
+    }
+
     public static func netOf(_ i: BudgetIncome) -> Double {
         // Take-home mode: the entered amount IS the net. The stored percentages are
         // kept untouched so flipping back to gross mode restores the old behavior.

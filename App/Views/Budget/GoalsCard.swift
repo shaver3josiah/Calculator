@@ -52,12 +52,9 @@ struct GoalsCard: View {
                     .foregroundStyle(theme.color("muted"))
             }
             Spacer()
-            TextField(String(format: "%.0f", BudgetMath.jsRound(entry.sel)), text: goalBinding(entry.index), prompt: Text(String(format: "%.0f", BudgetMath.jsRound(entry.sel))).foregroundStyle(theme.color("muted")))
-                .keyboardType(.decimalPad)
-                .font(bloomBody(13))
-                .frame(width: 70)
-                .multilineTextAlignment(.trailing)
-                .inputAccessories(goalBinding(entry.index), compact: true)
+            DecimalField(value: goalBinding(entry.index),
+                         prompt: String(format: "%.0f", BudgetMath.jsRound(entry.sel)),
+                         font: bloomBody(13), alignment: .trailing, width: 70)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(theme.color("surfaceSoft"))
@@ -136,19 +133,10 @@ struct GoalsCard: View {
         .background(Capsule().fill(theme.color("surfaceSoft")))
     }
 
-    private func goalBinding(_ index: Int) -> Binding<String> {
+    private func goalBinding(_ index: Int) -> Binding<Double?> {
         Binding(
-            get: {
-                guard let goal = store.month.cats[safe: index]?.goal else { return "" }
-                return Formatters.plain(goal)
-            },
-            set: { newValue in
-                if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
-                    store.setGoal(index, value: nil)
-                } else {
-                    store.setGoal(index, value: Double(newValue) ?? 0)
-                }
-            }
+            get: { store.month.cats[safe: index]?.goal },
+            set: { store.setGoal(index, value: $0) }
         )
     }
 }
