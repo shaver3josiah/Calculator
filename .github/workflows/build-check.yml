@@ -33,6 +33,26 @@ jobs:
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+      # App-layer unit tests (BloomAppTests). BloomCore's pure logic runs on
+      # Linux in test.yml; the stores in App/ import SwiftUI, so they need a
+      # booted simulator and can only run here.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          set -e
+          udid=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['isAvailable']))")
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $udid"
+      - name: Run App unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Bloom.xcodeproj \
+            -scheme Bloom \
+            -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
       - name: Verify bundled sounds and fonts
         run: |
           set -e

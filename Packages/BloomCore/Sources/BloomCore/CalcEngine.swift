@@ -49,8 +49,15 @@ public struct CalcEngine: Sendable {
             let a = stored ?? 0
             let b = Double(current) ?? 0
             let res = CalcEngine.compute(a, b, activeOp)
-            stored = res
-            current = Formatters.plain(res)
+            // `equals` has always guarded this; the chained path did not, so
+            // 5 / 0 + wrote the literal string "NaN" into the buffer and every
+            // later operand parsed it straight back out - the calculator stayed
+            // poisoned until AC. A faithful port of the JS source's own bug
+            // (see setOp in the all-in-one HTML); deliberately diverged. No
+            // vector pins the unguarded behavior.
+            let finite = res.isFinite
+            stored = finite ? res : nil
+            current = finite ? Formatters.plain(res) : "0"
         } else {
             stored = Double(current) ?? 0
         }

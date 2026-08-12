@@ -61,12 +61,34 @@ targets:
         UIRequiresFullScreen: true
         UILaunchScreen:
           UIColorName: LaunchBackground
+  # App-layer unit tests. BloomCore's pure logic is covered by `swift test` on
+  # Linux; the stores in App/ import SwiftUI and can only be tested here.
+  BloomAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: AppTests
+    dependencies:
+      - target: Bloom
+    settings:
+      base:
+        SWIFT_VERSION: "5.10"
+        GENERATE_INFOPLIST_FILE: true
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Bloom.app/Bloom"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
 schemes:
   Bloom:
     build:
       targets:
         Bloom: all
+        BloomAppTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - BloomAppTests
     archive:
       config: Release
