@@ -7,6 +7,21 @@ struct ImportBudgetSheet: View {
     @Environment(BudgetStore.self) private var store
     @State private var text = ""
     @State private var failed = false
+    /// Set only when the import would overwrite a month she has already worked
+    /// on. Most imports are of a month she doesn't have yet, and those just go
+    /// in - a dialog that also fires on the harmless case is one she learns to
+    /// tap through, which is how the dangerous case gets waved past too.
+    @State private var replace: ReplacePrompt?
+
+    private struct ReplacePrompt {
+        let key: String
+        let mine: String
+        let theirs: String
+        var title: String { "Replace \(BudgetMath.monthLabel(key))?" }
+        var message: String {
+            "You have \(mine) in \(BudgetMath.monthLabel(key)). The shared one has \(theirs). Replacing yours can't be undone."
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,11 +44,7 @@ struct ImportBudgetSheet: View {
                             .foregroundStyle(theme.color("deep"))
                     }
                     Button {
-                        if store.importShared(text) {
-                            dismiss()
-                        } else {
-                            failed = true
-                        }
+                        attemptImport()
                     } label: {
                         Text("Import")
                             .font(bloomBody(15, weight: .semibold))
@@ -55,6 +66,41 @@ struct ImportBudgetSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .alert(
+                replace?.title ?? "",
+                isPresented: Binding(get: { replace != nil }, set: { if !$0 { replace = nil } }),
+                presenting: replace
+            ) { _ in
+                Button("Replace", role: .destructive) { commit() }
+                // Cancel leaves her text in the box rather than closing the sheet,
+                // so "not that month" is a correction, not a restart.
+                Button("Keep mine", role: .cancel) { replace = nil }
+            } message: { prompt in
+                Text(prompt.message)
+            }
+        }
+    }
+
+    /// Nothing to lose -> import. Something to lose -> ask, once, with both
+    /// sides of the trade named.
+    private func attemptImport() {
+        guard let incoming = store.previewImport(text) else {
+            failed = true
+            return
+        }
+        if let mine = store.replacementSummary(for: incoming.key) {
+            replace = ReplacePrompt(key: incoming.key, mine: mine, theirs: incoming.summary)
+        } else {
+            commit()
+        }
+    }
+
+    private func commit() {
+        replace = nil
+        if store.importShared(text) {
+            dismiss()
+        } else {
+            failed = true
         }
     }
 }

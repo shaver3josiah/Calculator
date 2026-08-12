@@ -329,7 +329,7 @@ struct NotesEditorView: View {
     }
 
     private func newPage() {
-        if !isBlank { _ = archive.save(currentNote()) }
+        archive.stash(drafts.notes)
         clearPage()
         sound.play("tap1")
         ToastCenter.shared.show(title: "Fresh page", message: "Your last note is safe in your notebook.")

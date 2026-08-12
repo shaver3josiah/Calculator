@@ -70,6 +70,24 @@ final class NotesArchiveStore {
         return n
     }
 
+    /// The live page is about to be replaced - put it in the notebook first.
+    /// Returns the saved note (nil if the page was blank) so the caller can tell
+    /// her where it went.
+    ///
+    /// The blank guard is load-bearing, not a tidy-up: `save` DELETES a stored
+    /// note that has been cleared to nothing, so calling it with a blank page
+    /// would destroy the very note the caller is trying to protect.
+    @discardableResult
+    func stash(_ draft: NotesDraft) -> ArchivedNote? {
+        let blank = draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && draft.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard !blank else { return nil }
+        let id = draft.id ?? UUID()
+        var entry = ArchivedNote(id: id, title: draft.title, plain: draft.body, rtf: draft.rtf)
+        entry.archived = note(id: id)?.archived ?? false
+        return save(entry)
+    }
+
     func setArchived(_ id: UUID, _ archived: Bool) {
         guard let idx = notes.firstIndex(where: { $0.id == id }) else { return }
         notes[idx].archived = archived

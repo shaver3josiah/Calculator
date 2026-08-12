@@ -115,9 +115,18 @@ struct NotesArchiveView: View {
     }
 
     private func open(_ note: ArchivedNote) {
+        // Opening replaces the live page, so keep it exactly the way "New page"
+        // does. This used to overwrite whatever she was mid-sentence on.
+        let kept = archive.stash(drafts.notes)
         drafts.notes = NotesDraft(id: note.id, title: note.title, body: note.plain, rtf: note.rtf)
         drafts.lists.mode = "notes"
         sound.play("tap1")
+        // Only worth saying when a DIFFERENT note was set aside - reopening the
+        // note she already had open would just be noise.
+        if let kept, kept.id != note.id {
+            ToastCenter.shared.show(title: "Kept your page",
+                                    message: "\(kept.displayTitle) is safe in your notebook.")
+        }
     }
 
     /// Turn a note's lines into a checklist (bullets and plain lines both count).

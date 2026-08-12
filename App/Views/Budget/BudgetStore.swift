@@ -277,6 +277,22 @@ final class BudgetStore {
         }
     }
 
+    /// What an import into `key` would replace, or nil if that month is empty of
+    /// her own work. Doubles as the "is this destructive?" test, so the caller
+    /// can't ask the question one way and phrase the warning another.
+    func replacementSummary(for key: String) -> String? {
+        guard let m = db.months[key] else { return nil }
+        let cats = m.cats.count
+        return "\(cats) categor\(cats == 1 ? "y" : "ies"), \(Formatters.money(BudgetMath.planned(of: m))) planned"
+    }
+
+    /// The month an import would land in, without committing anything.
+    func previewImport(_ text: String) -> (key: String, summary: String)? {
+        guard let parsed = BudgetShare.parse(text), let m = parsed.months[parsed.cur] else { return nil }
+        let cats = m.cats.count
+        return (parsed.cur, "\(cats) categor\(cats == 1 ? "y" : "ies"), \(Formatters.money(BudgetMath.planned(of: m))) planned")
+    }
+
     @discardableResult
     func importShared(_ text: String) -> Bool {
         guard let parsed = BudgetShare.parse(text), let m = parsed.months[parsed.cur] else { return false }
