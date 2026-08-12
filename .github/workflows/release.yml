@@ -130,6 +130,7 @@ jobs:
       # the clock reset and doubles as a plain-text record of the last upload.
       # [skip ci] so it does not also burn a build-check run.
       - name: Stamp the keep-alive
+        continue-on-error: true
         if: github.event_name == 'schedule'
         run: |
           set -e
