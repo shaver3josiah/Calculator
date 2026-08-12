@@ -31,6 +31,13 @@ public final class JSONStore: @unchecked Sendable {
 
     private let directory: URL
     private let queue = DispatchQueue(label: "com.shaver.bloomcalculator.jsonstore")
+    /// Encoded values waiting on the debounce, newest per key. Touched only on `queue`.
+    private var pending: [StoreKey: Data] = [:]
+    private var flushScheduled = false
+    // ponytail: one debounce for every key. Long enough to swallow a typing burst,
+    // short enough that a hard kill loses at most this much; scenePhase flushes the
+    // normal path. Per-key intervals only if some key ever needs its own.
+    private static let debounce: DispatchTimeInterval = .milliseconds(500)
 
     public init(directory: URL) {
         self.directory = directory
@@ -39,6 +46,11 @@ public final class JSONStore: @unchecked Sendable {
 
     public func get<T: Decodable>(_ key: StoreKey, as type: T.Type) -> T? {
         return queue.sync {
+            // Read-your-writes: a value still waiting on the debounce is the
+            // truth, not the older copy still sitting on disk.
+            if let queued = pending[key] {
+                return try? JSONDecoder().decode(T.self, from: queued)
+            }
             let url = fileURL(for: key)
             guard let data = try? Data(contentsOf: url) else {
                 return nil
@@ -55,24 +67,48 @@ public final class JSONStore: @unchecked Sendable {
         }
     }
 
+    /// Coalesced and off the caller's thread. Every store calls this from a
+    /// `didSet`, so at the top of a burst of typing it fired once per keystroke:
+    /// a full encode plus an atomic write, synchronously, on the main thread.
+    /// Only the LAST value per key can ever reach disk, so the burst collapses
+    /// to one write `debounce` after it stops.
     public func set<T: Encodable>(_ key: StoreKey, _ value: T) {
-        queue.sync {
-            let url = fileURL(for: key)
-            guard let data = try? JSONEncoder().encode(value) else {
-                return
-            }
-            do {
-                try data.write(to: url, options: .atomic)
-            } catch {
-                assertionFailure("JSONStore write failed for \(key.rawValue): \(error)")
-            }
+        queue.async {
+            guard let data = try? JSONEncoder().encode(value) else { return }
+            self.pending[key] = data
+            guard !self.flushScheduled else { return }
+            self.flushScheduled = true
+            self.queue.asyncAfter(deadline: .now() + Self.debounce) { self.writePending() }
         }
     }
 
     public func remove(_ key: StoreKey) {
         queue.sync {
+            // Drop the queued write too, or the debounce resurrects the file.
+            pending[key] = nil
             let url = fileURL(for: key)
             try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    /// Write everything queued, right now. Call when the app leaves the screen:
+    /// the debounce window is the one span where her last edit lives only in
+    /// memory. Blocks until the bytes are handed to the filesystem.
+    public func flush() {
+        queue.sync { writePending() }
+    }
+
+    /// Must run on `queue`.
+    private func writePending() {
+        flushScheduled = false
+        let batch = pending
+        pending.removeAll()
+        for (key, data) in batch {
+            do {
+                try data.write(to: fileURL(for: key), options: .atomic)
+            } catch {
+                assertionFailure("JSONStore write failed for \(key.rawValue): \(error)")
+            }
         }
     }
 

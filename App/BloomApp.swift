@@ -59,7 +59,9 @@ struct BloomApp: App {
                 // Leaving the app is the last guaranteed moment to write her
                 // in-progress numbers down; the debounce may still be pending.
                 .onChange(of: scenePhase) { _, phase in
-                    if phase != .active { draftStore.flush() }
+                    guard phase != .active else { return }
+                    draftStore.flush()          // rebuild the blob, hand it to the store
+                    JSONStore.shared.flush()    // then land every debounced write
                 }
                 // ThemeStore's init assignment never fires its didSet, so the
                 // saved lock has to be re-applied here or a relaunch forgets it.
