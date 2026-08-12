@@ -166,7 +166,11 @@ struct NotesEditorView: View {
             .onEnded { value in
                 let t = value.translation
                 guard max(abs(t.width), abs(t.height)) > 50 else { return }
-                if abs(t.width) > abs(t.height) {
+                // Horizontal has to win CLEARLY: left is the one irreversible
+                // outcome here, and a 51-left/50-down flick used to delete the
+                // note outright. An ambiguous diagonal now falls to the vertical
+                // branch, where the worst case is archive - which is undoable.
+                if abs(t.width) > abs(t.height) * 1.5 {
                     if t.width > 0 { duplicateNote() } else { deleteNote() }
                 } else {
                     if t.height < 0 { keepNote() } else { archiveNote() }

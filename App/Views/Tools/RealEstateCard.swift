@@ -52,7 +52,7 @@ struct RealEstateCard: View {
     private var currentValue: Double { Double(drafts.realEstate.currentValue) ?? 0 }
     private var rate: Double { Double(drafts.realEstate.rate) ?? Self.homeRate }
     private var netYield: Double { Double(drafts.realEstate.netYield) ?? 0 }
-    private var years: Int { max(1, Int(Double(drafts.realEstate.years) ?? 20)) }
+    private var years: Int { drafts.realEstate.years.clampedInt(to: 1...100, fallback: 20) }
 
     private var futureValue: Double {
         FinanceMath.appreciatedValue(currentValue: currentValue, annualRatePct: rate, years: Double(years), netYieldPct: netYield)

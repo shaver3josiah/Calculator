@@ -1,9 +1,27 @@
-# CI: builds, signs, and uploads Bloom to TestFlight when a v* tag is pushed.
+# CI: builds, signs, and uploads Bloom to TestFlight.
+#
+# Three ways in:
+#   - push a v* tag       a real release
+#   - Actions > Run workflow   a build now, no tag needed
+#   - the 1st of the month     the keep-alive
+#
+# The keep-alive exists because a TestFlight build STOPS BEING INSTALLABLE 90
+# days after upload. Nothing warns you; the app simply disappears from her
+# TestFlight one day. Monthly is well inside that, and re-uploading the same
+# code is enough - the build number (github.run_number) always increases, which
+# is all App Store Connect requires.
 name: release
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+  schedule:
+    # 07:00 UTC on the 1st. Off the hour would be kinder to GitHub's scheduler
+    # queue, but a few minutes' drift is irrelevant against a 90-day clock.
+    - cron: "0 7 1 * *"
+permissions:
+  contents: write   # the keep-alive stamps a commit; see the last step
 jobs:
   swift-test:
     runs-on: ubuntu-latest
@@ -106,3 +124,19 @@ jobs:
       - name: Remove API key
         if: always()
         run: rm -f "$RUNNER_TEMP/asc.p8"
+      # GitHub disables a scheduled workflow after 60 days with no repository
+      # activity - which would silently kill this keep-alive about a month
+      # before the build it is meant to renew expires. A commit per run keeps
+      # the clock reset and doubles as a plain-text record of the last upload.
+      # [skip ci] so it does not also burn a build-check run.
+      - name: Stamp the keep-alive
+        if: github.event_name == 'schedule'
+        run: |
+          set -e
+          mkdir -p .github
+          echo "last keep-alive upload: $(date -u +'%Y-%m-%d %H:%M UTC')  (build ${{ github.run_number }})" > .github/last-keepalive.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-keepalive.txt
+          git commit -m "chore: TestFlight keep-alive, build ${{ github.run_number }} [skip ci]"
+          git push origin HEAD:${{ github.event.repository.default_branch }}

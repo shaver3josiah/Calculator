@@ -70,8 +70,10 @@ struct RootView: View {
     /// Debounced portrait⇄landscape switch: only the last change within a 300ms
     /// quiet window is applied, so rapid re-orientation can't flip the UI repeatedly.
     private func scheduleFlip(to want: Bool) {
-        guard want != landscape else { return }
+        // Bump FIRST: an early return must still supersede a pending flip, or
+        // rotating back inside the window lets the stale one land face-up.
         flipGeneration &+= 1
+        guard want != landscape else { return }
         let generation = flipGeneration
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(300))
@@ -93,6 +95,10 @@ struct RootView: View {
             }
             HStack(spacing: 0) {
                 landscapeContent
+                    // Portrait has this at line ~150. Without it landscape has no
+                    // Done key: the decimal pad has no return key, and in landscape
+                    // the pad covers the field, so a tap-outside is a guess.
+                    .keyboardDoneBar()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 // The rail carries the header buttons too — portrait's top bar
                 // doesn't exist here, and the theme editor is the only door to

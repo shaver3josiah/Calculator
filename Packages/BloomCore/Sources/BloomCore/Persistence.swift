@@ -107,8 +107,20 @@ public final class JSONStore: @unchecked Sendable {
             do {
                 try data.write(to: fileURL(for: key), options: .atomic)
             } catch {
+                // A write can genuinely fail (disk full, protected data locked
+                // while the phone is still locked). Dropping the bytes here
+                // would lose the edit silently, and assertionFailure is compiled
+                // out in Release, so the old code lost it with NO signal at all.
+                // Put it back so the next flush retries - unless a newer value
+                // for the same key already landed in the queue behind us.
+                if pending[key] == nil { pending[key] = data }
                 assertionFailure("JSONStore write failed for \(key.rawValue): \(error)")
             }
+        }
+        // Something failed and is waiting for another go.
+        if !pending.isEmpty, !flushScheduled {
+            flushScheduled = true
+            queue.asyncAfter(deadline: .now() + Self.debounce) { self.writePending() }
         }
     }
 

@@ -108,16 +108,21 @@ public enum MathModes {
     }
 
     public static func gcd(_ x: Int, _ y: Int) -> Int {
-        var a = abs(x)
-        var b = abs(y)
+        // `abs(Int.min)` traps - there is no positive Int.min. `magnitude` is
+        // UInt, so it cannot, and every intermediate here stays non-negative.
+        var a = x.magnitude
+        var b = y.magnitude
         while b != 0 {
             (a, b) = (b, a % b)
         }
-        return a == 0 ? 1 : a
+        return a == 0 ? 1 : Int(clamping: a)
     }
 
     public static func simplify(num: Int, den: Int) -> FractionValue? {
         if den == 0 { return nil }
+        // Negating Int.min traps (its positive has no Int). Unrepresentable, so
+        // it takes the same "no answer" path an invalid fraction already takes.
+        guard num > Int.min, den > Int.min else { return nil }
         var n = num
         var d = den
         if d < 0 {
@@ -128,24 +133,49 @@ public enum MathModes {
         return FractionValue(num: n / g, den: d / g)
     }
 
+    // Int arithmetic TRAPS on overflow, and both operands are digits she typed -
+    // two 10-digit denominators are enough to blow past Int64 on the cross
+    // multiply. This function is already Optional-returning, so an
+    // unrepresentable result is simply "no answer" instead of a crash.
+    private static func mul(_ a: Int, _ b: Int) -> Int? {
+        let (v, overflow) = a.multipliedReportingOverflow(by: b)
+        return overflow ? nil : v
+    }
+
+    private static func addOrNil(_ a: Int, _ b: Int) -> Int? {
+        let (v, overflow) = a.addingReportingOverflow(b)
+        return overflow ? nil : v
+    }
+
+    private static func subOrNil(_ a: Int, _ b: Int) -> Int? {
+        let (v, overflow) = a.subtractingReportingOverflow(b)
+        return overflow ? nil : v
+    }
+
     public static func fraction(_ n1: Int, _ d1: Int, _ op: FractionOp, _ n2: Int, _ d2: Int) -> FractionValue? {
         guard d1 != 0, d2 != 0 else { return nil }
         let n: Int
         let d: Int
         switch op {
         case .add:
-            n = n1 * d2 + n2 * d1
-            d = d1 * d2
+            guard let left = mul(n1, d2), let right = mul(n2, d1),
+                  let sum = addOrNil(left, right), let den = mul(d1, d2) else { return nil }
+            n = sum
+            d = den
         case .subtract:
-            n = n1 * d2 - n2 * d1
-            d = d1 * d2
+            guard let left = mul(n1, d2), let right = mul(n2, d1),
+                  let diff = subOrNil(left, right), let den = mul(d1, d2) else { return nil }
+            n = diff
+            d = den
         case .multiply:
-            n = n1 * n2
-            d = d1 * d2
+            guard let num = mul(n1, n2), let den = mul(d1, d2) else { return nil }
+            n = num
+            d = den
         case .divide:
             if n2 == 0 { return nil }
-            n = n1 * d2
-            d = d1 * n2
+            guard let num = mul(n1, d2), let den = mul(d1, n2) else { return nil }
+            n = num
+            d = den
         }
         return simplify(num: n, den: d)
     }

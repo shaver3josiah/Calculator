@@ -164,7 +164,7 @@ struct BabyPanel: View {
         .animation(reduceMotion ? nil : .easeOut(duration: 0.6), value: points.count)
     }
 
-    private var years: Int { max(Int(Double(drafts.baby.years) ?? 18), 1) }
+    private var years: Int { drafts.baby.years.clampedInt(to: 1...100, fallback: 18) }
     private var rate: Double { Double(drafts.baby.rate) ?? 7 }
 
     private func recompute() {

@@ -80,7 +80,7 @@ struct WholeLifePanel: View {
     }
 
     private var projectionYearsSlider: some View {
-        let years = Int(Double(drafts.wholeLife.projectionYears) ?? 30)
+        let years = drafts.wholeLife.projectionYears.clampedInt(to: 1...200, fallback: 30)
         return VStack(alignment: .leading, spacing: 6) {
             Text("Project \(years) years out")
                 .font(bloomBody(12, weight: .medium))
@@ -152,8 +152,8 @@ struct WholeLifePanel: View {
     private func recompute() {
         series = FinanceMath.wholeLifeSeries(
             annualPremium: Double(drafts.wholeLife.annualPremium) ?? 0,
-            yearsPaying: Int(Double(drafts.wholeLife.yearsPaying) ?? 20),
-            projectionYears: Int(Double(drafts.wholeLife.projectionYears) ?? 30),
+            yearsPaying: drafts.wholeLife.yearsPaying.clampedInt(to: 0...200, fallback: 20),
+            projectionYears: drafts.wholeLife.projectionYears.clampedInt(to: 1...200, fallback: 30),
             ratePct: Double(drafts.wholeLife.assumedRate) ?? 5.75,
             initialDeathBenefit: Double(drafts.wholeLife.initialDeathBenefit) ?? 0,
             efficiencyPct: Double(drafts.wholeLife.efficiency) ?? 85

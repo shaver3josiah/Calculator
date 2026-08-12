@@ -74,8 +74,8 @@ struct TrumpPanel: View {
 
     private var birthYear: Int { Int(drafts.trump.birthYear) ?? 2025 }
     private var seed: Double { FinanceMath.trumpSeed(birthYear: birthYear) }
-    private var currentAge: Int { max(0, Int(Double(drafts.trump.currentAge) ?? 0)) }
-    private var targetAge: Int { max(currentAge, Int(Double(drafts.trump.targetAge) ?? 18)) }
+    private var currentAge: Int { drafts.trump.currentAge.clampedInt(to: 0...120, fallback: 0) }
+    private var targetAge: Int { max(currentAge, drafts.trump.targetAge.clampedInt(to: 0...120, fallback: 18)) }
 
     /// Personal + employer contribution, with the real caps applied. Employer is
     /// clamped to its own $2,500 ceiling first, then the combined total to $5,000.

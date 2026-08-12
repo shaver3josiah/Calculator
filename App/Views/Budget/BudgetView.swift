@@ -75,6 +75,7 @@ struct BudgetView: View {
     private var monthBar: some View {
         HStack {
             EncirclePressButton(cornerRadius: 22, lineWidth: 1.5) {
+                KeyboardDismiss.now()   // commit into the month she typed it in
                 store.shiftMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
@@ -97,6 +98,7 @@ struct BudgetView: View {
             Spacer()
 
             EncirclePressButton(cornerRadius: 22, lineWidth: 1.5) {
+                KeyboardDismiss.now()   // commit into the month she typed it in
                 store.shiftMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")

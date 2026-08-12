@@ -200,9 +200,8 @@ struct ConvertPanel: View {
         let floored = (value + 1e-3).rounded(.down)
         let remainder = value - floored
         let showsPartial = remainder >= 0.05
-        let fullCount = max(Int(floored), 0)
-        let cappedCount = min(fullCount, Self.maxGlyphs)
-        let overflow = fullCount > Self.maxGlyphs
+        let cappedCount = floored.clampedInt(to: 0...Self.maxGlyphs, fallback: 0)
+        let overflow = floored > Double(Self.maxGlyphs)
 
         return VStack(spacing: 10) {
             LazyVGrid(columns: Self.glyphColumns, spacing: 10) {

@@ -45,10 +45,13 @@ final class ProjectionStore {
         JSONStore.shared.set(.funds, funds)
     }
 
+    // Fixed ids, NOT UUID(). A `static let` initialiser runs once per process,
+    // so UUID() minted four fresh ids on every cold launch - her saved Grow fund
+    // pick pointed at last launch's id and silently fell back to the default.
     private static let defaultFunds: [Fund] = [
-        Fund(id: UUID(), name: "Conservative", ratePct: 4),
-        Fund(id: UUID(), name: "Balanced", ratePct: 6),
-        Fund(id: UUID(), name: "Growth", ratePct: 8),
-        Fund(id: UUID(), name: "Aggressive", ratePct: 10)
+        Fund(id: UUID(uuidString: "B10E0000-0000-4000-A000-000000000001")!, name: "Conservative", ratePct: 4),
+        Fund(id: UUID(uuidString: "B10E0000-0000-4000-A000-000000000002")!, name: "Balanced", ratePct: 6),
+        Fund(id: UUID(uuidString: "B10E0000-0000-4000-A000-000000000003")!, name: "Growth", ratePct: 8),
+        Fund(id: UUID(uuidString: "B10E0000-0000-4000-A000-000000000004")!, name: "Aggressive", ratePct: 10)
     ]
 }

@@ -474,7 +474,7 @@ struct VisualizePanel: View {
         if let unit = ing.unit, measureUnits.contains(unit) { return 1 }
         // Only duplicate near-whole counts; 1.5 eggs → a single labeled graphic.
         guard abs(qty - qty.rounded()) <= 0.2 else { return 1 }
-        return max(1, Int(qty.rounded()))
+        return qty.rounded().clampedInt(to: 1...9999, fallback: 1)
     }
 
     private func scaledLabel(_ ing: ParsedIngredient) -> String {
