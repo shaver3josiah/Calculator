@@ -83,19 +83,28 @@ function extractBlockFrom(startLineNo, endLineNoExclusive, marker) {
   return block.slice(bracketAt, end);
 }
 
-const FOODS_IFRAME_LINE = 1054;
-const FOODS_PANTRY_LINE = 1552;
-const FOOD_SVG_LINE = 1243;
-const EGGS_START_LINE = 1737;
-const THEME_VARS_START_LINE = 1750;
-const FUNDS_START_LINE = 2060;
-const SOUND_BLOCK_START_LINE = 2680;
+// Locate each source block by its marker so edits to the HTML don't break extraction.
+function findLine(marker, required = true) {
+  const i = htmlLines.findIndex((l) => l.includes(marker));
+  if (i === -1 && required) throw new Error(`marker ${JSON.stringify(marker)} not found in ${SOURCE_HTML}`);
+  return i === -1 ? null : i + 1;
+}
+
+const FOODS_IFRAME_LINE = findLine("const FOODS=[{&quot;n&quot;");
+const FOODS_PANTRY_LINE = findLine("const FOODS=[{&quot;id&quot;", false);
+const FOOD_SVG_LINE = findLine("var FOOD_SVG={");
+const EGGS_START_LINE = findLine("const EASTER_EGGS=[");
+const THEME_VARS_START_LINE = findLine("const THEME_VARS=[");
+const FUNDS_START_LINE = findLine("const FUNDS=");
+const SOUND_BLOCK_START_LINE = findLine("var DEFAULT_MAP={");
 
 const rawFoodsIframe = decodeEntities(extractArrayLiteral(FOODS_IFRAME_LINE, "const FOODS=["));
 const foodsIframe = JSON.parse(rawFoodsIframe);
 
-const rawFoodsPantry = decodeEntities(extractArrayLiteral(FOODS_PANTRY_LINE, "const FOODS=["));
-const foodsPantry = JSON.parse(rawFoodsPantry);
+// The pantry FOODS array has left the HTML; food-library.json holds the same 426 foods in the same order.
+const foodsPantry = FOODS_PANTRY_LINE
+  ? JSON.parse(decodeEntities(extractArrayLiteral(FOODS_PANTRY_LINE, "const FOODS=[")))
+  : JSON.parse(readFileSync(FOOD_LIBRARY_PATH, "utf-8")).foods;
 
 const rawFoodSvgObj = decodeEntities(extractObjectLiteralWithTemplates(FOOD_SVG_LINE, "var FOOD_SVG={"));
 
@@ -159,14 +168,14 @@ const sources = {
   finance_employermatch: `${SOURCE_HTML}:2492-2497 (employerMatch)`,
   finance_tip: `${SOURCE_HTML}:2451-2457 (tipSplit)`,
   finance_pct: `${SOURCE_HTML}:2458-2460 (pctOf, pctChange)`,
-  eggs: `${SOURCE_HTML}:${EGGS_START_LINE}-1748 (EASTER_EGGS, eval'd verbatim after bracket-depth extraction)`,
+  eggs: `${SOURCE_HTML}:${EGGS_START_LINE}-${THEME_VARS_START_LINE - 2} (EASTER_EGGS, eval'd verbatim after bracket-depth extraction)`,
   theme_root: `${SOURCE_HTML}:11-24 (:root theme vars)`,
   theme_presets: `${SOURCE_HTML}:25-41 (rose, peony, soft presets)`,
-  theme_vars_editable: `${SOURCE_HTML}:${THEME_VARS_START_LINE}-1763 (THEME_VARS, eval'd verbatim)`,
-  funds_default: `${SOURCE_HTML}:${FUNDS_START_LINE}-2064 (FUNDS, eval'd verbatim)`,
-  soundmap: `${SOURCE_HTML}:${SOUND_BLOCK_START_LINE}-2687 (DEFAULT_MAP, GAIN, eval'd verbatim)`,
+  theme_vars_editable: `${SOURCE_HTML}:${THEME_VARS_START_LINE}-${THEME_VARS_START_LINE + 13} (THEME_VARS, eval'd verbatim)`,
+  funds_default: `${SOURCE_HTML}:${FUNDS_START_LINE}-${FUNDS_START_LINE + 4} (FUNDS, eval'd verbatim)`,
+  soundmap: `${SOURCE_HTML}:${SOUND_BLOCK_START_LINE}-${SOUND_BLOCK_START_LINE + 8} (DEFAULT_MAP, GAIN, eval'd verbatim)`,
   foods_iframe: `${SOURCE_HTML}:${FOODS_IFRAME_LINE} (iframe FOODS, entity-encoded, schema n/g/m/e, bracket-depth extracted + entity-decoded + JSON.parse)`,
-  foods_pantry: `${SOURCE_HTML}:${FOODS_PANTRY_LINE} (pantry FOODS, entity-encoded, schema id/name/group/measure/glyph/icon/filter/tinted, same method)`,
+  foods_pantry: `${FOODS_PANTRY_LINE ? SOURCE_HTML + ":" + FOODS_PANTRY_LINE : "food-library.json"} (pantry FOODS, entity-encoded, schema id/name/group/measure/glyph/icon/filter/tinted, same method)`,
   food_svg: `${SOURCE_HTML}:${FOOD_SVG_LINE} (FOOD_SVG templates, entity-encoded template literals, bracket-depth + backtick-aware extraction)`,
   food_art_key: `${SOURCE_HTML}:1244-1252 (foodArtKey matcher, transcribed)`,
   recipe_parse: `${SOURCE_HTML}:2205-2286 (UNICODE_FRAC, UNIT_ALIASES, tokenQty, parseLine, fmtQty, transcribed)`,
