@@ -359,12 +359,13 @@ public enum BudgetXLSX {
     }
 
     /// Cell styles, by their index in styles.xml's cellXfs. Order matters.
-    enum Style: Int {
+    enum Style: Int, CaseIterable {
         case plain = 0, title, subtitle, note, section, head, headNum, label, item
         case moneyIn, pctIn, money, dash
         case band, bandMoney, bandMoneyIn, bandPct
         case totalLabel, totalMoney, totalPct
         case grandLabel, grandMoney
+        case rule   // an empty cell that only carries the row's hairline
     }
 
     fileprivate enum Value {
@@ -420,6 +421,13 @@ public enum BudgetXLSX {
                 // Columns must be ascending within a row; last write to a column wins.
                 var byCol: [Int: (Value, Style)] = [:]
                 for (c, v, st) in b.cells { byCol[c.rawValue] = (v, st) }
+                // A ruled row (income, gift, item, bottom-line) draws its hairline
+                // across B…G, not just under the cells that happen to hold values.
+                if let first = byCol[Col.B.rawValue], first.1 == .label || first.1 == .item {
+                    for c in Col.C.rawValue...Col.G.rawValue where byCol[c] == nil {
+                        byCol[c] = (.blank, .rule)
+                    }
+                }
                 for c in byCol.keys.sorted() {
                     guard let (v, st) = byCol[c] else { continue }
                     let ref = "\(BudgetXLSX.colRef(c))\(r)"
@@ -525,13 +533,13 @@ public enum BudgetXLSX {
         "<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFF0F6\"/><bgColor indexed=\"64\"/></patternFill></fill>" +
         "</fills>"
 
-    // 0 none, 1 cherry rule under headers, 2 hairline row rule, 3 plum rule over
+    // 0 none, 1 cherry rule under headers, 2 blush row rule, 3 plum rule over
     // totals, 4 plum rule over + double under (the grand total)
     private static let borders =
         "<borders count=\"5\">" +
         "<border><left/><right/><top/><bottom/><diagonal/></border>" +
         "<border><left/><right/><top/><bottom style=\"medium\"><color rgb=\"FFE2417F\"/></bottom><diagonal/></border>" +
-        "<border><left/><right/><top/><bottom style=\"hair\"><color rgb=\"FFF0C9D9\"/></bottom><diagonal/></border>" +
+        "<border><left/><right/><top/><bottom style=\"thin\"><color rgb=\"FFF3D9E4\"/></bottom><diagonal/></border>" +
         "<border><left/><right/><top style=\"thin\"><color rgb=\"FF8E1560\"/></top><bottom/><diagonal/></border>" +
         "<border><left/><right/><top style=\"thin\"><color rgb=\"FF8E1560\"/></top><bottom style=\"double\"><color rgb=\"FF8E1560\"/></bottom><diagonal/></border>" +
         "</borders>"
@@ -572,7 +580,8 @@ public enum BudgetXLSX {
             xf(164, 9, 0, 3, h: "right"),         // totalMoney
             xf(9, 6, 0, 3, h: "right"),           // totalPct
             xf(0, 3, 0, 4, h: "left"),            // grandLabel
-            xf(166, 7, 0, 4, h: "right")          // grandMoney
+            xf(166, 7, 0, 4, h: "right"),         // grandMoney
+            xf(0, 0, 0, 2)                        // rule
         ]
         return "<cellXfs count=\"\(list.count)\">" + list.joined() + "</cellXfs>"
     }()

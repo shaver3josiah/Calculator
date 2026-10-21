@@ -174,7 +174,7 @@ final class XLSXTests: XCTestCase {
 
     func testStylesMatchTheStyleTable() {
         let styles = part(BudgetXLSX.workbook(db: fixtureDB()), "xl/styles.xml")
-        let xfCount = BudgetXLSX.Style.grandMoney.rawValue + 1
+        let xfCount = BudgetXLSX.Style.allCases.count
         XCTAssertTrue(styles.contains("<cellXfs count=\"\(xfCount)\">"))
         let cellXfs = styles.components(separatedBy: "<cellXfs")[1].components(separatedBy: "</cellXfs>")[0]
         XCTAssertEqual(cellXfs.components(separatedBy: "<xf ").count - 1, xfCount, "one xf per Style case")
