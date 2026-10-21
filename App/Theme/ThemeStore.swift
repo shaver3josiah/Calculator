@@ -19,7 +19,7 @@ final class ThemeStore {
     /// assignment below doesn't fire didSet).
     var orientation: OrientationPref = .auto {
         didSet {
-            JSONStore.shared.set(.orientation, orientation.rawValue)
+            JSONStore.shared.set(.orientationPref, orientation.rawValue)
             let pref = orientation
             Task { @MainActor in OrientationLock.apply(pref) }
         }
@@ -118,8 +118,12 @@ final class ThemeStore {
         showCalcLog = JSONStore.shared.get(.calcLog, as: Bool.self) ?? true
         showChordWheel = JSONStore.shared.get(.chordWheel, as: Bool.self) ?? true
         keyStyle = JSONStore.shared.get(.keyStyle, as: String.self) ?? "soft"
-        orientation = JSONStore.shared.get(.orientation, as: String.self)
+        // Read from the v2 key on purpose: a Portrait lock saved under v1 is what
+        // left the app unable to turn, and nothing on screen said why. Starting
+        // everyone at Automatic once restores rotation; she can still pin it again.
+        orientation = JSONStore.shared.get(.orientationPref, as: String.self)
             .flatMap(OrientationPref.init(rawValue:)) ?? .auto
+        JSONStore.shared.remove(.orientation)
         lastLightPreset = JSONStore.shared.get(.lightPreset, as: String.self)
             ?? (savedPresetName != "midnight" && savedPresetName != "custom" ? savedPresetName : "cherry")
 

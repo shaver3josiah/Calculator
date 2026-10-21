@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import BloomCore
 
 struct RootView: View {
@@ -24,6 +25,8 @@ struct RootView: View {
     @State private var landscape = false
     @State private var didInitOrientation = false
     @State private var flipGeneration = 0
+    /// One nudge per launch when a pinned rotation lock stops the turn she just made.
+    @State private var toldAboutLock = false
 
     var body: some View {
         Group {
@@ -43,6 +46,11 @@ struct RootView: View {
         }
         .onChange(of: vSize) { _, newValue in
             scheduleFlip(to: newValue == .compact)
+        }
+        // A pinned lock used to be silent: she turned the phone, nothing moved, and
+        // the app looked broken. The device still reports the turn, so say why.
+        .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+            explainLockIfBlocking(UIDevice.current.orientation)
         }
         // Budget's "Project it in the garden" handoff: the epoch bump lands here
         // and the tab switch gives ProjectionView fresh identity (the switch
@@ -65,6 +73,18 @@ struct RootView: View {
         .sheet(isPresented: studioPresentedBinding) {
             SoundStudioView()
         }
+    }
+
+    private func explainLockIfBlocking(_ device: UIDeviceOrientation) {
+        guard !toldAboutLock else { return }
+        let pref = themeStore.orientation
+        let blocked = (pref == .portrait && device.isLandscape) || (pref == .landscape && device.isPortrait)
+        guard blocked else { return }
+        toldAboutLock = true
+        ToastCenter.shared.show(
+            title: "Screen is pinned to \(pref.label)",
+            message: "To let it turn, tap the pencil and set Screen to Automatic."
+        )
     }
 
     /// Debounced portrait⇄landscape switch: only the last change within a 300ms

@@ -21,7 +21,10 @@ public enum StoreKey: String, CaseIterable, Sendable {
     case keyStyle = "bloom_keystyle"
     case lightPreset = "bloom_lightpreset"
     case drafts = "bloom_drafts"
+    /// v1 rotation lock. Retired in favor of `orientationPref`: reading a fresh
+    /// key restored Automatic once for everyone after rotation went missing.
     case orientation = "bloom_orientation"
+    case orientationPref = "bloom_orientation_v2"
     case calcDecimals = "bloom_calcdecimals"
     case notesArchive = "bloom_notesarchive"
 }

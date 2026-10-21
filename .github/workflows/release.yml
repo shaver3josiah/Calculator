@@ -85,6 +85,24 @@ jobs:
           echo "=== AppIcon entries in Assets.car ==="; xcrun assetutil --info "$APP/Assets.car" 2>/dev/null | grep -iE "AppIcon|Idiom|PixelWidth|PixelHeight" | head -60
           echo "=== full Info.plist ==="; plutil -p "$APP/Info.plist"
           exit 0
+      - name: Verify the app can still rotate
+        # Landscape went missing from her phone once. The runtime lock can only
+        # narrow what Info.plist allows, so if a project change ever drops a
+        # landscape orientation here, no setting in the app can bring it back.
+        run: |
+          set -e
+          APP="$RUNNER_TEMP/Bloom.xcarchive/Products/Applications/Bloom.app"
+          PLIST="$APP/Info.plist"
+          for key in UISupportedInterfaceOrientations "UISupportedInterfaceOrientations~ipad"; do
+            json=$(plutil -extract "$key" json -o - "$PLIST")
+            for o in UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight; do
+              case "$json" in
+                *"\"$o\""*) ;;
+                *) echo "::error::$key is missing $o - the app would stop rotating"; exit 1 ;;
+              esac
+            done
+          done
+          echo "Rotation verified: portrait and both landscapes on iPhone and iPad."
       - name: Verify bundled sounds and fonts
         run: |
           set -e

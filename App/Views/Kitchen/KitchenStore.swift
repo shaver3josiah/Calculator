@@ -10,6 +10,9 @@ struct SavedRecipe: Codable, Equatable, Identifiable {
     var steps: [String]
     var notes: String
     var savedAt: Date = Date()
+    /// The page a link recipe came from. Optional: recipes saved before this
+    /// field existed decode without it (their link, if any, is in `notes`).
+    var sourceUrl: String?
 }
 
 enum KitchenTab: String, CaseIterable {
@@ -43,12 +46,21 @@ final class KitchenStore {
         counterFinish = CounterFinish(rawValue: savedFinish) ?? .marble
     }
 
-    func saveRecipe(_ recipe: SavedRecipe) {
+    /// Inserts a new recipe, or replaces the saved one with the same id.
+    /// Returns true when it was an update.
+    @discardableResult
+    func saveRecipe(_ recipe: SavedRecipe) -> Bool {
         if let idx = savedRecipes.firstIndex(where: { $0.id == recipe.id }) {
             savedRecipes[idx] = recipe
-        } else {
-            savedRecipes.insert(recipe, at: 0)
+            return true
         }
+        savedRecipes.insert(recipe, at: 0)
+        return false
+    }
+
+    func contains(_ id: UUID?) -> Bool {
+        guard let id else { return false }
+        return savedRecipes.contains { $0.id == id }
     }
 
     func deleteRecipe(_ id: UUID) {

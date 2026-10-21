@@ -428,6 +428,130 @@ struct GlitterDustView: View {
     }
 }
 
+/// AC's sweep: the number she cleared drifts left, blurs, and breaks into a gust
+/// of petals while the fresh "0" fades in behind it — wiping the slate reads as a
+/// breath out, not a blink. Apply to the result row: `.clearSweep(...)`.
+/// Reduce Motion / motion off: no ghost, no petals, the row just updates.
+extension View {
+    func clearSweep(trigger: Int, text: String, font: Font, color: Color) -> some View {
+        modifier(ClearSweepModifier(trigger: trigger, text: text, font: font, color: color))
+    }
+}
+
+private struct ClearSweepModifier: ViewModifier {
+    @Environment(ThemeStore.self) private var theme
+    @Environment(SoundStore.self) private var sound
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let trigger: Int
+    let text: String
+    let font: Font
+    let color: Color
+
+    @State private var ghost: String?
+    @State private var gone = false
+    @State private var hideRow = false
+    @State private var textWidth: CGFloat = 0
+    @State private var pool: [ParticleSpec] = []
+    @State private var active = false
+    @State private var generation = 0
+
+    private static let petals = 18
+    private static let maxAge: Double = 1.2   // 0.18 stagger + 0.95 lifetime + margin
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(hideRow ? 0 : 1)
+            .overlay(alignment: .bottomTrailing) {
+                ZStack(alignment: .bottomTrailing) {
+                    if let ghost {
+                        Text(ghost)
+                            .font(font)
+                            .foregroundStyle(color)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
+                            .scaleEffect(gone ? 0.86 : 1, anchor: .trailing)
+                            .offset(x: gone ? -64 : 0, y: gone ? -8 : 0)
+                            .blur(radius: gone ? 10 : 0)
+                            .opacity(gone ? 0 : 1)
+                    }
+                    if theme.petalsOn {
+                        TimelineView(.animation(minimumInterval: nil, paused: !active)) { context in
+                            Canvas { ctx, size in
+                                let now = context.date.timeIntervalSinceReferenceDate
+                                // spec.x is a fraction of the cleared number's width,
+                                // measured live, so petals leave from its actual digits.
+                                let left = size.width - Double(textWidth)
+                                for spec in pool {
+                                    let age = now - spec.seedTime
+                                    guard age >= 0, age < spec.lifetime else { continue }
+                                    let t = age / spec.lifetime
+                                    let gust = 1 - pow(1 - t, 2)
+                                    let px = left + spec.x * Double(textWidth) + spec.vx * gust * 150
+                                    let py = size.height * spec.y + spec.vy * gust * 70 + sin(t * .pi * 2 + spec.rotation) * 6
+                                    let alpha = t < 0.15 ? t / 0.15 : (1 - t) / 0.85
+                                    let rot = spec.rotation + spec.rotationSpeed * age
+                                    drawPetal(&ctx, spec: spec, x: px, y: py, rotationDeg: rot, alpha: alpha, color: theme.color(petalToken(spec.colorIndex)))
+                                }
+                            }
+                        }
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.9), trigger: trigger) { _, _ in sound.hapticsEnabled }
+            .onChange(of: trigger) { _, _ in sweep() }
+    }
+
+    private func sweep() {
+        guard theme.motionEnabled, !reduceMotion, !text.isEmpty else { return }
+        generation += 1
+        let expected = generation
+        // Show the old number exactly where it sat, hide the row's fresh "0" under it.
+        var t = Transaction()
+        t.disablesAnimations = true
+        withTransaction(t) {
+            ghost = text
+            gone = false
+            hideRow = true
+        }
+        withAnimation(.easeIn(duration: 0.42)) { gone = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+            guard generation == expected else { return }
+            withAnimation(.easeOut(duration: 0.3)) { hideRow = false }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if generation == expected { ghost = nil }
+        }
+        guard theme.petalsOn else { return }
+        let now = Date.timeIntervalSinceReferenceDate
+        pool = (0..<Self.petals).map { makeSweepPetal(index: $0, baseTime: now) }
+        active = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxAge) {
+            if generation == expected { active = false }
+        }
+    }
+}
+
+/// A petal that peels off the cleared number and rides a gust to the left.
+private func makeSweepPetal(index: Int, baseTime: Double) -> ParticleSpec {
+    var rng = SeededGenerator(seed: index &* 5153 &+ timeSeed(baseTime))
+    let x = Double.random(in: 0.05...0.95, using: &rng)
+    return ParticleSpec(
+        // Digits on the left peel first, so the gust visibly travels along the number.
+        seedTime: baseTime + x * 0.18,
+        x: x,
+        y: Double.random(in: 0.35...0.8, using: &rng),
+        vx: -Double.random(in: 0.55...1.15, using: &rng),
+        vy: -Double.random(in: 0.1...0.9, using: &rng),
+        rotation: Double.random(in: 0...360, using: &rng),
+        rotationSpeed: Double.random(in: -260...260, using: &rng),
+        size: Double.random(in: 7...13, using: &rng),
+        colorIndex: index,
+        lifetime: Double.random(in: 0.7...0.95, using: &rng)
+    )
+}
+
 struct SeededGenerator: RandomNumberGenerator {
     private var state: UInt64
 

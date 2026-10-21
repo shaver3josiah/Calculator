@@ -172,6 +172,8 @@ struct CalcView: View {
                 }
                 .frame(height: fontSize * 1.15)
             }
+            .clearSweep(trigger: calcStore.clearEpoch, text: calcStore.clearedText,
+                        font: bloomNumber(fontSize, weight: .semibold), color: themeStore.color("text"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }

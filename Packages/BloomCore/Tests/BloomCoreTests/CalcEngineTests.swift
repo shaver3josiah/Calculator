@@ -43,4 +43,68 @@ final class CalcEngineTests: XCTestCase {
         press(&engine, "4")
         XCTAssertEqual(engine.equals()?.display, "20")
     }
+
+    // MARK: Backspace deletes one thing at a time, in every state
+
+    func testBackspaceWhileTypingDropsOneCharacter() {
+        var engine = CalcEngine()
+        press(&engine, "123")
+        XCTAssertTrue(engine.backspace())
+        XCTAssertEqual(engine.displayText, "12")
+        engine.backspace()
+        engine.backspace()
+        XCTAssertEqual(engine.displayText, "0")
+        XCTAssertFalse(engine.backspace(), "nothing left to delete")
+    }
+
+    func testBackspaceAfterOperatorCancelsItAndReopensTheNumber() {
+        var engine = CalcEngine()
+        press(&engine, "12")
+        engine.setOp(.add)
+        XCTAssertEqual(engine.expressionText, "12 +")
+        XCTAssertTrue(engine.backspace())
+        XCTAssertNil(engine.pendingOp, "the operator is gone")
+        XCTAssertEqual(engine.expressionText, "")
+        XCTAssertEqual(engine.displayText, "12")
+        engine.backspace()
+        XCTAssertEqual(engine.displayText, "1", "the operand is editable again, not overwritten")
+        press(&engine, "5")
+        XCTAssertEqual(engine.displayText, "15")
+    }
+
+    func testBackspaceAfterChainedOperatorKeepsTheRunningTotal() {
+        var engine = CalcEngine()
+        press(&engine, "2")
+        engine.setOp(.add)
+        press(&engine, "3")
+        engine.setOp(.multiply)   // running total 5
+        engine.backspace()
+        XCTAssertNil(engine.pendingOp)
+        XCTAssertEqual(engine.displayText, "5")
+        XCTAssertNil(engine.equals(), "no operator left to apply")
+    }
+
+    func testBackspaceOnResultEditsIt() {
+        var engine = CalcEngine()
+        press(&engine, "12")
+        engine.setOp(.multiply)
+        press(&engine, "12")
+        _ = engine.equals()
+        XCTAssertEqual(engine.displayText, "144")
+        XCTAssertTrue(engine.backspace())
+        XCTAssertEqual(engine.displayText, "14")
+        press(&engine, "0")
+        XCTAssertEqual(engine.displayText, "140", "typing continues the edited result")
+    }
+
+    func testBackspaceAfterClearAllIsANoOp() {
+        var engine = CalcEngine()
+        press(&engine, "9")
+        engine.setOp(.subtract)
+        press(&engine, "4")
+        engine.clearAll()
+        XCTAssertFalse(engine.backspace())
+        XCTAssertEqual(engine.displayText, "0")
+        XCTAssertEqual(engine.expressionText, "")
+    }
 }

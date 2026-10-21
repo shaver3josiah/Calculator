@@ -18,12 +18,11 @@ struct BudgetView: View {
                         ShareLink(item: store.exportText()) {
                             Label("Share as text", systemImage: "doc.plaintext")
                         }
-                        if let xlsx = store.exportXLSXURL() {
-                            ShareLink(item: xlsx) {
-                                Label("Share as spreadsheet", systemImage: "tablecells")
-                            }
-                            .accessibilityLabel("Share as spreadsheet")
+                        let sheet = store.spreadsheet
+                        ShareLink(item: sheet, preview: SharePreview(sheet.fileName)) {
+                            Label("Share as spreadsheet", systemImage: "tablecells")
                         }
+                        .accessibilityLabel("Share as spreadsheet")
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 14, weight: .semibold))

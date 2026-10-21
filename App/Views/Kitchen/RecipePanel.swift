@@ -8,6 +8,8 @@ struct RecipePanel: View {
     var body: some View {
         @Bindable var d = drafts
         VStack(spacing: 14) {
+            MyRecipesButton()
+
             Picker("Mode", selection: $d.picks.recipeMode) {
                 Text("Write").tag("write")
                 Text("From a link").tag("link")
@@ -41,6 +43,9 @@ struct RecipeWritePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            if kitchen.contains(w.savedId) {
+                editingBanner
+            }
             TextField("Recipe name", text: bind(\.name), prompt: Text("Recipe name").foregroundStyle(theme.color("muted")))
                 .font(bloomBody(15))
                 .foregroundStyle(theme.color("text"))
@@ -93,7 +98,7 @@ struct RecipeWritePanel: View {
                 Button {
                     saveRecipe()
                 } label: {
-                    Text("Save")
+                    Text(kitchen.contains(w.savedId) ? "Save changes" : "Save to My Recipes")
                         .font(bloomBody(14, weight: .semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -237,16 +242,45 @@ struct RecipeWritePanel: View {
         sound.play("success")
     }
 
+    /// Shown while the page holds a recipe that's already in My Recipes, so she
+    /// knows Save updates it, and has a way out to a blank page.
+    private var editingBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "book.closed")
+                .font(.system(size: 13, weight: .semibold))
+            Text("Editing a saved recipe")
+                .font(bloomBody(13, weight: .semibold))
+            Spacer()
+            Button("New recipe") {
+                drafts.recipeWrite = RecipeWriteDraft()
+                sound.play("modeswitch")
+            }
+            .font(bloomBody(13, weight: .semibold))
+            .frame(minHeight: 44)
+        }
+        .foregroundStyle(theme.color("primaryStrong"))
+        .padding(.horizontal, 12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(theme.color("surfaceSoft")))
+    }
+
     private func saveRecipe() {
-        let recipe = SavedRecipe(
-            name: w.name.isEmpty ? "Untitled" : w.name,
+        let trimmed = w.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var recipe = SavedRecipe(
+            name: trimmed.isEmpty ? "Untitled" : trimmed,
             serves: w.serves,
             time: w.time,
-            ingredients: w.ingredients.filter { !$0.isEmpty },
-            steps: w.steps.filter { !$0.isEmpty },
-            notes: w.notes
+            ingredients: w.ingredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
+            steps: w.steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
+            notes: w.notes,
+            sourceUrl: w.sourceUrl
         )
-        kitchen.saveRecipe(recipe)
+        if kitchen.contains(w.savedId), let id = w.savedId { recipe.id = id }
+        let updated = kitchen.saveRecipe(recipe)
+        drafts.recipeWrite.savedId = recipe.id
         sound.play("success")
+        ToastCenter.shared.show(
+            title: updated ? "Changes saved" : "Saved",
+            message: "\(recipe.name) is in My Recipes."
+        )
     }
 }

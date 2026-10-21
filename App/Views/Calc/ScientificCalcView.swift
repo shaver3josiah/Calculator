@@ -134,6 +134,8 @@ struct ScientificCalcView: View {
                 }
                 .frame(maxHeight: .infinity)
             }
+            .clearSweep(trigger: calc.clearEpoch, text: calc.clearedText,
+                        font: bloomNumber(resultFont, weight: .semibold), color: theme.color("text"))
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .contentShape(Rectangle())   // the band is mostly empty air; make all of it swipeable

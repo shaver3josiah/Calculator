@@ -104,6 +104,10 @@ struct RecipeWriteDraft: Codable, Equatable {
     var ingredients: [String] = [""]
     var steps: [String] = [""]
     var notes = ""
+    /// Set when this draft is a saved recipe opened for editing (or one she has
+    /// already saved once): Save then updates that recipe instead of adding a copy.
+    var savedId: UUID?
+    var sourceUrl: String?
 
     var isEmpty: Bool {
         name.isEmpty && serves.isEmpty && time.isEmpty && notes.isEmpty
@@ -125,6 +129,8 @@ struct RecipeLinkDraft: Codable, Equatable {
     var notes = ""
     var sourceUrl = ""
     var didFetch = false
+    /// The recipe this fetch was saved as, so a second tap on Save updates it.
+    var savedId: UUID?
 }
 
 struct RecipeShareDraft: Codable, Equatable {

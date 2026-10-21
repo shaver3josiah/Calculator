@@ -1,4 +1,6 @@
 import Foundation
+import CoreTransferable
+import UniformTypeIdentifiers
 import BloomCore
 
 @Observable
@@ -265,17 +267,17 @@ final class BudgetStore {
         BudgetShare.export(db: db, giving: stewardshipTotal)
     }
 
-    /// Writes the current budget as an .xlsx to a temp file, returns its URL (nil on failure).
-    func exportXLSXURL() -> URL? {
-        let safe = String(db.cur.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "-" })
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Hannahs-Budget-\(safe).xlsx")
-        do {
-            try BudgetXLSX.workbook(db: db, giving: stewardshipTotal).write(to: url, options: .atomic)
-            return url
-        } catch {
-            return nil
-        }
+    /// The give-first settings as the workbook needs them: the rates themselves,
+    /// so the sheet's giving rows are live formulas, not pasted totals.
+    var exportGiving: BudgetGiving {
+        BudgetGiving(tithePct: stewardship.tithePct, feastPct: stewardship.feastPct,
+                     poorPct: stewardship.poorPct, flat: stewardship.innovationFlat,
+                     ofIncome: anyNetMode)
     }
+
+    /// A snapshot to hand the share sheet. The file is only written if she
+    /// actually shares it, not every time the budget tab redraws.
+    var spreadsheet: BudgetSpreadsheet { BudgetSpreadsheet(db: db, giving: exportGiving) }
 
     /// What an import into `key` would replace, or nil if that month is empty of
     /// her own work. Doubles as the "is this destructive?" test, so the caller
@@ -307,5 +309,23 @@ final class BudgetStore {
 
     private func save() {
         JSONStore.shared.set(.budget2, db)
+    }
+}
+
+/// The month as an .xlsx for ShareLink. Written lazily, when the share sheet asks.
+struct BudgetSpreadsheet: Transferable {
+    let db: BudgetDB
+    let giving: BudgetGiving
+
+    var fileName: String { BudgetXLSX.fileName(for: db.cur) }
+
+    static let xlsxType = UTType(filenameExtension: "xlsx", conformingTo: .spreadsheet) ?? .spreadsheet
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: xlsxType) { sheet in
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(sheet.fileName)
+            try BudgetXLSX.workbook(db: sheet.db, giving: sheet.giving).write(to: url, options: .atomic)
+            return SentTransferredFile(url)
+        }
     }
 }

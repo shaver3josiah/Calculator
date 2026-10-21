@@ -307,7 +307,7 @@ struct RecipeLinkPanel: View {
 
     /// Renders the champagne "pretty page" to a temp .html and returns its URL, so
     /// ShareLink hands the recipient an openable document (a raw HTML *string*
-    /// would share as plain text). Mirrors BudgetStore.exportXLSXURL().
+    /// would share as plain text). Same idea as BudgetSpreadsheet (BudgetStore.swift).
     private func prettyPageURL() -> URL? {
         let d = drafts.recipeLink
         let html = RecipeShare.html(name: d.name, serves: d.serves, time: d.time,
@@ -534,6 +534,7 @@ struct RecipeLinkPanel: View {
         draft.steps = recipe.steps
         draft.sourceUrl = RecipeParse.cleanUrl(draft.url)
         draft.didFetch = true
+        draft.savedId = nil   // a fresh read is a new recipe, not an edit of the last one
         // One assignment, so the store persists this once instead of six times.
         drafts.recipeLink = draft
         sound.play("success")
@@ -542,21 +543,23 @@ struct RecipeLinkPanel: View {
 
     private func saveRecipe() {
         let d = drafts.recipeLink
-        let sourceNote = d.sourceUrl.isEmpty ? "" : "From: \(d.sourceUrl)"
-        let notes = [d.notes, sourceNote].filter { !$0.isEmpty }.joined(separator: "\n\n")
-        let recipe = SavedRecipe(
+        var recipe = SavedRecipe(
             name: d.name.isEmpty ? "Untitled" : d.name,
             serves: d.serves,
             time: d.time,
             ingredients: d.ingredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
             steps: d.steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
-            notes: notes
+            notes: d.notes,
+            sourceUrl: d.sourceUrl.isEmpty ? nil : d.sourceUrl
         )
-        kitchen.saveRecipe(recipe)
+        // A second tap on Save updates the copy the first tap made.
+        if kitchen.contains(d.savedId), let id = d.savedId { recipe.id = id }
+        let updated = kitchen.saveRecipe(recipe)
+        drafts.recipeLink.savedId = recipe.id
         sound.play("success")
         ToastCenter.shared.show(
-            title: "Saved",
-            message: "\(recipe.name) is in your recipes."
+            title: updated ? "Changes saved" : "Saved",
+            message: "\(recipe.name) is in My Recipes."
         )
     }
 }

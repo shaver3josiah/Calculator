@@ -67,6 +67,9 @@ struct BloomApp: App {
                 // saved lock has to be re-applied here or a relaunch forgets it.
                 .task {
                     OrientationLock.apply(themeStore.orientation)
+                    // RootView listens for physical turns to explain a pinned lock;
+                    // UIKit only guarantees those events once someone asks for them.
+                    UIDevice.current.beginGeneratingDeviceOrientationNotifications()
                 }
         }
     }

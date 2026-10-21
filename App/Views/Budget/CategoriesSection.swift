@@ -130,6 +130,12 @@ struct CategoriesSection: View {
 
     /// One collapsed deck slot: header + card padding + inter-card gap.
     private var cardSlot: CGFloat { headerHeight + Self.cardPadding * 2 + Self.cardSpacing }
+    /// Portrait phone widths: a one-line row left an item name ~90pt (about ten
+    /// characters) beside its switch, amount, grip and delete. Below this width the
+    /// name gets a full line of its own and the controls sit on the line beneath.
+    /// Every row and every header keeps the same shape, so the drag slot math (one
+    /// measured rowHeight / headerHeight) stays exact.
+    private var stacked: Bool { sectionSize.width < 480 }
     private var isReordering: Bool { cardDrag != nil || rowDrag != nil }
     private let reorderSpring = Animation.spring(response: 0.35, dampingFraction: 0.75)
     private let settleSpring = Animation.spring(response: 0.3, dampingFraction: 0.8)
@@ -234,63 +240,30 @@ struct CategoriesSection: View {
     }
 
     private func categoryHeader(_ index: Int, category: BudgetCategory) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                pulseHeader(index)
-                store.toggleCategoryOpen(index)
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(theme.color("muted"))
-                    .rotationEffect(.degrees(category.open && !deckMode ? 90 : 0))
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(TactilePressStyle(cornerRadius: 10))
-
-            CompactToggle(isOn: catSelectAllBinding(index))
-
-            TextField("Category", text: catNameBinding(index), prompt: Text("Category").foregroundStyle(theme.color("muted")))
-                .font(bloomBody(16, weight: .semibold))
-                .foregroundStyle(theme.color("text"))
-                .inputAccessories(catNameBinding(index), compact: true)
-
-            // The total doubles as a generous open/close target — the whole-row
-            // tap used to swallow near-misses on the (already narrow) name
-            // field and collapse the card mid-edit.
-            Text(Formatters.money(BudgetMath.catTotal(category)))
-                .font(bloomNumber(15, weight: .semibold))
-                .foregroundStyle(theme.color("deep"))
-                .padding(.vertical, 12)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    pulseHeader(index)
-                    store.toggleCategoryOpen(index)
+        Group {
+            if stacked {
+                VStack(spacing: 0) {
+                    HStack(spacing: 4) {
+                        headerChevron(index, category: category)
+                        headerName(index)
+                        headerTotal(index, category: category)
+                    }
+                    HStack(spacing: 8) {
+                        CompactToggle(isOn: catSelectAllBinding(index))
+                        Spacer(minLength: 0)
+                        headerGrip(index, category: category)
+                        headerDelete(index, category: category)
+                    }
                 }
-
-            grip(index: index, count: store.month.cats.count, isActive: cardDrag?.from == index) { translation in
-                cardDragChanged(index, translation: translation)
-            } ended: {
-                cardDragEnded(index)
-            } moveTo: { to in
-                store.moveCategory(from: index, to: to)
-            }
-            .accessibilityLabel("Reorder \(category.n.isEmpty ? "category" : category.n)")
-            .discoverable("budget.dragReorder", cornerRadius: 10)
-
-            if category.items.isEmpty {
-                Button {
-                    KeyboardDismiss.now()   // commit any half-typed field before indices shift
-                    store.deleteCategory(index)
-                } label: {
-                    Image(systemName: "xmark.circle")
-                        .foregroundStyle(theme.color("muted"))
-                        .frame(minWidth: 40, minHeight: 44)
-                        .contentShape(Rectangle())
+            } else {
+                HStack(spacing: 8) {
+                    headerChevron(index, category: category)
+                    CompactToggle(isOn: catSelectAllBinding(index))
+                    headerName(index)
+                    headerTotal(index, category: category)
+                    headerGrip(index, category: category)
+                    headerDelete(index, category: category)
                 }
-                .buttonStyle(TactilePressStyle(cornerRadius: 10))
-                .accessibilityLabel("Remove category")
-                .disabled(isReordering)
             }
         }
         .overlay {
@@ -299,6 +272,75 @@ struct CategoriesSection: View {
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
+    }
+
+    private func headerChevron(_ index: Int, category: BudgetCategory) -> some View {
+        Button {
+            pulseHeader(index)
+            store.toggleCategoryOpen(index)
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(theme.color("muted"))
+                .rotationEffect(.degrees(category.open && !deckMode ? 90 : 0))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 10))
+    }
+
+    private func headerName(_ index: Int) -> some View {
+        TextField("Category", text: catNameBinding(index), prompt: Text("Category").foregroundStyle(theme.color("muted")))
+            .font(bloomBody(16, weight: .semibold))
+            .foregroundStyle(theme.color("text"))
+            .inputAccessories(catNameBinding(index), compact: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // The total doubles as a generous open/close target — the whole-row tap used
+    // to swallow near-misses on the (already narrow) name field and collapse the
+    // card mid-edit.
+    private func headerTotal(_ index: Int, category: BudgetCategory) -> some View {
+        Text(Formatters.money(BudgetMath.catTotal(category)))
+            .font(bloomNumber(15, weight: .semibold))
+            .foregroundStyle(theme.color("deep"))
+            .fixedSize()
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                pulseHeader(index)
+                store.toggleCategoryOpen(index)
+            }
+    }
+
+    private func headerGrip(_ index: Int, category: BudgetCategory) -> some View {
+        grip(index: index, count: store.month.cats.count, isActive: cardDrag?.from == index) { translation in
+            cardDragChanged(index, translation: translation)
+        } ended: {
+            cardDragEnded(index)
+        } moveTo: { to in
+            store.moveCategory(from: index, to: to)
+        }
+        .accessibilityLabel("Reorder \(category.n.isEmpty ? "category" : category.n)")
+        .discoverable("budget.dragReorder", cornerRadius: 10)
+    }
+
+    @ViewBuilder
+    private func headerDelete(_ index: Int, category: BudgetCategory) -> some View {
+        if category.items.isEmpty {
+            Button {
+                KeyboardDismiss.now()   // commit any half-typed field before indices shift
+                store.deleteCategory(index)
+            } label: {
+                Image(systemName: "xmark.circle")
+                    .foregroundStyle(theme.color("muted"))
+                    .frame(minWidth: 40, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(TactilePressStyle(cornerRadius: 10))
+            .accessibilityLabel("Remove category")
+            .disabled(isReordering)
+        }
     }
 
     private func pulseHeader(_ index: Int) {
@@ -314,46 +356,84 @@ struct CategoriesSection: View {
     // MARK: Rows
 
     private func rowView(category categoryIndex: Int, row rowIndex: Int) -> some View {
-        HStack(spacing: 8) {
-            CompactToggle(isOn: rowSelBinding(categoryIndex, rowIndex))
-
-            TextField("Item", text: rowNameBinding(categoryIndex, rowIndex), prompt: Text("Item").foregroundStyle(theme.color("muted")))
-                .font(bloomBody(15))
-                .foregroundStyle(theme.color("text"))
-                .inputAccessories(rowNameBinding(categoryIndex, rowIndex), compact: true)
-
-            DecimalField(value: rowAmountBinding(categoryIndex, rowIndex),
-                         font: bloomBody(15), alignment: .trailing, width: 64)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(theme.color("surfaceSoft"))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            grip(index: rowIndex, count: store.month.cats[safe: categoryIndex]?.items.count ?? 0,
-                 isActive: rowDrag?.category == categoryIndex && rowDrag?.from == rowIndex) { translation in
-                rowDragChanged(category: categoryIndex, row: rowIndex, translation: translation)
-            } ended: {
-                rowDragEnded(category: categoryIndex, row: rowIndex)
-            } moveTo: { to in
-                store.moveRow(category: categoryIndex, from: rowIndex, to: to)
+        Group {
+            if stacked {
+                VStack(alignment: .leading, spacing: 0) {
+                    rowName(categoryIndex, rowIndex)
+                        .padding(.horizontal, 6)
+                        .padding(.top, 6)
+                    HStack(spacing: 8) {
+                        CompactToggle(isOn: rowSelBinding(categoryIndex, rowIndex))
+                        rowAmount(categoryIndex, rowIndex)
+                        Spacer(minLength: 0)
+                        rowGrip(categoryIndex, rowIndex)
+                        rowDelete(categoryIndex, rowIndex)
+                    }
+                }
+                .padding(.bottom, 4)
+                .overlay(alignment: .bottom) {
+                    // Two lines per item need an edge, or a name floats free of
+                    // the amount it belongs to.
+                    Rectangle().fill(theme.color("line")).frame(height: 0.5)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    CompactToggle(isOn: rowSelBinding(categoryIndex, rowIndex))
+                    rowName(categoryIndex, rowIndex)
+                    rowAmount(categoryIndex, rowIndex)
+                    rowGrip(categoryIndex, rowIndex)
+                    rowDelete(categoryIndex, rowIndex)
+                }
             }
-            .accessibilityLabel("Reorder item")
-
-            Button {
-                KeyboardDismiss.now()   // commit any half-typed field before indices shift
-                store.deleteRow(category: categoryIndex, row: rowIndex)
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.color("muted"))
-                    .frame(minWidth: 40, minHeight: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(TactilePressStyle(cornerRadius: 10))
-            .accessibilityLabel("Remove item")
-            .disabled(isReordering)
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { rowHeight = $0 }
+    }
+
+    private func rowName(_ categoryIndex: Int, _ rowIndex: Int) -> some View {
+        TextField("Item", text: rowNameBinding(categoryIndex, rowIndex), prompt: Text("Item").foregroundStyle(theme.color("muted")))
+            .font(bloomBody(15))
+            .foregroundStyle(theme.color("text"))
+            .inputAccessories(rowNameBinding(categoryIndex, rowIndex), compact: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func rowAmount(_ categoryIndex: Int, _ rowIndex: Int) -> some View {
+        // Stacked rows have room to spare on the control line: a wider field shows
+        // "$1,400.00"-sized amounts without scrolling inside the box.
+        DecimalField(value: rowAmountBinding(categoryIndex, rowIndex),
+                     font: bloomBody(15), alignment: .trailing, width: stacked ? 96 : 64)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(theme.color("surfaceSoft"))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func rowGrip(_ categoryIndex: Int, _ rowIndex: Int) -> some View {
+        grip(index: rowIndex, count: store.month.cats[safe: categoryIndex]?.items.count ?? 0,
+             isActive: rowDrag?.category == categoryIndex && rowDrag?.from == rowIndex) { translation in
+            rowDragChanged(category: categoryIndex, row: rowIndex, translation: translation)
+        } ended: {
+            rowDragEnded(category: categoryIndex, row: rowIndex)
+        } moveTo: { to in
+            store.moveRow(category: categoryIndex, from: rowIndex, to: to)
+        }
+        .accessibilityLabel("Reorder item")
+    }
+
+    private func rowDelete(_ categoryIndex: Int, _ rowIndex: Int) -> some View {
+        Button {
+            KeyboardDismiss.now()   // commit any half-typed field before indices shift
+            store.deleteRow(category: categoryIndex, row: rowIndex)
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(theme.color("muted"))
+                .frame(minWidth: 40, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TactilePressStyle(cornerRadius: 10))
+        .accessibilityLabel("Remove item")
+        .disabled(isReordering)
     }
 
     // MARK: The pluck

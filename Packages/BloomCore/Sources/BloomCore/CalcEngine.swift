@@ -110,20 +110,37 @@ public struct CalcEngine: Sendable {
         overwrite = true
     }
 
-    public mutating func backspace() {
+    /// Deletes one thing, never nothing (until the buffer is already "0"):
+    ///   - while typing: the last character
+    ///   - right after an operator: that operator, and the number on screen
+    ///     (the operand, or the running total of a chain) becomes editable again
+    ///   - on a finished result: the result becomes editable, minus its last character
+    /// Returns false when there was nothing to delete. Diverges from the JS source,
+    /// whose backspace was a no-op in both overwrite states; no vector pins that.
+    @discardableResult
+    public mutating func backspace() -> Bool {
         if overwrite {
-            return
+            if op != nil {
+                op = nil
+                stored = nil
+                parts = []
+                overwrite = false
+                return true
+            }
+            guard current != "0" else { return false }
+            overwrite = false
         }
         if current.count <= 1 || (current.count == 2 && current.hasPrefix("-")) {
             current = "0"
             overwrite = true
-            return
+            return true
         }
         current.removeLast()
         if current == "-" {
             current = "0"
             overwrite = true
         }
+        return true
     }
 
     public var displayText: String {

@@ -33,6 +33,10 @@ final class CalcStore {
     var lastEgg: Egg?
     var eggEpoch: Int = 0
     var resultEpoch: Int = 0
+    /// Bumps when AC wipes something real; `clearedText` is what was on screen, so
+    /// the display can sweep that exact number away (the .clearSweep modifier in Particles.swift).
+    var clearEpoch: Int = 0
+    private(set) var clearedText: String = ""
     var mathMode: CalcMathMode = .complex
     var angleMode: AngleMode = .radians
 
@@ -118,10 +122,13 @@ final class CalcStore {
         case "=":
             handleEquals()
         case "C":
+            let hadWork = display != "0" || !expression.trimmingCharacters(in: .whitespaces).isEmpty
+            clearedText = display
             engine.clearAll()
             sequence.removeAll()
             refreshDisplay()
             emit("clear")
+            if hadWork && !muted { clearEpoch += 1 }
         case "±":
             // A sign flip on a settled result keeps it settled — nothing is being
             // typed — so "0.333" stays "0.333", not the raw 8-place buffer.
@@ -135,8 +142,13 @@ final class CalcStore {
             refreshDisplay(settled: true)
             emit("percent")
         case "⌫":
-            engine.backspace()
-            if !sequence.isEmpty {
+            // A settled result is edited from what she SEES ("0.333" at her
+            // precision), not the 8-place buffer behind it.
+            if settled, let value = displayValue,
+               let shown = Double(BloomCore.Formatters.plain(value, decimals: decimals)) {
+                engine.setValue(shown)
+            }
+            if engine.backspace(), !sequence.isEmpty {
                 sequence.removeLast()
             }
             refreshDisplay()
