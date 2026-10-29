@@ -6,7 +6,6 @@ struct CalcView: View {
     @Environment(CalcStore.self) private var calcStore
     @Environment(HistoryStore.self) private var historyStore
     @Environment(MusicStore.self) private var musicStore
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var activeSolver: MathSolver?
 
     private let keypadRows: [[KeyDef]] = [
@@ -41,8 +40,8 @@ struct CalcView: View {
         //   • the card is the residual after the keypad, clamped 128–210 — so on
         //     phones it fills (cluster ≈ slot, keypad sits near the bottom) and on a
         //     tablet it caps at a generous 210 rather than ballooning
-        //   • resultFont tracks the card (the DEVICE), never the digit count, so the
-        //     number is a constant size and long values scroll instead of shrinking
+        //   • resultFont tracks the card (the DEVICE); a value too wide for the card
+        //     shrinks to fit rather than scrolling (see resultColumn)
         // The cluster is CENTERED: on phones the residual card makes the margin ~14pt
         // (still bottom-anchored feel); on iPad the capped elements center with
         // balanced margins instead of dumping a ~380pt gap under the card.
@@ -88,8 +87,8 @@ struct CalcView: View {
 
     // The display card. Height is set explicitly in `body` (slot minus fixed chrome),
     // never scavenged from VStack arbitration. Two-line calculator layout on the right:
-    // the live expression fills the top band (previously empty), the fixed-size result
-    // sits below it and scrolls horizontally instead of shrinking.
+    // the live expression fills the top band (previously empty), the result sits below
+    // it and shrinks to fit when it's too wide.
     private func displayArea(resultFont: CGFloat) -> some View {
         HStack(alignment: .top, spacing: 8) {
             if showLeftColumn {
@@ -132,8 +131,7 @@ struct CalcView: View {
 
     // Right side of the card: a slim live-expression line up top (the one thing the
     // history log — which only holds completed calcs — never shows), and below it the
-    // result at a fixed device-sized font. Long results scroll to the trailing edge
-    // like a cash-register tape; the digits keep their size, the tape moves.
+    // result at a device-sized font that shrinks only when the value won't fit.
     private func resultColumn(fontSize: CGFloat) -> some View {
         VStack(alignment: .trailing, spacing: 2) {
             Text(calcStore.expression)
@@ -145,33 +143,18 @@ struct CalcView: View {
 
             Spacer(minLength: 0)
 
-            // The result at a fixed size. GeometryReader gives the row width so short
-            // values right-align and long ones overflow into a horizontal scroll,
-            // trailing-anchored — the digits never resize, the "tape" moves.
-            ScrollViewReader { proxy in
-                GeometryReader { geo in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        RollingNumberText(
-                            text: calcStore.display,
-                            font: bloomNumber(fontSize, weight: .semibold),
-                            color: themeStore.color("text")
-                        )
-                        .lineLimit(1)
-                        .fixedSize()                                         // never shrink
-                        .padding(.leading, 6)                                // minimal scroll headroom
-                        .frame(minWidth: geo.size.width, alignment: .trailing)
-                        .frame(height: geo.size.height, alignment: .bottom)  // sit on the baseline
-                        .id("bloomResult")
-                    }
-                    .defaultScrollAnchor(.trailing)
-                    .onChange(of: calcStore.display) { _, _ in
-                        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
-                            proxy.scrollTo("bloomResult", anchor: .trailing)
-                        }
-                    }
-                }
-                .frame(height: fontSize * 1.15)
-            }
+            // Full size while it fits; once it doesn't (around 1M with the log showing,
+            // later with it off) the digits shrink to the card's width, so she never
+            // has to scroll sideways to read a big result. 0.2 still fits 15 digits.
+            RollingNumberText(
+                text: calcStore.display,
+                font: bloomNumber(fontSize, weight: .semibold),
+                color: themeStore.color("text")
+            )
+            .lineLimit(1)
+            .minimumScaleFactor(0.2)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(height: fontSize * 1.15, alignment: .bottom)   // sit on the baseline
             .clearSweep(trigger: calcStore.clearEpoch, text: calcStore.clearedText,
                         font: bloomNumber(fontSize, weight: .semibold), color: themeStore.color("text"))
         }
@@ -426,8 +409,8 @@ struct CalcView: View {
 
 /// Swipe the display left/right to show fewer/more decimals — one step per ~44pt, so one
 /// long swipe can travel several places. It rides on the CARD as a simultaneous gesture,
-/// never inside the result's horizontal ScrollView: the tape still scrolls a long number
-/// within its own bounds, and this only reads the drag alongside it. minimumDistance 24
+/// never inside the result row (landscape's result still scrolls horizontally), and this
+/// only reads the drag alongside it. minimumDistance 24
 /// keeps a scroll flick from stealing a step.
 struct DecimalSwipeModifier: ViewModifier {
     @Environment(ThemeStore.self) private var theme

@@ -3,6 +3,7 @@ import BloomCore
 
 struct HistoryOverlay: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(ThemeStore.self) private var theme
     @Environment(CalcStore.self) private var calc
@@ -29,6 +30,9 @@ struct HistoryOverlay: View {
                 }
             }
             .background(theme.color("bg"))
+            .safeAreaInset(edge: .bottom) {
+                if isSelecting { textButton }
+            }
             .navigationTitle(isSelecting ? selectionTitle : "History")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -37,6 +41,10 @@ struct HistoryOverlay: View {
                         Button("Cancel", action: cancelSelection)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
+                        Button("All", action: selectAll)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        // Texting has its own big button; this stays for Notes, Mail, etc.
                         ShareLink(item: formatShareText(selectedEntries))
                             .disabled(selectedIds.isEmpty)
                     }
@@ -112,6 +120,54 @@ struct HistoryOverlay: View {
 
     private var selectedEntries: [HistoryEntry] {
         history.groupedEntries().flatMap { $0.entries }.filter { selectedIds.contains($0.id) }
+    }
+
+    private func selectAll() {
+        selectedIds = Set(history.groupedEntries().flatMap { $0.entries }.map(\.id))
+    }
+
+    // "Text 3 calcs" while every pick is a calc; a note or list in the mix makes it "items".
+    private var textButtonTitle: String {
+        let n = selectedIds.count
+        guard n > 0 else { return "Text" }
+        let noun = selectedEntries.allSatisfy { $0.type == "calc" } ? "calc" : "item"
+        return "Text \(n) \(noun)\(n == 1 ? "" : "s")"
+    }
+
+    // Straight into Messages with the picks already written out; she only chooses who
+    // gets it. The share icon up top still covers Mail/Notes and devices without SMS.
+    private var textButton: some View {
+        Button(action: textSelection) {
+            Text(textButtonTitle)
+                .font(bloomBody(16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: theme.radius)
+                        .fill(theme.color("primaryStrong"))
+                )
+                .opacity(selectedIds.isEmpty ? 0.4 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(selectedIds.isEmpty)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(theme.color("bg"))
+    }
+
+    private func textSelection() {
+        // "+" "&" "=" are real characters in a calc, so they must be escaped or the
+        // sms: body gets cut at the first "&" and every "+" turns into a space.
+        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=+?#"))
+        guard let body = formatShareText(selectedEntries).addingPercentEncoding(withAllowedCharacters: allowed),
+              let url = URL(string: "sms:&body=\(body)") else { return }
+        openURL(url) { opened in
+            guard !opened else { return }
+            ToastCenter.shared.show(
+                title: "Messages isn't available",
+                message: "Use the share button at the top instead."
+            )
+        }
     }
 
     private var searchBar: some View {

@@ -468,7 +468,7 @@ private struct ClearSweepModifier: ViewModifier {
                             .font(font)
                             .foregroundStyle(color)
                             .lineLimit(1)
-                            .fixedSize()
+                            .minimumScaleFactor(0.2)   // match the portrait row, which shrinks big values to fit
                             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { textWidth = $0 }
                             .scaleEffect(gone ? 0.86 : 1, anchor: .trailing)
                             .offset(x: gone ? -64 : 0, y: gone ? -8 : 0)
